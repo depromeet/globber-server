@@ -38,6 +38,7 @@ out/
 
 ### Mac ###
 .DS_Store
+**/.DS_Store
 
 ### RestDocs ###
 openapi3.yaml
