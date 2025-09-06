@@ -1,0 +1,31 @@
+name: 백엔드 CD (DEV)
+
+on:
+  workflow_run:
+    workflows: ["백엔드 CI"]
+    branches: [ "develop" ]
+    types:
+      - completed
+
+jobs:
+  cd:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: [self-hosted, dev]
+
+    steps:
+      - name: 실행 중인 컨테이너 중지 및 삭제
+        run: |
+          docker stop dev || true && docker rm dev || true
+          docker stop promtail_dev || true && docker rm promtail_dev || true
+
+      - name: dev 네트워크 생성 확인
+        run: docker network create dev_network || true
+
+      - name: Docker Compose Pull & Up 실행
+        run: |
+          cd backend
+          docker compose -f config/docker-compose-dev.yml pull
+          docker compose -f config/docker-compose-dev.yml up -d
+
+      - name: Docker 이미지 정리
+        run: docker image prune -af
