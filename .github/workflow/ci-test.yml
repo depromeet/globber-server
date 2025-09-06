@@ -1,0 +1,81 @@
+name: Backend CI
+
+on:
+  push:
+    branches: [ "main", "develop" ]
+  pull_request:
+    branches: [ "main", "develop" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        shell: bash
+        working-directory: .
+
+    permissions: write-all
+
+    steps:
+      - name: 저장소 체크아웃
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
+          token: ${{ secrets.SECRETS_SUBMODULE_ACCESS_TOKEN }}
+
+      - name: JDK 21 설정
+        uses: actions/setup-java@v3
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: gradlew 실행 권한 부여
+        run: chmod +x gradlew
+
+      - name: 프로젝트 클린
+        run: ./gradlew clean
+
+      - name: 단위 테스트 실행
+        run: ./gradlew test
+
+      - name: 빌드 실행
+        run: ./gradlew build
+
+      - name: 테스트 결과 게시
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: always()
+        with:
+          files: ${{ github.workspace }}/backend/build/test-results/**/*.xml
+
+      - name: Jacoco 테스트 커버리지 리포트(PR 반영)
+        id: jacoco
+        uses: madrapps/jacoco-report@v1.6.1
+        with:
+          paths: ${{ github.workspace }}/backend/build/reports/jacoco/test/jacocoTestReport.xml
+          token: ${{ secrets.GITHUB_TOKEN }}
+          min-coverage-overall: 50
+          min-coverage-changed-files: 50
+          title: "🌻 테스트 커버리지 리포트"
+          update-comment: true
+
+      - name: Docker 이미지 빌드
+        run: |
+          docker build -t myapp:test -f Dockerfile .
+
+      - name: Docker 컨테이너 실행
+        run: |
+          docker run -d --name myapp -p 8080:8080 myapp:test
+          sleep 15  # 애플리케이션 부팅 대기
+
+      - name: 애플리케이션 핑 체크
+        run: |
+          curl --fail http://localhost:8080/actuator/health || (docker logs myapp && exit 1)
+
+      - name: Docker 컨테이너 정리
+        if: always()
+        run: |
+          docker stop myapp
+          docker rm myapp

@@ -1,0 +1,163 @@
+# CodeRabbit이 사용할 언어 설정 (한국어)
+language: ko-KR
+
+# AI 코치의 성격과 리뷰 스타일을 정의하는 지침
+tone_instructions: > 
+  비판보다 개선 중심이며, 관련 문서 추천과 위트 있는 칭찬, P1~P5 우선순위 표시를 지킵니다.
+
+# 코드 리뷰 설정
+reviews:
+  profile: chill                      # 리뷰 스타일: 편안하고 친근한 톤
+  request_changes_workflow: false     # Request Change 요청시 병합 비활성화 해제
+  high_level_summary: true            # PR 전체 요약 제공
+  changed_files_summary: false        # 개별 파일 요약은 비활성화 (중복 방지)
+  sequence_diagrams: false            # 시퀀스 다이어그램 생성 비활성화
+  assess_linked_issues: true          # 연결된 이슈 분석 활성화
+  related_issues: false               # 관련 이슈 추천 비활성화
+  related_prs: false                  # 관련 PR 추천 비활성화
+  suggested_labels: false             # 라벨 추천 비활성화
+  auto_apply_labels: false            # 자동 라벨 적용 비활성화
+  suggested_reviewers: false          # 리뷰어 추천 비활성화
+  auto_assign_reviewers: false        # 자동 리뷰어 할당 비활성화
+  poem: true                          # 리뷰 완료 후 시 작성 활성화 (재미 요소)
+
+  # 특정 경로별 상세 리뷰 지침 설정
+  path_instructions:
+
+    - path: src/**   # 백엔드 코드
+      instructions: |
+        - 1. 팀 컨벤션, 가독성, 예외처리, 테스트/확장/유지보수성, 모듈화, API/DB/보안 설계 기준을 기반으로 리뷰해주세요.
+        - 2. 최신 트렌드, 불필요한 로직, 클린코드, 리팩터링, 서비스/도메인 설계, 공통 예외 처리, 확장성도 함께 확인해주세요.
+        - 3. 각 피드백은 문제점, 대안, 장단점을 짧고 논리적으로 제시하고, 예시 코드가 있다면 간결히 포함해주세요.
+        - 4. 팀 내 스타일 통일성도 확인해주세요.
+        - 5. 리뷰를 남겨주는 부분은 해당 라인의 범위의 코멘트에 작성해주세요.
+        - 6. 미작성한 테스트 코드 케이스가 있다면, 어떤 테스트가 필요한지 제안해주세요. (예: 컨트롤러는 E2E테스트, 나머지는 단위 테스트)
+        - 7. 리뷰가 너무 많아서 피로감을 줄 수 있으니, 꼭 필요한 부분에 집중해주세요.
+        - 8. 보안 상 치명적이거나, 추후 문제가 발생할 가능성이 높은 부분에 리뷰를 집중해주세요.
+
+  # 자동 리뷰 기능 설정
+  abort_on_close: true               # PR이 닫히면 리뷰 중지
+  disable_cache: false               # 빠르고 효율적인 리뷰를 위해 캐시 기능 활성화
+  auto_review:
+    enabled: true                    # 자동 리뷰 활성화
+    auto_incremental_review: false    # 증분 리뷰 비활성화 (PR 이후 커밋/변경에 대해서는 리뷰하지 않도록 비활성화)
+    base_branches: ["develop", "main", "be"]
+
+  # 코드 분석 도구(Tools)
+  tools:
+    hadolint: # Dockerfile 분석
+      enabled: true
+    gitleaks: # 민감정보 포함여부 확인
+      enabled: true
+    sqlfluff: # SQL 분석
+      enabled: true
+
+# 채팅 및 상호작용 설정
+chat:
+  auto_reply: true                    # 질문 시 자동 응답 활성화
+
+# 지식 베이스 설정 (CodeRabbit이 참고할 문서들)
+knowledge_base:
+  opt_out: false                      # 지식베이스 사용 허용 (프로젝트의 리뷰들 확인)
+
+  web_search:
+    enabled: true                     # 웹 검색을 통한 최신 정보 활용
+
+  learnings:
+    scope: local                      # 학습 데이터를 현재 저장소로 제한
+
+  issues:
+    scope: local                      # 이슈 참조를 현재 저장소로 제한
+
+  pull_requests:
+    scope: local                      # PR 참조를 현재 저장소로 제한
+
+# 공통 그라운드 룰 (Backend 공통)
+common_ground_rules:
+  # Pn 그라운드 룰 (Backend 공통) - 리뷰 우선순위 시스템
+  priority_system:
+    P1:
+      description: "꼭 반영해주세요 (Request changes)"
+      criteria: "앱 크래시, 보안 이슈, 메모리 누수 등 서비스에 중대한 오류를 발생시킬 수 있는 문제"
+      action: "리뷰 요청자는 반드시 반영하거나 합리적인 반박 의견 제시 필요"
+
+    P2:
+      description: "적극적으로 고려해주세요 (Request changes)"
+      criteria: "성능 저하, 아키텍처 위반, 유지보수성에 영향을 주는 문제"
+      action: "수용하거나 적합한 의견으로 토론 권장"
+
+    P3:
+      description: "웬만하면 반영해 주세요 (Comment)"
+      criteria: "코드 컨벤션, 가독성 개선, 리팩토링 제안"
+      action: "수용하거나 반영 불가 사유 설명, 향후 계획 명시 권장"
+
+    P4:
+      description: "반영해도 좋고 넘어가도 좋습니다 (Approve)"
+      criteria: "사소한 개선사항, 선택적 적용 가능한 제안"
+      action: "고민해보는 정도면 충분, 무시해도 무관"
+
+    P5:
+      description: "그냥 사소한 의견입니다 (Approve)"
+      criteria: "개인 취향, 참고용 의견"
+      action: "무시해도 무관"
+
+  # 작업 목표 설정 (Backend 공통) - 효율적인 개발 프로세스를 위한 규칙
+  work_guidelines:
+    goal_setting:                     # 작업 계획 및 범위 설정
+      - "이슈 티켓 발행 시 목표 명확히 설정"
+      - "큰 작업은 여러 개의 작은 티켓으로 분할"
+      - "PR은 최대 500 Line 제한"                    # 리뷰 품질 유지를 위한 크기 제한
+      - "주요 변경사항이나 새로운 패턴 도입 시 반드시 사전 논의"
+
+    deadline:                         # 리뷰 프로세스 시간 관리
+      - "리뷰 완료 기준 24시간 이내"                   # 빠른 피드백 사이클 유지
+      - "피드백 마감기한을 팀과 설정하여 준수"
+
+  # 리뷰어 자세와 원칙 (Backend 공통) - 건설적인 리뷰 문화 조성
+  reviewer_principles:
+    basic_rules:                      # 리뷰의 기본 원칙
+      - "피드백은 코드, 프로세스, 사양만을 대상으로 함"     # 개인 공격 방지
+      - "리뷰이와 리뷰어의 인격과는 분리"
+      - "언어 폭력이나 비난이 섞인 지적 금지"
+      - "시간에 쫓겨 리뷰 품질을 낮추지 말 것"
+
+    reviewer_attitude:                # 리뷰어가 가져야 할 마음가짐
+      - "리뷰는 모두를 위한 것 (나 자신, 팀, 서비스)"
+      - "적절한 시간 분배로 피드백 마감기한 준수"
+      - "우선순위를 정해 필요한 부분만 간단히 리뷰"
+
+    feedback_method:                  # 효과적인 피드백 방법
+      constructive:                   # 건설적인 표현 방법
+        good: "이 부분을 다음과 같이 개선할 수 있을 것 같습니다"
+        bad: "이 코드는 잘못되었다"
+      specific:                       # 구체적인 제안 방법
+        good: "RecyclerView 대신 LazyColumn을 사용하면 성능이 향상될 것 같습니다"
+        bad: "성능이 안 좋다"
+      discussion:                     # 토론 방식
+        - "토론을 하되, 납득할 수 있는 이유와 근거 충분히 제시"
+
+    mindset:                          # 리뷰 문화에 대한 기본 마인드셋
+      - "리뷰는 모두를 위한 것"
+      - "사람은 누구나 실수한다 - 빠르게 인정하고 열린 마음으로 토론"
+      - "칭찬도 좋은 코드 리뷰 - 특별한 의견이 없다면 칭찬하기"
+      - "실수 지적받았을 때 방어적이 되지 않기"
+      - "리뷰를 위한 리뷰는 자제 - 의미 있는 피드백에 집중"
+
+# 코드 생성
+code_generation:
+  docstrings:
+    language: ko-KR
+    path_instructions:
+      - path:  src/**
+        instructions: |
+          - JavaDoc 공식 형식으로, 한글로 Docstring을 작성해주세요.
+          - 메서드 목적, 파라미터, 반환값, 예외 정보를 명확하게 기술해 주세요.
+          - 외부 API 등 공개 메서드는 상세히, 내부용은 핵심만 요약해 주세요.
+
+
+  unit_tests:
+    path_instructions:
+      - path:  src/**
+        instructions: |
+          - Controller는 인수테스트(API 엔드포인트 통합 테스트) 나머지 영역은 함수/클래스 단위의 단위 테스트
+          - given-when-then 패턴을 적용
