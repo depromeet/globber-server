@@ -1,8 +1,6 @@
-name: Backend CI
+name: 백엔드 CI 테스트
 
 on:
-  push:
-    branches: [ "main", "develop" ]
   pull_request:
     branches: [ "main", "develop" ]
 
@@ -48,13 +46,13 @@ jobs:
         uses: EnricoMi/publish-unit-test-result-action@v2
         if: always()
         with:
-          files: ${{ github.workspace }}/backend/build/test-results/**/*.xml
+          files: ${{ github.workspace }}/build/test-results/**/*.xml
 
       - name: Jacoco 테스트 커버리지 리포트(PR 반영)
         id: jacoco
         uses: madrapps/jacoco-report@v1.6.1
         with:
-          paths: ${{ github.workspace }}/backend/build/reports/jacoco/test/jacocoTestReport.xml
+          paths: ${{ github.workspace }}/build/reports/jacoco/test/jacocoTestReport.xml
           token: ${{ secrets.GITHUB_TOKEN }}
           min-coverage-overall: 50
           min-coverage-changed-files: 50
@@ -63,7 +61,7 @@ jobs:
 
       - name: Docker 이미지 빌드
         run: |
-          docker build -t myapp:test -f Dockerfile .
+          docker build -t myapp:test -f Dockerfile.prod .
 
       - name: Docker 컨테이너 실행
         run: |
