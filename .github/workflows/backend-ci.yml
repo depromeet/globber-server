@@ -1,4 +1,4 @@
-name: 백엔드 CI
+name: 백엔드 공통 CI
 
 on:
   push:
@@ -46,20 +46,27 @@ jobs:
           username: ${{ secrets.DOCKERHUB_DEPLOY_USERNAME }}
           password: ${{ secrets.DOCKERHUB_DEPLOY_TOKEN }}
 
+      - name: 멀티 아키텍처 의존성 추가 (qemu)
+        uses: docker/setup-qemu-action@v3
+
+      - name: 멀티 아키텍처 의존성 추가 (docker buildx)
+        uses: docker/setup-buildx-action@v3
+
       - name: Docker 이미지 빌드 및 푸시 (브랜치별 태깅)
         run: |
           VERSION=$(date +'%Y%m%d%H%M%S')-${GITHUB_SHA::7}
 
           if [[ "${GITHUB_REF_NAME}" == "develop" ]]; then
             docker buildx build -f Dockerfile.dev \
-              --platform linux/arm64 \
-              -t one/one:dev-$VERSION \
-              -t one/one:dev-latest \
+              --platform linux/amd64,linux/arm64 \
+              -t mimiminu123/globber:dev-$VERSION \
+              -t mimiminu123/globber:dev-latest \
               --push .
           elif [[ "${GITHUB_REF_NAME}" == "main" ]]; then
-            docker buildx build -f Dockerfile \
-              --platform linux/arm64 \
-              -t one/one:prod-$VERSION \
-              -t one/one:prod-latest \
+            docker buildx build -f Dockerfile.prod \
+              --platform linux/amd64,linux/arm64 \
+              -t mimiminu123/globber:prod-$VERSION \
+              -t mimiminu123/globber:prod-latest \
               --push .
           fi
+      
