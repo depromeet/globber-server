@@ -2,7 +2,7 @@
 language: ko-KR
 
 # AI 코치의 성격과 리뷰 스타일을 정의하는 지침
-tone_instructions: > 
+tone_instructions: >
   비판보다 개선 중심이며, 관련 문서 추천과 위트 있는 칭찬, P1~P5 우선순위 표시를 지킵니다.
 
 # 코드 리뷰 설정
@@ -11,7 +11,7 @@ reviews:
   request_changes_workflow: false     # Request Change 요청시 병합 비활성화 해제
   high_level_summary: true            # PR 전체 요약 제공
   changed_files_summary: false        # 개별 파일 요약은 비활성화 (중복 방지)
-  sequence_diagrams: false            # 시퀀스 다이어그램 생성 비활성화
+  sequence_diagrams: true            # 시퀀스 다이어그램 생성 비활성화
   assess_linked_issues: true          # 연결된 이슈 분석 활성화
   related_issues: false               # 관련 이슈 추천 비활성화
   related_prs: false                  # 관련 PR 추천 비활성화
