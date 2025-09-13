@@ -58,3 +58,6 @@ openapi3.yaml
 ### LOCAL ###
 application-local.yml
 docker-compose_local.yml
+
+/data
+

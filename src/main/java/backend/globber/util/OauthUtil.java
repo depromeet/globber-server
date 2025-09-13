@@ -109,8 +109,7 @@ public class OauthUtil implements OAuth2UserService<OAuth2UserRequest, OAuth2Use
 
         // 토큰 생성
         String accessToken = jwtTokenProvider.createAccessToken(email, roles);
-        response.addHeader("Authorization", "Bearer " + accessToken);
-
+        response.addHeader("Authorization", accessToken);
         try {
             // 리다이렉트
             response.sendRedirect(successRedirectUri+accessToken);
@@ -123,6 +122,7 @@ public class OauthUtil implements OAuth2UserService<OAuth2UserRequest, OAuth2Use
 
     // 실패시 로그인 페이지로 리다이렉트.
     public void oauthFailureHandler(HttpServletRequest request, HttpServletResponse response, AuthenticationException exception){
+        log.error("OAuth2 login failed", exception);
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
         try {
             response.sendRedirect(failureRedirectUri);

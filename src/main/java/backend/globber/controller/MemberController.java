@@ -118,4 +118,9 @@ public class MemberController {
         MemberResponse memberResponse = memberService.findMember(accessToken);
         return ResponseEntity.ok(ApiResponse.success(memberResponse));
     }
+
+    @GetMapping("/auth/kakao" )
+    @Operation(summary = "카카오 로그인", description = "카카오 로그인을 진행합니다.")
+    public void kakaoLogin() {
+    }
 }

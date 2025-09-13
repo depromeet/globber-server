@@ -30,8 +30,15 @@ public class AuthorizationFilter extends OncePerRequestFilter{
 
         String uri = request.getRequestURI();
 
-        // OAuth2 콜백은 그냥 패스
-        if (uri.startsWith("/login/oauth2") || uri.startsWith("/oauth2") || uri.startsWith("/swagger-ui")) {
+
+        // 화이트리스트 경로 (OAuth2, Swagger, API docs 등)
+        if (uri.startsWith("/login/oauth2")
+            || uri.startsWith("/oauth2")
+            || uri.startsWith("/swagger-ui")
+            || uri.startsWith("/v3/api-docs")
+            || uri.startsWith("/swagger-resources")
+            || uri.startsWith("/webjars")
+            || uri.startsWith("/oauth/token")) {
             chain.doFilter(request, response);
             return;
         }
