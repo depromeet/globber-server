@@ -41,7 +41,6 @@ dependencies {
     implementation 'com.ibm.icu:icu4j:74.1' // ISO 3166 country codes
     implementation 'org.springframework.boot:spring-boot-starter-validation'
     implementation 'org.springframework.boot:spring-boot-starter-data-redis'
-    testImplementation 'it.ozimov:embedded-redis:0.7.3'
 }
 
 tasks.named('test') {
