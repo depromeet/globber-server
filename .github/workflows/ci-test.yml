@@ -8,17 +8,6 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
-    services:
-      redis:
-        image: redis:7
-        ports:
-          - 6379:6379
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
     defaults:
       run:
         shell: bash
@@ -73,11 +62,20 @@ jobs:
       - name: Docker 이미지 빌드
         run: |
           docker build -t myapp:test -f Dockerfile.prod .
+          
+      - name: Redis 컨테이너 실행
+        run: |
+          docker run -d --name redis -p 6379:6379 redis:7.4-alpine
+          sleep 5
 
       - name: Docker 컨테이너 실행
         run: |
-          docker run -d --name myapp -p 8080:8080 myapp:test
-          sleep 15  # 애플리케이션 부팅 대기
+          docker run -d --name myapp --link redis:redis -p 8080:8080 \
+            -e SPRING_PROFILES_ACTIVE=prod \
+            -e SPRING_REDIS_HOST=redis \
+            -e SPRING_REDIS_PORT=6379 \
+            myapp:test
+          sleep 15
 
       - name: 애플리케이션 핑 체크
         run: |
