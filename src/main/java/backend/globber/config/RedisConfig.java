@@ -1,5 +1,6 @@
 package backend.globber.config;
 
+import backend.globber.membertravel.controller.dto.CityCoordinates;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
@@ -16,8 +17,8 @@ public class RedisConfig {
   }
 
   @Bean
-  public RedisTemplate<String, Object> redisTemplate() {
-    RedisTemplate<String, Object> template = new RedisTemplate<>();
+  public RedisTemplate<String, CityCoordinates> cityCoordinatesRedisTemplate() {
+    RedisTemplate<String, CityCoordinates> template = new RedisTemplate<>();
     template.setConnectionFactory(redisConnectionFactory());
 
     // Key 직렬화 (String)
