@@ -1,0 +1,30 @@
+name: "🧹 CHORE"
+description: "개발, 수정과 관련없는 기타 사항을 적어주세요"
+title: "[CHORE] "
+labels: []
+assignees: []
+
+body:
+  - type: textarea
+    id: task-details
+    attributes:
+      label: 📝 업무 상세
+      description: 진행해야 할 업무를 설명해주세요.
+      placeholder: 최대한 자세히 적어주세요!
+    validations:
+      required: true
+
+  - type: textarea
+    id: work-details
+    attributes:
+      label: 🏗️ 작업 상세
+      description: 작업 목록을 체크박스 형태로 작성해주세요.
+      placeholder: 최대한 자세히 적어주세요!
+    validations:
+      required: true
+
+  - type: textarea
+    id: references
+    attributes:
+      label: 👀 참고사항
+      description: 업무 진행 시 참고해야 할 사항이 있다면 작성해주세요.

@@ -1,0 +1,42 @@
+name: "🛠️ FIX"
+description: "수정과 관련된 사항을 적어주세요"
+title: "[FIX] "
+labels: []
+assignees: []
+
+body:
+  - type: textarea
+    id: problem-details
+    attributes:
+      label: 🔍 문제 상세
+      description: (가능하면) Given-When-Then 형식으로 서술해주세요.
+      placeholder: |
+        Given: 현재의 상태 또는 상황을 설명하세요.
+        When: 문제를 발생시키는 행동을 설명하세요.
+        Then: 기대한 결과와 실제 결과를 설명하세요.
+    validations:
+      required: true
+
+  - type: textarea
+    id: fix-details
+    attributes:
+      label: 📝 수정사항 상세
+      description: 수정해야 할 사항을 자세히 설명해주세요.
+      placeholder: 최대한 자세히 적어주세요!
+    validations:
+      required: true
+
+  - type: textarea
+    id: task-details
+    attributes:
+      label: 🏗️ 작업 상세
+      description: 구현해야 할 작업 목록을 체크박스 형태로 작성해주세요.
+      placeholder: 최대한 자세히 적어주세요!
+    validations:
+      required: true
+
+  - type: textarea
+    id: references
+    attributes:
+      label: 👀 참고사항
+      description: 이슈 해결에 참고해야 할 사항이 있다면 작성해주세요.

@@ -1,0 +1,17 @@
+blank_issues_enabled: false
+issue_templates:
+  - name: "✨ Feature 요청"
+    description: "새로운 기능을 요청하려면 클릭하세요."
+    file: feature.yml
+
+  - name: "🛠️ Bug 수정 (Fix)"
+    description: "버그를 수정하려면 클릭하세요."
+    file: fix.yml
+
+  - name: "🛫 배포 요청 (Deploy)"
+    description: "배포 관련 이슈를 생성하려면 클릭하세요."
+    file: deploy.yml
+
+  - name: "🧹 기타 작업 (Chore)"
+    description: "기타 작업(문서 정리 등등..)이 필요할 경우 클릭하세요."
+    file: chore.yml

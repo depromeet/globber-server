@@ -1,0 +1,30 @@
+name: "🛫 DEPLOY"
+description: "배포와 관련된 사항을 적어주세요"
+title: "[DEPLOY] "
+labels: []
+assignees: []
+
+body:
+  - type: textarea
+    id: feature-details
+    attributes:
+      label: "📝 기능 상세"
+      description: "배포할 기능이나 변경 사항을 설명해주세요."
+      placeholder: "최대한 자세히 적어주세요!"
+    validations:
+      required: true
+
+  - type: textarea
+    id: task-details
+    attributes:
+      label: "🏗️ 작업 상세"
+      description: "배포 관련 작업 목록을 체크박스 형태로 작성해주세요."
+      placeholder: "최대한 자세히 적어주세요!"
+    validations:
+      required: true
+
+  - type: textarea
+    id: references
+    attributes:
+      label: "👀 참고사항"
+      description: "배포 관련 참고해야 할 사항이 있다면 작성해주세요."
