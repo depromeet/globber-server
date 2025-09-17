@@ -1,14 +1,8 @@
 package backend.globber.membertravel.controller.dto;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+public record CityCoordinates(
+    Double lat,
+    Double lng
+) {
 
-@Getter
-@NoArgsConstructor
-@AllArgsConstructor
-public class CityCoordinates {
-
-  private Double lat;
-  private Double lng;
 }

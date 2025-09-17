@@ -26,37 +26,37 @@ public class MemberTravelService {
 
   public MemberTravelResponse saveTravelRecord(Long memberId, CreateMemberTravelRequest request) {
     try {
-      String countryCode = CountryCodeConverter.convertToIso3Code(request.getCountryName());
+      String countryCode = CountryCodeConverter.convertToIso3Code(request.countryName());
 
-      CityCoordinates coordinates = redisService.getCityCoordinates(request.getCityName(), request.getCountryName());
+      CityCoordinates coordinates = redisService.getCityCoordinates(request.cityName(), request.countryName());
 
       // Redis에 없으면 외부 API 호출?? 일단 mock
       if (coordinates == null) {
-        coordinates = geocodingService.getCoordinates(request.getCityName(), request.getCountryName());
+        coordinates = geocodingService.getCoordinates(request.cityName(), request.countryName());
 
         // Redis에 캐싱
         if (coordinates != null) {
-          redisService.saveCityCoordinates(request.getCityName(), request.getCountryName(), coordinates);
+          redisService.saveCityCoordinates(request.cityName(), request.countryName(), coordinates);
         }
       }
 
       if (coordinates == null) {
         throw new IllegalArgumentException(
-            "해당 도시의 좌표를 찾을 수 없습니다: " + request.getCityName() + ", " + request.getCountryName());
+            "해당 도시의 좌표를 찾을 수 없습니다: " + request.cityName() + ", " + request.countryName());
       }
 
       MemberTravel memberTravel = MemberTravel.builder()
           .memberId(memberId)
           .countryCode(countryCode)
-          .cityName(request.getCityName())
-          .lat(coordinates.getLat())
-          .lng(coordinates.getLng())
+          .cityName(request.cityName())
+          .lat(coordinates.lat())
+          .lng(coordinates.lng())
           .build();
 
       memberTravelRepository.save(memberTravel);
 
       log.info("여행 기록 저장 완료 - 회원ID: {}, 국가: {}, 도시: {}",
-          memberId, request.getCountryName(), request.getCityName());
+          memberId, request.countryName(), request.cityName());
 
     } catch (Exception e) {
       log.error("여행 기록 저장 실패 - 회원ID: {}, 요청: {}", memberId, request, e);

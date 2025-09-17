@@ -22,7 +22,7 @@ public class CityCoordinatesRedisService {
       String key = buildRedisKey(cityName, countryName);
       redisTemplate.opsForValue().set(key, coordinates);
       log.info("Redis에 도시 좌표 저장 완료 - Key: {}, 좌표: ({}, {})",
-          key, coordinates.getLat(), coordinates.getLng());
+          key, coordinates.lat(), coordinates.lng());
     } catch (Exception e) {
       log.error("Redis 저장 실패 - 도시: {}, 국가: {}", cityName, countryName, e);
     }
