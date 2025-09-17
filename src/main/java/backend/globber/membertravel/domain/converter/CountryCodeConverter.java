@@ -19,7 +19,7 @@ public class CountryCodeConverter {
    * @throws IllegalArgumentException 매칭되는 국가를 찾을 수 없는 경우
    */
   public static String convertToIso3Code(String countryName) {
-    if (countryName == null || countryName.trim().isEmpty()) {
+    if (countryName == null || countryName.isBlank()) {
       throw new IllegalArgumentException("국가명은 null이거나 빈 문자열일 수 없습니다.");
     }
 
