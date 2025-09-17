@@ -24,6 +24,7 @@ public class MemberTravelService {
   private final CityCoordinatesRedisService redisService;
   private final GeocodingService geocodingService;
 
+  @Transactional
   public MemberTravelResponse saveTravelRecord(Long memberId, CreateMemberTravelRequest request) {
     try {
       String countryCode = CountryCodeConverter.convertToIso3Code(request.countryName());
