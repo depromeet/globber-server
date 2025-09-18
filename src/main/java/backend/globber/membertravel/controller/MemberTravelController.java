@@ -23,15 +23,14 @@ public class MemberTravelController {
 
   @PostMapping("/{memberId}")
   public ResponseEntity<MemberTravelResponse> createMemberTravel(
-      @PathVariable Long memberId
-      , @Valid @RequestBody CreateMemberTravelRequest request) {
-    // ApiResponseDto 만드나..?
+      @PathVariable final Long memberId
+      , @Valid @RequestBody final CreateMemberTravelRequest request) {
     return ResponseEntity.status(HttpStatus.CREATED)
         .body(memberTravelService.saveTravelRecord(memberId, request));
   }
 
   @GetMapping("/{memberId}/globe")
-  public ResponseEntity<MemberTravelResponse> getMemberTravelRecords(@PathVariable Long memberId) {
+  public ResponseEntity<MemberTravelResponse> getMemberTravelRecords(@PathVariable final Long memberId) {
     return ResponseEntity.ok(memberTravelService.getMemberTravelRecords(memberId));
   }
 }
