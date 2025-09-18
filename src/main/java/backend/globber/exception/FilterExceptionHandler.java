@@ -1,23 +1,24 @@
 package backend.globber.exception;
 
-import backend.globber.dto.response.ApiResponse;
+import backend.globber.auth.dto.response.ApiResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-import java.io.IOException;
-
 @RequiredArgsConstructor
 @Slf4j
 public class FilterExceptionHandler extends OncePerRequestFilter {
+
     private final ObjectMapper ObjectMapper;
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws IOException{
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
+        FilterChain filterChain) throws IOException {
         try {
             filterChain.doFilter(request, response);
         } catch (CustomException e) {
@@ -31,8 +32,9 @@ public class FilterExceptionHandler extends OncePerRequestFilter {
         }
     }
 
-    private void setErrorResponse(HttpServletResponse response, ApiResponse<?> err) throws IOException {
-        response.setStatus(response.SC_INTERNAL_SERVER_ERROR);
+    private void setErrorResponse(HttpServletResponse response, ApiResponse<?> err)
+        throws IOException {
+        response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
         response.setContentType("application/json");
         response.setCharacterEncoding("UTF-8");
         response.getWriter().write(ObjectMapper.writeValueAsString(err));

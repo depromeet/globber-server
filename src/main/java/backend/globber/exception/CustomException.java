@@ -1,11 +1,12 @@
 package backend.globber.exception;
 
-import backend.globber.dto.response.ApiResponse;
+import backend.globber.auth.dto.response.ApiResponse;
 import lombok.Getter;
 import org.springframework.http.HttpStatus;
 
 @Getter
-public class CustomException extends RuntimeException{
+public class CustomException extends RuntimeException {
+
     private final HttpStatus httpStatus;
     private final ApiResponse<String> response;
 
