@@ -2,9 +2,11 @@ package backend.globber.membertravel.service;
 
 import backend.globber.membertravel.controller.dto.CityCoordinates;
 import java.util.Map;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
 @Service
+@Profile("local")
 public class MockGeocodingService implements GeocodingService {
 
   private static final Map<String, CityCoordinates> MOCK_DATA = Map.of(
