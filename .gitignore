@@ -59,5 +59,5 @@ openapi3.yaml
 application-local.yml
 docker-compose_local.yml
 
-/data
 
+/data/

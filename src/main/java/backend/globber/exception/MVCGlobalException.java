@@ -1,5 +1,6 @@
 package backend.globber.exception;
 
+import backend.globber.auth.dto.response.ApiResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -14,5 +15,11 @@ class MVCGlobalException {
     public ResponseEntity<?> customExceptionHandler(CustomException e) {
         log.error("MVCGlobalException: " + e.getMessage());
         return ResponseEntity.status(e.getHttpStatus()).body(e.getResponse());
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<?> illegalArgumentHandler(IllegalArgumentException e) {
+        log.warn("Bad request: {}", e.getMessage(), e);
+        return ResponseEntity.badRequest().body(ApiResponse.fail(e.getMessage()));
     }
 }

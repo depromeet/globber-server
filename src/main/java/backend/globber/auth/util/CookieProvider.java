@@ -22,7 +22,7 @@ public class CookieProvider {
 
     // 쿠키에 저장된 RefreshToken을 삭제.
     public ResponseCookie deleteRefreshCookie() {
-        return ResponseCookie.from("RefreshToken", null)
+        return ResponseCookie.from("RefreshToken", "")
             .httpOnly(true)
             .maxAge(0)
             .path("/")

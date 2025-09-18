@@ -62,6 +62,8 @@ public class OauthUtil implements OAuth2UserService<OAuth2UserRequest, OAuth2Use
             case "kakao":
                 provider = AuthProvider.KAKAO;
                 break;
+            default:
+                throw new CustomAuthException("지원하지 않는 OAuth2 제공자입니다.");
         }
 
         // 소셜 로그인 정보 추출 -> userNameAttributeName은 소셜 로그인을 통해 가져온 사용자 정보 중 username으로 지정할 값.

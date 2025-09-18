@@ -25,7 +25,7 @@ public class SecurityUserDetailService implements UserDetailsService {
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         Member member = memberRepository.findByEmail(username)
-            .orElseThrow(UsernameNotFoundException::new);
+            .orElseThrow(() -> new UsernameNotFoundException("존재하지 않는 사용자입니다."));
 
         Collection<GrantedAuthority> authorities = new ArrayList<>();
         for (Role role : member.getRoles()) {

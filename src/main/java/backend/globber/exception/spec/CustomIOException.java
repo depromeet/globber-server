@@ -6,10 +6,10 @@ import org.springframework.http.HttpStatus;
 public class CustomIOException extends CustomException {
 
     public CustomIOException() {
-        super(HttpStatus.BAD_REQUEST, "IO Exception");
+        super(HttpStatus.BAD_GATEWAY, "IO Exception");
     }
 
     public CustomIOException(String message) {
-        super(HttpStatus.BAD_REQUEST, message);
+        super(HttpStatus.BAD_GATEWAY, message);
     }
 }

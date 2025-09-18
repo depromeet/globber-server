@@ -7,10 +7,15 @@ import org.springframework.http.HttpStatus;
 public class CustomTokenException extends CustomException {
 
     public CustomTokenException() {
-        super(HttpStatus.INTERNAL_SERVER_ERROR, "토큰 관련 예외가 발생했습니다.");
+        super(HttpStatus.UNAUTHORIZED, "유효하지 않은 토큰입니다.");
     }
 
     public CustomTokenException(String message) {
-        super(HttpStatus.INTERNAL_SERVER_ERROR, message);
+        super(HttpStatus.UNAUTHORIZED, message);
     }
+
+    public CustomTokenException(HttpStatus status, String message) {
+        super(status, message);
+    }
+
 }

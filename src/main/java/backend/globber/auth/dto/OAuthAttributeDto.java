@@ -36,7 +36,7 @@ public class OAuthAttributeDto {
         if (AuthProvider.KAKAO.equals(provider)) {
             return ofKakao(attributes, nameAttributeKey);
         }
-        return null;
+        throw new IllegalArgumentException("Unsupported provider: " + provider);
     }
 
     // 팩토리 메서드 구현체.

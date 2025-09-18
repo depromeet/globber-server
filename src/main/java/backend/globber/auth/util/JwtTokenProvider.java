@@ -24,6 +24,8 @@ public class JwtTokenProvider {
     private String secretKey;
     @Value("${jwt.access_expiration}")
     private long accessTokenExpiration;
+    @Value("${jwt.refresh_expiration}")
+    private long refreshTokenExpiration;
 
     public String fromHeader(String header) {
         return header.replace(JwtPrefix, "");
@@ -47,9 +49,11 @@ public class JwtTokenProvider {
         claims.put("value", UUID.randomUUID().toString());
 
         // 쿠키에는 공백이 들어갈 수 없으므로 공백 제거 (Bearer 포함 X)
+        Date now = new Date();
         return Jwts.builder()
             .setClaims(claims)
             .setIssuedAt(new Date())
+            .setExpiration(new Date(now.getTime() + refreshTokenExpiration))
             .signWith(SignatureAlgorithm.HS256, secretKey)
             .compact();
     }
@@ -57,11 +61,11 @@ public class JwtTokenProvider {
     // 토큰의 서브젝트인 이메일 추출
     public String getEmailForAccessToken(String a_token) {
         String token = fromHeader(a_token);
-        return getClaimes(token).getSubject();
+        return getClaims(token).getSubject();
     }
 
     // 토큰의 클레임 추출
-    public Claims getClaimes(String token) {
+    public Claims getClaims(String token) {
         if (token.startsWith(JwtPrefix)) {
             token = fromHeader(token);
         }
@@ -73,18 +77,18 @@ public class JwtTokenProvider {
     }
 
     public String getRefreshTokenId(String r_token) {
-        return getClaimes(fromHeader(r_token)).get("value").toString();
+        return getClaims(fromHeader(r_token)).get("value").toString();
     }
 
     public Date getExpirationTime(String token) {
         if (token.startsWith(JwtPrefix)) {
             token = fromHeader(token);
         }
-        return getClaimes(token).getExpiration();
+        return getClaims(token).getExpiration();
     }
 
     public List<String> getRole(String a_token) {
-        return getClaimes(a_token).get("role", List.class);
+        return getClaims(a_token).get("role", List.class);
     }
 
     // Token의 UUID 와 RefreshTokenId 비교
