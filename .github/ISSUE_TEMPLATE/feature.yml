@@ -1,0 +1,30 @@
+name: "✅ Feature"
+description: "개발과 관련된 사항을 적어주세요"
+title: "[FEATURE] "
+labels: []
+assignees: []
+
+body:
+  - type: textarea
+    id: feature-details
+    attributes:
+      label: 📝 기능 상세
+      description: 추가하거나 변경할 기능을 설명해주세요.
+      placeholder: 최대한 자세히 적어주세요!
+    validations:
+      required: true
+
+  - type: textarea
+    id: task-details
+    attributes:
+      label: 🏗️ 작업 상세
+      description: 구현해야 할 작업 목록을 체크박스 형태로 작성해주세요.
+      placeholder: 최대한 자세히 적어주세요!
+    validations:
+      required: true
+
+  - type: textarea
+    id: references
+    attributes:
+      label: 👀 참고사항
+      description: 이슈 해결에 참고해야 할 사항이 있다면 작성해주세요.

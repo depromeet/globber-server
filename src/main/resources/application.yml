@@ -2,4 +2,4 @@ spring:
   application:
     name: globber
   profiles:
-    default: local
+    active: local
