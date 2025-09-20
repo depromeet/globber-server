@@ -54,3 +54,10 @@ openapi3.yaml
 
 ### env ###
 .env
+
+### LOCAL ###
+application-local.yml
+docker-compose_local.yml
+
+
+/data/
