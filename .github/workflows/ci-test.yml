@@ -72,7 +72,7 @@ jobs:
         run: |
           docker run -d --name myapp --link redis:redis -p 8080:8080 \
             -e SPRING_PROFILES_ACTIVE=prod \
-            -e SPRING_REDIS_HOST=redis \
+            -e SPRING_REDIS_HOST=redis_dev \
             -e SPRING_REDIS_PORT=6379 \
             myapp:test
           sleep 15
