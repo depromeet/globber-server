@@ -4,13 +4,13 @@ services:
   dev:
     container_name: dev
     build:
-      context: ../..
+      context: ..
       dockerfile: ../Dockerfile.dev
       args:
         JAR_FILE: /build/libs/*.jar
-    image: mimiminu123/globber:dev-latest
+    image: one/one:dev
     ports:
-      - "8080:8080"
+      - "80:8080"
     volumes:
       - ../log:/log
     environment:
@@ -38,7 +38,7 @@ services:
     ports:
       - "6379:6379"
     volumes:
-      - redis_data:/data
+      - ../data/redis:/data
     restart: always
     networks:
       - dev_network
@@ -46,6 +46,3 @@ services:
 networks:
   dev_network:
     external: true
-
-volumes:
-  redis_data:

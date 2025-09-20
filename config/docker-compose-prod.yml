@@ -10,7 +10,7 @@ services:
         JAR_FILE: /build/libs/*.jar
     image: mimiminu123/globber:dev-latest
     ports:
-      - "80:8080"
+      - "8080:8080"
     volumes:
       - ../log:/log
     environment:
