@@ -5,10 +5,24 @@ services:
     container_name: redis_dev
     image: redis:7.2
     ports:
-      - "6380:6379"
+      - "6379:6379"
     volumes:
       - redis_data:/data
     restart: always
 
+  postgres:
+    container_name: postgres_dev
+    image: postgres:15
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: 1234
+      POSTGRES_DB: globber
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: always
+
 volumes:
   redis_data:
+  postgres_data:
