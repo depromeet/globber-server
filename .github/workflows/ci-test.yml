@@ -8,6 +8,10 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
+    env:
+      DOCKER_HOST: unix:///var/run/docker.sock
+      TESTCONTAINERS_RYUK_DISABLED: true
+
     defaults:
       run:
         shell: bash
@@ -33,10 +37,15 @@ jobs:
       - name: gradlew 실행 권한 부여
         run: chmod +x gradlew
 
+      - name: Docker 가용성 확인(디버그용)
+        run: |
+          docker version
+          docker info
+
       - name: 프로젝트 클린
         run: ./gradlew clean
 
-      - name: 단위 테스트 실행
+      - name: 단위 테스트 실행 (Testcontainers)
         run: ./gradlew test
 
       - name: 빌드 실행
@@ -62,7 +71,8 @@ jobs:
       - name: Docker 이미지 빌드
         run: |
           docker build -t myapp:test -f Dockerfile.prod .
-          
+
+      # 아래부터는 앱 런타임 확인용(테스트와 무관)
       - name: Redis 컨테이너 실행
         run: |
           docker run -d --name redis -p 6379:6379 redis:7.4-alpine
@@ -72,7 +82,7 @@ jobs:
         run: |
           docker run -d --name myapp --link redis:redis -p 8080:8080 \
             -e SPRING_PROFILES_ACTIVE=prod \
-            -e SPRING_REDIS_HOST=redis_dev \
+            -e SPRING_REDIS_HOST=redis \
             -e SPRING_REDIS_PORT=6379 \
             myapp:test
           sleep 15
@@ -84,5 +94,7 @@ jobs:
       - name: Docker 컨테이너 정리
         if: always()
         run: |
-          docker stop myapp
-          docker rm myapp
+          docker stop myapp || true
+          docker rm myapp || true
+          docker stop redis || true
+          docker rm redis || true
