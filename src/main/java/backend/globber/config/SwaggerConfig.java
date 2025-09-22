@@ -23,7 +23,7 @@ public class SwaggerConfig {
     // 그룹화된 API 생성
     public GroupedOpenApi api() {
         String[] paths = {"/**"};
-        String[] packagesToScan = {"backend.globber.controller"};
+        String[] packagesToScan = {"backend.globber"};
         return GroupedOpenApi.builder()
             .group("GLOBBER API")
             .pathsToMatch(paths)

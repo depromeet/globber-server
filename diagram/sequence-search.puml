@@ -1,0 +1,29 @@
+@startuml
+actor User
+control SearchService
+collections CacheRepository
+database CityRepository
+collections RankingRepository
+
+User -> SearchService : 검색 요청("인도")
+
+SearchService -> CacheRepository : GET "search:인도"
+alt 캐시 히트
+    CacheRepository --> SearchService : 결과 반환
+else 캐시 미스
+    CacheRepository --> SearchService : 없음
+    SearchService -> CityRepository : pg_bigm 기반 유사도 검색
+    CityRepository --> SearchService : 후보 리스트 ["인도","인도네시아","인도차이나"]
+
+    SearchService -> LevenshteinDistance : 알고리즘 기반 유사도 정렬
+
+    SearchService -> SearchService : 유사도 동점 시 인기순(점수)으로 정렬
+    SearchService -> CacheRepository : SET "search:인도" 결과, ttl=10분
+end
+
+SearchService --> User : 최종 결과 리스트
+
+== 최종 선택 반영 ==
+User -> SearchService : 최종 선택("인도네시아")
+SearchService -> RankingRepository : ZINCRBY "search_ranking" "인도네시아" 1
+@enduml

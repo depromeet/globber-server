@@ -1,0 +1,25 @@
+@startuml
+actor Member
+control UI
+control Service
+database DB as "내부 DB"
+collections RedisCache as "Redis 캐시"
+control Scheduler as "스케줄러"
+
+== 사용자 요청 흐름 ==
+Member -> UI : 인기 여행지 조회 요청
+UI -> Service : 인기 여행지 조회
+Service -> RedisCache : 캐시 조회 (key="recommended:city:list")
+alt 캐시에 데이터 있음
+    RedisCache --> Service : RecommendedCityList 반환
+else 캐시에 데이터 없음
+    Service -> DB : 인기 여행지 조회
+    DB --> Service : RecommendedCityList 반환
+    Service -> RedisCache : set(key, RecommendedCityList, ttl)
+end
+Service --> UI : RecommendedCityList 반환
+UI --> Member : 인기 여행지 화면 표시
+
+== 주기적 캐시 갱신 ==
+Scheduler -> DB : 인기 여행지 조회 (ex: 매 주 1번)
+@enduml

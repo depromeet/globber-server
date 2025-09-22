@@ -62,15 +62,15 @@ jobs:
       - name: Docker 이미지 빌드
         run: |
           docker build -t myapp:test -f Dockerfile.prod .
-          
+
       - name: Redis 컨테이너 실행
         run: |
-          docker run -d --name redis -p 6379:6379 redis:7.4-alpine
+          docker run -d --name redis_dev -p 6379:6379 redis:7.4-alpine
           sleep 5
 
       - name: Docker 컨테이너 실행
         run: |
-          docker run -d --name myapp --link redis:redis -p 8080:8080 \
+          docker run -d --name myapp --link redis_dev:redis_dev -p 8080:8080 \
             -e SPRING_PROFILES_ACTIVE=prod \
             -e SPRING_REDIS_HOST=redis_dev \
             -e SPRING_REDIS_PORT=6379 \

@@ -5,35 +5,40 @@ import org.springframework.boot.jdbc.DataSourceBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.utility.DockerImageName;
 
 import javax.sql.DataSource;
+import java.time.Duration;
+import java.util.Map;
 
-@Testcontainers
-@TestConfiguration
+@TestConfiguration(proxyBeanMethods = false)
 public class PostgresTestConfig {
 
-    @Container
-    private static final PostgreSQLContainer<?> postgresContainer =
-            new PostgreSQLContainer<>("postgres:15.3")
+    private static final DockerImageName IMAGE = DockerImageName
+            .parse("symdit/postgresql15-bigm:latest")
+            .asCompatibleSubstituteFor("postgres");
+
+    private static final PostgreSQLContainer<?> postgres =
+            new PostgreSQLContainer<>(IMAGE)
                     .withDatabaseName("mydb")
                     .withUsername("testuser")
                     .withPassword("testpassword")
-                    .withCommand("-c timezone=Asia/Seoul");
+                    .withStartupTimeout(Duration.ofMinutes(3))
+                    .withTmpFs(Map.of("/var/lib/postgresql/data", "rw"))
+                    .withInitScript("schema.sql");
 
     static {
-        postgresContainer.start();
+        postgres.start();
     }
 
     @Bean
     @Primary
     public DataSource dataSource() {
         return DataSourceBuilder.create()
-                .url(postgresContainer.getJdbcUrl())
-                .username(postgresContainer.getUsername())
-                .password(postgresContainer.getPassword())
-                .driverClassName(postgresContainer.getDriverClassName())
+                .url(postgres.getJdbcUrl())
+                .username(postgres.getUsername())
+                .password(postgres.getPassword())
+                .driverClassName(postgres.getDriverClassName())
                 .build();
     }
 }
