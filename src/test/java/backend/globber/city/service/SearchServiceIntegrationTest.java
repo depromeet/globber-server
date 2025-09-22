@@ -45,17 +45,28 @@ class SearchServiceIntegrationTest {
 
         cityRepository.deleteAll();
         cityRepository.saveAll(List.of(
-                new City(null, "뉴델리", "인도"),
-                new City(null, "타지마할", "인도"),
-                new City(null, "민우", "인도"),
-                new City(null, "서울", "대한민국"),
-                new City(null, "인천", "대한민국"),
-                new City(null, "부산", "대한민국"),
-                new City(null, "베이징", "중국"),
-                new City(null, "상하이", "중국"),
-                new City(null, "홍콩", "중국"),
-                new City(null, "도쿄", "일본"),
-                new City(null, "오사카", "일본")
+                City.builder().cityName("뉴델리").countryName("인도")
+                        .lat(28.6139).lng(77.2090).countryCode("IND").build(),
+                City.builder().cityName("타지마할").countryName("인도")
+                        .lat(27.1751).lng(78.0421).countryCode("IND").build(),
+                City.builder().cityName("민우").countryName("인도")
+                        .lat(28.7041).lng(77.1025).countryCode("IND").build(), // 임시 좌표
+                City.builder().cityName("서울").countryName("대한민국")
+                        .lat(37.5665).lng(126.9780).countryCode("KOR").build(),
+                City.builder().cityName("인천").countryName("대한민국")
+                        .lat(37.4563).lng(126.7052).countryCode("KOR").build(),
+                City.builder().cityName("부산").countryName("대한민국")
+                        .lat(35.1796).lng(129.0756).countryCode("KOR").build(),
+                City.builder().cityName("베이징").countryName("중국")
+                        .lat(39.9042).lng(116.4074).countryCode("CHN").build(),
+                City.builder().cityName("상하이").countryName("중국")
+                        .lat(31.2304).lng(121.4737).countryCode("CHN").build(),
+                City.builder().cityName("홍콩").countryName("중국")
+                        .lat(22.3193).lng(114.1694).countryCode("CHN").build(),
+                City.builder().cityName("도쿄").countryName("일본")
+                        .lat(35.6762).lng(139.6503).countryCode("JPN").build(),
+                City.builder().cityName("오사카").countryName("일본")
+                        .lat(34.6937).lng(135.5023).countryCode("JPN").build()
         ));
     }
 
@@ -165,7 +176,15 @@ class SearchServiceIntegrationTest {
     void testResultLimit() {
         // given
         for (int i = 0; i < 200; i++) {
-            cityRepository.save(new City(null, "테스트도시" + i, "테스트국가"));
+            cityRepository.save(
+                    City.builder()
+                            .cityName("테스트도시" + i)
+                            .countryName("테스트국가")
+                            .lat(0.0)
+                            .lng(0.0)
+                            .countryCode("TST")
+                            .build()
+            );
         }
 
         // when
