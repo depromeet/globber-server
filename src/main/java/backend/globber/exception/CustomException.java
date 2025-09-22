@@ -1,6 +1,6 @@
 package backend.globber.exception;
 
-import backend.globber.auth.dto.response.ApiResponse;
+import backend.globber.common.dto.ApiResponse;
 import lombok.Getter;
 import org.springframework.http.HttpStatus;
 

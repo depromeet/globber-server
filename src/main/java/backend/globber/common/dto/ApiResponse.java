@@ -1,4 +1,4 @@
-package backend.globber.auth.dto.response;
+package backend.globber.common.dto;
 
 public record ApiResponse<T>(
     String status,

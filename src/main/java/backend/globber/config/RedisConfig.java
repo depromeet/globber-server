@@ -4,6 +4,7 @@ package backend.globber.config;
 import backend.globber.auth.domain.RefreshToken;
 import backend.globber.city.controller.dto.RecommendResponse;
 import backend.globber.city.controller.dto.SearchResult;
+import backend.globber.membertravel.controller.dto.response.MemberTravelAllResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -61,6 +62,15 @@ public class RedisConfig {
         template.setConnectionFactory(redisConnectionFactory1());
         template.setKeySerializer(new StringRedisSerializer());
         template.setValueSerializer(new Jackson2JsonRedisSerializer<>(RecommendResponse.class));
+        return template;
+    }
+
+    @Bean(name = "redisTemplate4") // MemberTravel
+    public RedisTemplate<String, MemberTravelAllResponse> redisTemplate4() {
+        RedisTemplate<String, MemberTravelAllResponse> template = new RedisTemplate<>();
+        template.setConnectionFactory(redisConnectionFactory1());
+        template.setKeySerializer(new StringRedisSerializer());
+        template.setValueSerializer(new Jackson2JsonRedisSerializer<>(MemberTravelAllResponse.class));
         return template;
     }
 }

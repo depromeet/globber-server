@@ -1,7 +1,9 @@
 package backend.globber.city.domain;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Pattern;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -16,6 +18,8 @@ import lombok.NoArgsConstructor;
                 @Index(name = "idx_country_city", columnList = "countryName, cityName")
         }
 )
+// 확실해지기 전에는 빌더 필요
+@Builder
 public class City {
 
     @Id
@@ -27,4 +31,14 @@ public class City {
 
     @Column(nullable = false, length = 50)
     private String countryName;
+
+    @Column(nullable = false)
+    private Double lat;
+
+    @Column(nullable = false)
+    private Double lng;
+
+    @Column(nullable = false, length = 3)
+    @Pattern(regexp = "^[A-Z]{3}$", message = "ISO 3166-1 Alpha-3 형식이어야 합니다 (예: KOR, USA, JPN)")
+    private String countryCode;
 }

@@ -1,61 +1,105 @@
 package backend.globber.membertravel.service;
 
-import backend.globber.membertravel.controller.dto.CountryInfo;
+import backend.globber.auth.domain.Member;
+import backend.globber.auth.repository.MemberRepository;
+import backend.globber.city.controller.dto.CityUniqueDto;
+import backend.globber.city.domain.City;
+import backend.globber.city.repository.CityRepository;
 import backend.globber.membertravel.controller.dto.request.CreateMemberTravelRequest;
-import backend.globber.membertravel.controller.dto.response.MemberTravelResponse;
+import backend.globber.membertravel.controller.dto.response.MemberTravelAllResponse;
 import backend.globber.membertravel.domain.MemberTravel;
-import backend.globber.membertravel.domain.converter.CountryCodeConverter;
+import backend.globber.membertravel.domain.MemberTravelCity;
+import backend.globber.membertravel.repository.MemberTravelCityRepository;
 import backend.globber.membertravel.repository.MemberTravelRepository;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 import org.springframework.transaction.annotation.Transactional;
 
-@Slf4j
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
 public class MemberTravelService {
 
-  private final MemberTravelRepository memberTravelRepository;
+    private final MemberRepository memberRepository;
+    private final CityRepository cityRepository;
+    private final MemberTravelRepository memberTravelRepository;
+    private final MemberTravelCityRepository memberTravelCityRepository;
 
-  private final GeocodingService geocodingService;
+    @CacheEvict(value = "memberTravels", key = "#memberId", cacheManager = "memberTravelCacheManager")
+    @Transactional
+    public MemberTravelAllResponse createMemberTravel(Long memberId, List<CreateMemberTravelRequest> requests) {
+        Member member = memberRepository.findById(memberId)
+            .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 멤버입니다."));
 
-  @Transactional
-  public MemberTravelResponse saveTravelRecord(Long memberId, CreateMemberTravelRequest request) {
-    String countryCode = CountryCodeConverter.convertToIso3Code(request.countryName());
+        // MemberTravel이 이미 있으면 재사용, 없으면 생성
+        MemberTravel memberTravel = memberTravelRepository.findByMember_Id(memberId)
+            .orElseGet(() -> memberTravelRepository.save(
+                MemberTravel.builder().member(member).build()
+            ));
 
-    MemberTravel memberTravel = MemberTravel.builder()
-        .memberId(memberId)
-        .countryCode(countryCode)
-        .cityName(request.cityName())
-//          .lat(0.0)
-//          .lng(0.0)
-        .build();
-    memberTravelRepository.save(memberTravel);
+        for (CreateMemberTravelRequest req : requests) {
+            CityUniqueDto dto = CityUniqueDto.builder()
+                .cityName(req.cityName())
+                .countryCode(req.countryCode())
+                .lat(req.lat())
+                .lng(req.lng())
+                .build();
 
-    log.info("여행 기록 저장 완료 - 회원ID: {}, 국가: {}, 도시: {}", memberId, request.countryName(), request.cityName());
+            City city = cityRepository.findByCityUniqueDto(dto)
+                .orElseGet(() -> {
+                    City newCity = City.builder()
+                        .cityName(req.cityName())
+                        .countryName(req.countryName())
+                        .countryCode(req.countryCode())
+                        .lat(req.lat())
+                        .lng(req.lng())
+                        .build();
+                    return cityRepository.save(newCity);
+                });
 
-    return MemberTravelResponse.builder()
-        .countries(List.of())
-        .build();
-  }
+            boolean exists = memberTravelCityRepository.existsByMemberTravel_IdAndCity_CityId(
+                memberTravel.getId(), city.getCityId()
+            );
 
-  public MemberTravelResponse getMemberTravelRecords(Long memberId) {
-    List<MemberTravel> memberTravels = memberTravelRepository.findByMemberIdOrderByCreatedAtDesc(memberId);
+            if (!exists) {
+                MemberTravelCity mtc = MemberTravelCity.builder()
+                    .memberTravel(memberTravel)
+                    .city(city)
+                    .build();
 
-    List<CountryInfo> countries = memberTravels.stream()
-        .map(memberTravel -> CountryInfo.builder()
-            .code(memberTravel.getCountryCode())
-            .cityName(memberTravel.getCityName())
-            .lat(memberTravel.getLat())
-            .lng(memberTravel.getLng())
-            .build())
-        .toList();
+                memberTravelCityRepository.save(mtc);
+                memberTravel.getMemberTravelCities().add(mtc);
+            }
+        }
 
-    return MemberTravelResponse.builder()
-        .countries(countries)
-        .build();
-  }
+        return MemberTravelAllResponse.from(memberId,
+            memberTravelRepository.findAllByMember_Id(memberId));
+    }
+
+
+    @Cacheable(value = "memberTravels", key = "#memberId", cacheManager = "memberTravelCacheManager")
+    @Transactional(readOnly = true)
+    public MemberTravelAllResponse retrieveMemberTravel(Long memberId) {
+        memberRepository.findById(memberId)
+            .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 멤버입니다."));
+
+        List<MemberTravel> travels = memberTravelRepository.findAllByMember_Id(memberId);
+        return MemberTravelAllResponse.from(memberId, travels);
+    }
+
+    @CacheEvict(value = "memberTravels", key = "#memberId", cacheManager = "memberTravelCacheManager")
+    @Transactional
+    public Boolean deleteTravelRecord(Long memberId, CityUniqueDto cityDto) {
+        MemberTravel memberTravel = memberTravelRepository.findByMember_Id(memberId)
+            .orElseThrow(() -> new IllegalArgumentException("여행 기록이 존재하지 않습니다."));
+
+        City city = cityRepository.findByCityUniqueDto(cityDto)
+            .orElseThrow(() -> new IllegalArgumentException("도시가 존재하지 않습니다."));
+
+        memberTravelCityRepository.deleteByMemberTravel_IdAndCity_CityId(memberTravel.getId(), city.getCityId());
+        return true;
+    }
 }

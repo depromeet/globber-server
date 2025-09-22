@@ -28,4 +28,3 @@ public class RecommendedCityListRepository {
         return redisTemplate.opsForValue().get(key);
     }
 }
-
