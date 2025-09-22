@@ -14,12 +14,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.context.ContextConfiguration;
 
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
+@ContextConfiguration(initializers = RedisTestConfig.Initializer.class)
 @Import({PostgresTestConfig.class, RedisTestConfig.class})
 class SearchServiceIntegrationTest {
 
@@ -34,7 +36,6 @@ class SearchServiceIntegrationTest {
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
-
 
     @BeforeEach
     void setUp() {

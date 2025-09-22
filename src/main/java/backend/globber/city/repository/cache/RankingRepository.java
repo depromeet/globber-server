@@ -1,7 +1,7 @@
 package backend.globber.city.repository.cache;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Repository;
 
 import java.util.HashMap;
@@ -12,7 +12,8 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class RankingRepository {
 
-    private final RedisTemplate<String, Object> redisTemplate;
+    private final StringRedisTemplate redisTemplate;
+
     private static final String RANKING_KEY = "search_ranking";
 
     /**

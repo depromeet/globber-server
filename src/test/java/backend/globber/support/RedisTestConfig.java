@@ -1,39 +1,37 @@
 package backend.globber.support;
 
 import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Primary;
-import org.springframework.data.redis.connection.RedisConnectionFactory;
-import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
-import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.boot.test.util.TestPropertyValues;
+import org.springframework.context.ApplicationContextInitializer;
+import org.springframework.context.ConfigurableApplicationContext;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-import java.time.Duration;
-
 @TestConfiguration
 @Testcontainers
 public class RedisTestConfig {
+
     private static final int REDIS_PORT = 6379;
 
     @Container
-    private static final GenericContainer<?> redisContainer = new GenericContainer<>("redis:7.4.1-alpine3.20")
-            .withExposedPorts(REDIS_PORT)
-            .waitingFor(Wait.forListeningPort())
-            .withStartupTimeout(Duration.ofSeconds(60));
+    private static final GenericContainer<?> redisContainer =
+            new GenericContainer<>("redis:latest")
+                    .withExposedPorts(REDIS_PORT)
+                    .waitingFor(Wait.forListeningPort());
 
     static {
         redisContainer.start();
     }
 
-    @Bean
-    @Primary
-    public RedisConnectionFactory redisConnectionFactory() {
-        return new LettuceConnectionFactory(
-                redisContainer.getHost(),
-                redisContainer.getMappedPort(REDIS_PORT)
-        );
+    public static class Initializer implements ApplicationContextInitializer<ConfigurableApplicationContext> {
+        @Override
+        public void initialize(ConfigurableApplicationContext context) {
+            TestPropertyValues.of(
+                    "spring.data.redis.host=" + redisContainer.getHost(),
+                    "spring.data.redis.port=" + redisContainer.getMappedPort(REDIS_PORT)
+            ).applyTo(context.getEnvironment());
+        }
     }
 }

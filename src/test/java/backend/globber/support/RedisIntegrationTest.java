@@ -5,10 +5,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.data.redis.DataRedisTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.test.context.ContextConfiguration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 @DataRedisTest
+@ContextConfiguration(initializers = RedisTestConfig.Initializer.class)
 @Import(RedisTestConfig.class)
 class RedisIntegrationTest {
 
