@@ -4,9 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Repository;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Repository
 @RequiredArgsConstructor
@@ -37,5 +35,13 @@ public class RankingRepository {
             scores.put(keyword, score != null ? score : 0.0);
         }
         return scores;
+    }
+
+    public List<String> getTopCities(int limit) {
+        return Optional.ofNullable(
+                        redisTemplate.opsForZSet().reverseRange(RANKING_KEY, 0, limit - 1)
+                ).orElse(Set.of())
+                .stream()
+                .toList();
     }
 }

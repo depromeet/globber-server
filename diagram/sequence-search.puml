@@ -5,6 +5,13 @@ collections CacheRepository
 database CityRepository
 collections RankingRepository
 
+== 기본 인기 도시 노출 ==
+User -> SearchService : 초기 접속
+SearchService -> RankingRepository : 올해 인기 해외도시 TOP20 조회
+RankingRepository --> SearchService : ["도쿄","방콕","하노이", ...] (20개)
+SearchService --> User : 인기 도시 리스트 반환
+
+== 검색 요청 ==
 User -> SearchService : 검색 요청("인도")
 
 SearchService -> CacheRepository : GET "search:인도"
@@ -17,11 +24,14 @@ else 캐시 미스
 
     SearchService -> LevenshteinDistance : 알고리즘 기반 유사도 정렬
 
-    SearchService -> SearchService : 유사도 동점 시 인기순(점수)으로 정렬
+    SearchService -> RankingRepository : 인기순 점수 조회
+    SearchService -> SearchService : 유사도 정렬 결과에 인기순 가중치 적용
+
+    SearchService -> SearchService : 상위 100개만 추출
     SearchService -> CacheRepository : SET "search:인도" 결과, ttl=10분
 end
 
-SearchService --> User : 최종 결과 리스트
+SearchService --> User : 최종 결과 리스트(100개 이내)
 
 == 최종 선택 반영 ==
 User -> SearchService : 최종 선택("인도네시아")

@@ -60,6 +60,16 @@ public class SearchService {
         rankingRepository.incrementScore(cityName);
     }
 
+    public SearchResult getPopularCities(int limit) {
+        List<String> topCities = rankingRepository.getTopCities(limit);
+
+        List<SearchResponse> responses = topCities.stream()
+                .map(cityName -> new SearchResponse(cityName, null))
+                .toList();
+
+        return new SearchResult(responses);
+    }
+
     private int exactMatchRank(SearchResponse c, String keyword) {
         if (c.cityName().equals(keyword) || c.countryName().equals(keyword)) {
             return 0;
