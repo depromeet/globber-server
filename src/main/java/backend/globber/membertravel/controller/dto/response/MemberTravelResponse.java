@@ -1,12 +1,21 @@
 package backend.globber.membertravel.controller.dto.response;
 
-import backend.globber.membertravel.controller.dto.CountryInfo;
+import backend.globber.membertravel.controller.dto.TravelCityDto;
+import backend.globber.membertravel.domain.MemberTravel;
 import java.util.List;
-import lombok.Builder;
 
-@Builder
 public record MemberTravelResponse(
-    List<CountryInfo> countries
+    //Long memberTravelId,
+    List<TravelCityDto> cities
 ) {
+    public static MemberTravelResponse from(MemberTravel memberTravel) {
+        List<TravelCityDto> cities = memberTravel.getMemberTravelCities().stream()
+            .map(TravelCityDto::from)
+            .toList();
 
+        return new MemberTravelResponse(
+            //memberTravel.getId(),
+            cities
+        );
+    }
 }

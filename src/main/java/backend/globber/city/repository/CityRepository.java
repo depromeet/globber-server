@@ -1,7 +1,10 @@
 package backend.globber.city.repository;
 
+import backend.globber.city.controller.dto.CityUniqueDto;
 import backend.globber.city.controller.dto.SearchResponse;
 import backend.globber.city.domain.City;
+import java.util.Optional;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -26,4 +29,17 @@ public interface CityRepository extends JpaRepository<City, Long> {
             LIMIT 300
             """, nativeQuery = true)
     List<SearchResponse> findCandidates(@Param("keyword") String keyword);
+
+
+    @Cacheable(value = "cities", key = "#cityUniqueDto.cityName + '-' + #cityUniqueDto.countryCode + '-' + T(java.lang.String).format('%.5f', #cityUniqueDto.lat) + '-' + T(java.lang.String).format('%.5f', #cityUniqueDto.lng)")
+    @Query(value = """
+            SELECT c FROM City c
+            WHERE c.cityName = :#{#cityUniqueDto.cityName}
+              AND c.countryCode = :#{#cityUniqueDto.countryCode}
+              AND c.lat = :#{#cityUniqueDto.lat}
+              AND c.lng = :#{#cityUniqueDto.lng}
+            """)
+    Optional<City> findByCityUniqueDto(CityUniqueDto cityUniqueDto);
+
+
 }

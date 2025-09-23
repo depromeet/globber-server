@@ -1,6 +1,6 @@
 package backend.globber.auth.controller;
 
-import backend.globber.auth.dto.response.ApiResponse;
+import backend.globber.common.dto.ApiResponse;
 import backend.globber.auth.dto.response.JwtTokenResponse;
 import backend.globber.auth.service.TokenService;
 import backend.globber.auth.util.CookieProvider;
