@@ -1,6 +1,6 @@
 package backend.globber.exception;
 
-import backend.globber.auth.dto.response.ApiResponse;
+import backend.globber.common.dto.ApiResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;

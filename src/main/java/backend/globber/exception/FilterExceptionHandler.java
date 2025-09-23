@@ -1,6 +1,6 @@
 package backend.globber.exception;
 
-import backend.globber.auth.dto.response.ApiResponse;
+import backend.globber.common.dto.ApiResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
