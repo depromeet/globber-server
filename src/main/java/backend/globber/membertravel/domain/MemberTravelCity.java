@@ -10,9 +10,11 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -23,7 +25,16 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = PROTECTED)
 @AllArgsConstructor(access = PRIVATE)
 @Builder
-@Table(name = "member_travel_city")
+@Table(
+        name = "member_travel_city",
+        indexes = {
+            @Index(name = "idx_mtc_member", columnList = "member_travel_id"),
+            @Index(name = "idx_mtc_city", columnList = "city_id")
+    },
+        uniqueConstraints = {
+            @UniqueConstraint(name = "uk_mtc_member_city", columnNames = {"member_travel_id", "city_id"})
+    }
+    )
 public class MemberTravelCity {
 
     @Id

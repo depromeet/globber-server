@@ -31,7 +31,7 @@ public interface CityRepository extends JpaRepository<City, Long> {
     List<SearchResponse> findCandidates(@Param("keyword") String keyword);
 
 
-    @Cacheable(value = "cities", key = "#dto.cityName + '-' + #dto.countryCode + '-' + #dto.lat + '-' + #dto.lng")
+    @Cacheable(value = "cities", key = "#cityUniqueDto.cityName + '-' + #cityUniqueDto.countryCode + '-' + T(java.lang.String).format('%.5f', #cityUniqueDto.lat) + '-' + T(java.lang.String).format('%.5f', #cityUniqueDto.lng)")
     @Query(value = """
             SELECT c FROM City c
             WHERE c.cityName = :#{#cityUniqueDto.cityName}

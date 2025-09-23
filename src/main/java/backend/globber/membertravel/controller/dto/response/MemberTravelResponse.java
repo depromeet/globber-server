@@ -5,7 +5,7 @@ import backend.globber.membertravel.domain.MemberTravel;
 import java.util.List;
 
 public record MemberTravelResponse(
-    Long memberTravelId,
+    //Long memberTravelId,
     List<TravelCityDto> cities
 ) {
     public static MemberTravelResponse from(MemberTravel memberTravel) {
@@ -14,7 +14,7 @@ public record MemberTravelResponse(
             .toList();
 
         return new MemberTravelResponse(
-            memberTravel.getId(),
+            //memberTravel.getId(),
             cities
         );
     }

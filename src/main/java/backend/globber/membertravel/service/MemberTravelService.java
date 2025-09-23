@@ -5,6 +5,9 @@ import backend.globber.auth.repository.MemberRepository;
 import backend.globber.city.controller.dto.CityUniqueDto;
 import backend.globber.city.domain.City;
 import backend.globber.city.repository.CityRepository;
+import backend.globber.exception.spec.CityNotFoundException;
+import backend.globber.exception.spec.TravelNotFoundException;
+import backend.globber.exception.spec.UsernameNotFoundException;
 import backend.globber.membertravel.controller.dto.request.CreateMemberTravelRequest;
 import backend.globber.membertravel.controller.dto.response.MemberTravelAllResponse;
 import backend.globber.membertravel.domain.MemberTravel;
@@ -32,7 +35,7 @@ public class MemberTravelService {
     @Transactional
     public MemberTravelAllResponse createMemberTravel(Long memberId, List<CreateMemberTravelRequest> requests) {
         Member member = memberRepository.findById(memberId)
-            .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 멤버입니다."));
+            .orElseThrow(() -> new UsernameNotFoundException("존재하지 않는 멤버입니다."));
 
         // MemberTravel이 이미 있으면 재사용, 없으면 생성
         MemberTravel memberTravel = memberTravelRepository.findByMember_Id(memberId)
@@ -84,7 +87,7 @@ public class MemberTravelService {
     @Transactional(readOnly = true)
     public MemberTravelAllResponse retrieveMemberTravel(Long memberId) {
         memberRepository.findById(memberId)
-            .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 멤버입니다."));
+            .orElseThrow(() -> new UsernameNotFoundException("존재하지 않는 멤버입니다."));
 
         List<MemberTravel> travels = memberTravelRepository.findAllByMember_Id(memberId);
         return MemberTravelAllResponse.from(memberId, travels);
@@ -94,10 +97,10 @@ public class MemberTravelService {
     @Transactional
     public Boolean deleteTravelRecord(Long memberId, CityUniqueDto cityDto) {
         MemberTravel memberTravel = memberTravelRepository.findByMember_Id(memberId)
-            .orElseThrow(() -> new IllegalArgumentException("여행 기록이 존재하지 않습니다."));
+            .orElseThrow(TravelNotFoundException::new);
 
         City city = cityRepository.findByCityUniqueDto(cityDto)
-            .orElseThrow(() -> new IllegalArgumentException("도시가 존재하지 않습니다."));
+            .orElseThrow(CityNotFoundException::new);
 
         memberTravelCityRepository.deleteByMemberTravel_IdAndCity_CityId(memberTravel.getId(), city.getCityId());
         return true;

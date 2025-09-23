@@ -1,6 +1,7 @@
 package backend.globber.membertravel.controller.dto;
 
 import backend.globber.membertravel.domain.MemberTravelCity;
+import java.util.Objects;
 
 public record TravelCityDto(
     Long cityId,
@@ -11,7 +12,8 @@ public record TravelCityDto(
     Double lng)
 {
     public static TravelCityDto from(MemberTravelCity mtc) {
-        var city = mtc.getCity();
+        Objects.requireNonNull(mtc, "mtc must not be null");
+        var city = Objects.requireNonNull(mtc.getCity(), "mtc.city must not be null");
         return new TravelCityDto(
             city.getCityId(),
             city.getCityName(),
