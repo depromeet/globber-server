@@ -3,10 +3,9 @@ package backend.globber.city.service;
 import backend.globber.city.controller.dto.RecommendResponse;
 import backend.globber.city.domain.City;
 import backend.globber.city.repository.CityRepository;
-import backend.globber.city.repository.cache.RecommendedCityListRepository;
+import backend.globber.city.repository.cache.RankingRepository;
 import backend.globber.support.PostgresTestConfig;
 import backend.globber.support.RedisTestConfig;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,59 +20,48 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
 @ContextConfiguration(initializers = RedisTestConfig.Initializer.class)
-@Import({RedisTestConfig.class, PostgresTestConfig.class})
+@Import({PostgresTestConfig.class, RedisTestConfig.class})
 class CityServiceIntegrationTest {
+
+    @Autowired
+    private CityService cityService;
 
     @Autowired
     private CityRepository cityRepository;
 
     @Autowired
-    private RecommendedCityListRepository recommendedCityListRepository;
+    private RankingRepository rankingRepository;
 
-    @Autowired
-    private CityService cityService;
 
-    @BeforeEach
-    void setUp() {
-        // DB에 20개 City 데이터 삽입
-        List<City> cities = IntStream.rangeClosed(1, 20)
-                .mapToObj(i -> City.builder()
-                        .cityName("City" + i)
-                        .countryName("Country" + i)
-                        .lat(0.0)
-                        .lng(0.0)
-                        .countryCode("TST")
-                        .build()
-                ).toList();
+    @Test
+    @DisplayName("인기 도시 조회 시 limit 개수만큼 반환된다")
+    void getTopCities_limitTest() {
+        List<City> cities = IntStream.rangeClosed(1, 50)
+                .mapToObj(i -> new City(null, "City" + i, "Country" + i))
+                .toList();
         cityRepository.saveAll(cities);
+        cities.forEach(rankingRepository::incrementScore);
+
+        int limit = 10;
+
+        RecommendResponse response = cityService.getTopCities(limit);
+
+        assertThat(response.cityResponseList()).hasSize(limit);
     }
 
-    @Test
-    @DisplayName("캐시에 없으면 DB에서 조회 후 Redis에 저장된다")
-    void testCacheMiss() {
-        // when
-        RecommendResponse result = cityService.getRecommendedCities();
-
-        // then
-        assertThat(result.cityResponseList()).hasSize(20);
-
-        // Redis에 데이터 저장되었는지 확인
-        RecommendResponse cached = recommendedCityListRepository.getRecommendedCities("recommended:city:list");
-        assertThat(cached.cityResponseList()).hasSize(20);
-    }
 
     @Test
-    @DisplayName("캐시에 있으면 DB를 조회하지 않고 Redis에서 조회한다")
-    void testCacheHit() {
-        // given: 첫 번째 호출로 캐시 저장
-        cityService.getRecommendedCities();
+    @DisplayName("Redis에 데이터가 없으면 DB에서 limit 개수 조회한다")
+    void getTopCities_fallbackToDb() {
+        List<City> cities = IntStream.rangeClosed(1, 50)
+                .mapToObj(i -> new City(null, "City" + i, "Country" + i))
+                .toList();
+        cityRepository.saveAll(cities);
 
-        // when: 두 번째 호출
-        RecommendResponse result = cityService.getRecommendedCities();
+        int limit = 5;
 
-        // then
-        assertThat(result.cityResponseList()).hasSize(20);
-        RecommendResponse cached = recommendedCityListRepository.getRecommendedCities("recommended:city:list");
-        assertThat(cached.cityResponseList()).hasSize(20);
+        RecommendResponse response = cityService.getTopCities(limit);
+
+        assertThat(response.cityResponseList()).hasSize(limit);
     }
 }
