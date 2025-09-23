@@ -4,6 +4,7 @@ package backend.globber.config;
 import backend.globber.auth.domain.RefreshToken;
 import backend.globber.city.controller.dto.RecommendResponse;
 import backend.globber.city.controller.dto.SearchResult;
+import backend.globber.city.domain.City;
 import backend.globber.membertravel.controller.dto.response.MemberTravelAllResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -30,10 +31,10 @@ public class RedisConfig {
     @Bean
     public RedisConnectionFactory redisConnectionFactory1() {
         RedisStandaloneConfiguration redisConfig = new RedisStandaloneConfiguration(REDIS_HOST,
-            REDIS_PORT);
+                REDIS_PORT);
         redisConfig.setDatabase(0);
         return new LettuceConnectionFactory(redisConfig,
-            LettuceClientConfiguration.defaultConfiguration());
+                LettuceClientConfiguration.defaultConfiguration());
     }
 
     // 레디스 데이터 템플릿 설정, Refresh 토큰 저장용으로 String : Object(RedisToken) 형식으로 설정
@@ -43,11 +44,11 @@ public class RedisConfig {
         redisTemplate.setConnectionFactory(redisConnectionFactory1());
         redisTemplate.setKeySerializer(new StringRedisSerializer());
         redisTemplate.setValueSerializer(
-            new Jackson2JsonRedisSerializer<RefreshToken>(RefreshToken.class));  // 객체를 Json 형식으로 저장
+                new Jackson2JsonRedisSerializer<RefreshToken>(RefreshToken.class));  // 객체를 Json 형식으로 저장
         return redisTemplate;
     }
 
-    @Bean(name = "redisTemplate2")
+    @Bean(name = "searchResultRedisTemplate")
     public RedisTemplate<String, SearchResult> redisTemplate2() {
         RedisTemplate<String, SearchResult> template = new RedisTemplate<>();
         template.setConnectionFactory(redisConnectionFactory1());
@@ -56,12 +57,27 @@ public class RedisConfig {
         return template;
     }
 
-    @Bean(name = "redisTemplate3")
+    @Bean(name = "recommendResponseRedisTemplate")
     public RedisTemplate<String, RecommendResponse> redisTemplate3() {
         RedisTemplate<String, RecommendResponse> template = new RedisTemplate<>();
         template.setConnectionFactory(redisConnectionFactory1());
         template.setKeySerializer(new StringRedisSerializer());
         template.setValueSerializer(new Jackson2JsonRedisSerializer<>(RecommendResponse.class));
+        return template;
+    }
+
+    @Bean(name = "searchTopCityRedisTemplate")
+    public RedisTemplate<String, City> searchTop() {
+        RedisTemplate<String, City> template = new RedisTemplate<>();
+        template.setConnectionFactory(redisConnectionFactory1());
+
+        template.setKeySerializer(new StringRedisSerializer());
+        template.setHashKeySerializer(new StringRedisSerializer());
+
+        Jackson2JsonRedisSerializer<City> serializer = new Jackson2JsonRedisSerializer<>(City.class);
+        template.setValueSerializer(serializer);
+        template.setHashValueSerializer(serializer);
+
         return template;
     }
 

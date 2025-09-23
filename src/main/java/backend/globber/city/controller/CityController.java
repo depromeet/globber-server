@@ -6,9 +6,13 @@ import backend.globber.city.service.CityService;
 import backend.globber.city.service.SearchService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.constraints.Max;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/v1/cities")
@@ -21,19 +25,13 @@ public class CityController {
 
     @GetMapping("/favorites")
     @Operation(summary = "인기 여행지 조회", description = "인기 여행지 목록을 조회합니다.")
-    public ResponseEntity<RecommendResponse> getFavorites() {
-        return ResponseEntity.ok(cityService.getRecommendedCities());
+    public ResponseEntity<RecommendResponse> getFavorites(@RequestParam(defaultValue = "20") @Max(500) final int limit) {
+        return ResponseEntity.ok(cityService.getTopCities(limit));
     }
 
     @GetMapping
     @Operation(summary = "도시 검색", description = "키워드 기반으로 도시/국가를 검색합니다. 유사도 + 인기순 정렬")
-    public SearchResult search(@RequestParam String keyword) {
+    public SearchResult search(@RequestParam final String keyword) {
         return searchService.search(keyword);
-    }
-
-    @PostMapping("/select")
-    public ResponseEntity<Void> selectCity(@RequestParam String cityName) {
-        searchService.recordSelection(cityName);
-        return ResponseEntity.ok().build();
     }
 }

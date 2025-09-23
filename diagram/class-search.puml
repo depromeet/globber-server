@@ -3,15 +3,16 @@ class SearchService {
     - CacheRepository cacheRepository
     - CityRepository cityRepository
     - RankingRepository rankingRepository
-    + List<String> search(String keyword)
-    + void select(String cityName)
+    + SearchResult search(String keyword)
     + void recordSelection(String cityName)
+    + SearchResult getPopularCities(int limit)
 }
 
 interface CacheRepository {
     + List<String> get(String key)
     + void set(String key, List<String> value, int ttlMinutes)
 }
+
 
 interface CityRepository {
     + List<City> searchByKeyword(String keyword)
@@ -20,6 +21,7 @@ interface CityRepository {
 interface RankingRepository {
     + void incrementScore(String cityName)
     + Map<String, Integer> getScores(List<String> cityNames)
+    + List<String> getTopCities(int limit)
 }
 
 class City {

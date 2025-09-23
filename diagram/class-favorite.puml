@@ -18,20 +18,15 @@ class City {
   - cityId: Long
   - cityName: String
   - countryName: String
-  - flagIcon: String
 }
 
-class RedisCache {
-  + get(key: String): Object
+class RankingRepository {
+  + incrementScore(key: String): Object
   + set(key: String, value: Object, ttl: long): void
 }
 
-class CityRepository {
-  + findRecommended(): RecommendedCityList
-}
+
 
 Member --> RecommendedCityList : 조회한다
 RecommendedCityList *-- City : 포함한다
-RecommendedCityList --> RedisCache : 캐싱된다
-RedisCache --> CityRepository : Miss 시 DB조회
 @enduml

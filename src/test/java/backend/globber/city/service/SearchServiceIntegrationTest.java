@@ -17,6 +17,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ContextConfiguration;
 
 import java.util.List;
+import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -98,10 +99,11 @@ class SearchServiceIntegrationTest {
     @DisplayName("최종 선택이 반영되면 랭킹 점수가 증가한다")
     void testRecordSelection() {
         // given
-        searchService.recordSelection("뉴델리");
+        City city = new City(1L, "뉴델리", "인도", 123.12, 123.12, "IND");
+        searchService.recordSelection(city);
 
         // when
-        Double score = rankingRepository.getScore("뉴델리");
+        Double score = rankingRepository.getScore(city);
 
         // then
         assertThat(score).isNotNull();
@@ -121,16 +123,18 @@ class SearchServiceIntegrationTest {
 
         System.out.println(names);
         assertThat(names).contains("뉴델리", "민우", "타지마할");
-
+        assertThat(names).doesNotContain("서울");
     }
 
     @Test
     @DisplayName("인기도 점수가 높은 도시는 유사도가 같을 경우 더 앞에 정렬된다 (뉴델리 vs 뭄바이)")
     void testPopularityRankingWithMultipleCities() {
+
+        City city = new City(1L, "뉴델리", "인도", 123.12, 123.12, "IND");
         // given
-        searchService.recordSelection("뭄바이");
-        searchService.recordSelection("뭄바이");
-        searchService.recordSelection("뭄바이");
+        searchService.recordSelection(city);
+        searchService.recordSelection(city);
+        searchService.recordSelection(city);
 
         // when
         SearchResult result = searchService.search("인도");
@@ -152,9 +156,10 @@ class SearchServiceIntegrationTest {
     @DisplayName("인기도 점수가 높은 도시는 유사도가 같을 경우 더 앞에 정렬된다 2 (서울 vs 부산 vs 인천)")
     void testPopularityRankingWithMultipleCities2() {
         // given
-        searchService.recordSelection("서울");
-        searchService.recordSelection("서울");
-        searchService.recordSelection("서울");
+        City city = new City(1L, "서울", "대한민국", 123.12, 123.12, "KOR");
+        searchService.recordSelection(city);
+        searchService.recordSelection(city);
+        searchService.recordSelection(city);
 
         // when
         SearchResult result = searchService.search("대한민국");
@@ -193,4 +198,44 @@ class SearchServiceIntegrationTest {
         // then
         assertThat(result.cities().size()).isLessThanOrEqualTo(100);
     }
+
+    @Test
+    @DisplayName("레디스에 40개 도시를 저장하고 인기도 순으로 Top 20이 반환된다")
+    void testPopularCitiesTop20() {
+        // given: DB 초기화 후 40개 저장
+        cityRepository.deleteAll();
+
+        List<City> cities = IntStream.rangeClosed(1, 40)
+                .mapToObj(i -> new City(null, "City" + i, "Country" + i, 123.12, 123.12, "KOR"))
+                .toList();
+        cityRepository.saveAll(cities);
+
+        City city10 = cities.get(9);
+        City city5 = cities.get(4);
+        City city20 = cities.get(19);
+
+
+        IntStream.range(0, 40).forEach(i -> searchService.recordSelection(cities.get(i)));
+
+        IntStream.range(0, 10).forEach(i -> searchService.recordSelection(city10));
+        IntStream.range(0, 5).forEach(i -> searchService.recordSelection(city5));
+        IntStream.range(0, 3).forEach(i -> searchService.recordSelection(city20));
+
+        // when
+        SearchResult result = searchService.getPopularCities(20);
+
+        // then: Top-20 사이즈 확인
+        assertThat(result.cities()).hasSize(20);
+
+        // 인기도 순서 검증
+        List<String> names = result.cities().stream()
+                .map(SearchResponse::cityName)
+                .toList();
+
+        assertThat(names.get(0)).isEqualTo("City10");
+        assertThat(names.get(1)).isEqualTo("City5");
+        assertThat(names.get(2)).isEqualTo("City20");
+    }
+
+
 }
