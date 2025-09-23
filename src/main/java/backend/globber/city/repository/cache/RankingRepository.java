@@ -47,6 +47,7 @@ public class RankingRepository {
     }
 
     public List<City> getTopCities(final int limit) {
+        if (limit <= 0) return List.of();
         Set<String> members = zsetTemplate.opsForZSet()
                 .reverseRange(RANKING_KEY, 0, limit - 1);
 
@@ -56,7 +57,7 @@ public class RankingRepository {
 
         return members.stream()
                 .map(member -> {
-                    String cityId = member.replace("city:", "");
+                    String cityId = member.replace(CITY_MEMBER_PREFIX, "");
                     return (City) redisTemplate.opsForHash().get(CITY_DATA_KEY, cityId);
                 })
                 .filter(Objects::nonNull)
