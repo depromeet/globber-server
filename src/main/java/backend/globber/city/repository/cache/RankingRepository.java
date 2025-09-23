@@ -20,10 +20,12 @@ public class RankingRepository {
 
     private static final String RANKING_KEY = "search_ranking";
     private static final String CITY_DATA_KEY = "city:data";
+    private static final String CITY_MEMBER_PREFIX = "city:";
 
 
     public void incrementScore(final City city) {
-        String member = "city:" + city.getCityId();
+        if (city == null || city.getCityId() == null) return;
+        String member = CITY_MEMBER_PREFIX + city.getCityId();
 
         zsetTemplate.opsForZSet().incrementScore(RANKING_KEY, member, 1);
         redisTemplate.opsForHash().put(CITY_DATA_KEY, city.getCityId().toString(), city);

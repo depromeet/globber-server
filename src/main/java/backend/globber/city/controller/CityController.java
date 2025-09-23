@@ -6,6 +6,7 @@ import backend.globber.city.service.CityService;
 import backend.globber.city.service.SearchService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.constraints.Max;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -24,7 +25,7 @@ public class CityController {
 
     @GetMapping("/favorites")
     @Operation(summary = "인기 여행지 조회", description = "인기 여행지 목록을 조회합니다.")
-    public ResponseEntity<RecommendResponse> getFavorites(@RequestParam(defaultValue = "20") final int limit) {
+    public ResponseEntity<RecommendResponse> getFavorites(@RequestParam(defaultValue = "20") @Max(500) final int limit) {
         return ResponseEntity.ok(cityService.getTopCities(limit));
     }
 
