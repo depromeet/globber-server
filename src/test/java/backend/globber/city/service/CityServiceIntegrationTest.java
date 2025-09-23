@@ -37,21 +37,14 @@ class CityServiceIntegrationTest {
     void setUp() {
         // DB에 20개 City 데이터 삽입
         List<City> cities = IntStream.rangeClosed(1, 20)
-                .mapToObj(i -> {
-                    City c = new City();
-                    try {
-                        var cityNameField = City.class.getDeclaredField("cityName");
-                        cityNameField.setAccessible(true);
-                        cityNameField.set(c, "City" + i);
-
-                        var countryField = City.class.getDeclaredField("countryName");
-                        countryField.setAccessible(true);
-                        countryField.set(c, "Country" + i);
-                    } catch (Exception e) {
-                        throw new RuntimeException(e);
-                    }
-                    return c;
-                }).toList();
+                .mapToObj(i -> City.builder()
+                        .cityName("City" + i)
+                        .countryName("Country" + i)
+                        .lat(0.0)
+                        .lng(0.0)
+                        .countryCode("TST")
+                        .build()
+                ).toList();
         cityRepository.saveAll(cities);
     }
 
