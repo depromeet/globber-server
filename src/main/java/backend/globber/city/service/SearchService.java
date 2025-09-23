@@ -2,9 +2,10 @@ package backend.globber.city.service;
 
 import backend.globber.city.controller.dto.SearchResponse;
 import backend.globber.city.controller.dto.SearchResult;
+import backend.globber.city.domain.City;
 import backend.globber.city.repository.CityRepository;
-import backend.globber.city.repository.cache.CacheRepository;
 import backend.globber.city.repository.cache.RankingRepository;
+import backend.globber.city.repository.cache.SearchRepository;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.text.similarity.LevenshteinDistance;
 import org.springframework.stereotype.Service;
@@ -17,11 +18,11 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class SearchService {
 
-    private final CacheRepository cacheRepository;
+    private final SearchRepository cacheRepository;
     private final RankingRepository rankingRepository;
     private final CityRepository cityRepository;
 
-    public SearchResult search(String keyword) {
+    public SearchResult search(final String keyword) {
         String cacheKey = "search:" + keyword;
 
         SearchResult cached = cacheRepository.get(cacheKey);
@@ -31,8 +32,8 @@ public class SearchService {
 
         List<SearchResponse> candidates = cityRepository.findCandidates(keyword);
 
-        Map<String, Double> scores = rankingRepository.getScores(
-                candidates.stream().map(SearchResponse::cityName).toList()
+        Map<Long, Double> scores = rankingRepository.getScores(
+                candidates.stream().map(SearchResponse::toEntity).toList()
         );
 
         LevenshteinDistance levenshtein = new LevenshteinDistance();
@@ -56,37 +57,44 @@ public class SearchService {
         return result;
     }
 
-    public void recordSelection(String cityName) {
-        rankingRepository.incrementScore(cityName);
+    public void recordSelection(final City city) {
+        rankingRepository.incrementScore(city);
     }
 
-    public SearchResult getPopularCities(int limit) {
-        List<String> topCities = rankingRepository.getTopCities(limit);
+
+    public SearchResult getPopularCities(final int limit) {
+        List<City> topCities = rankingRepository.getTopCities(limit);
 
         List<SearchResponse> responses = topCities.stream()
-                .map(cityName -> new SearchResponse(cityName, null))
+                .map(city -> SearchResponse.builder()
+                        .cityId(city.getCityId())
+                        .cityName(city.getCityName())
+                        .countryName(city.getCountryName())
+                        .build()
+                )
                 .toList();
 
         return new SearchResult(responses);
     }
 
-    private int exactMatchRank(SearchResponse c, String keyword) {
+
+    private int exactMatchRank(final SearchResponse c, final String keyword) {
         if (c.cityName().equals(keyword) || c.countryName().equals(keyword)) {
             return 0;
         }
         return 1;
     }
 
-    private int similarityRank(SearchResponse c, String keyword, LevenshteinDistance levenshtein) {
+    private int similarityRank(final SearchResponse c, final String keyword, final LevenshteinDistance levenshtein) {
         if (c.cityName().equals(keyword) || c.countryName().equals(keyword)) {
             return 0;
         }
         return levenshtein.apply(c.cityName(), keyword);
     }
 
-    private double popularityRank(SearchResponse c, Map<String, Double> scores) {
-        if (scores.containsKey(c.cityName())) {
-            return scores.get(c.cityName());
+    private double popularityRank(final SearchResponse c, final Map<Long, Double> scores) {
+        if (scores.containsKey(c.cityId())) {
+            return scores.get(c.cityId());
         }
         return 0.0;
     }
