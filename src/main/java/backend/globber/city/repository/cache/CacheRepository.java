@@ -13,7 +13,7 @@ public class CacheRepository {
     private final RedisTemplate<String, SearchResult> redisTemplate;
 
     public CacheRepository(
-            @Qualifier("redisTemplate2") RedisTemplate<String, SearchResult> redisTemplate) {
+            @Qualifier("searchResultRedisTemplate") RedisTemplate<String, SearchResult> redisTemplate) {
         this.redisTemplate = redisTemplate;
     }
 
