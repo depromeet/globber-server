@@ -4,6 +4,7 @@ import backend.globber.city.controller.dto.CityUniqueDto;
 import backend.globber.city.controller.dto.SearchResponse;
 import backend.globber.city.domain.City;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -13,8 +14,8 @@ import java.util.Optional;
 
 public interface CityRepository extends JpaRepository<City, Long> {
 
-    @Query("SELECT c FROM City c ORDER BY c.cityName ASC")
-    List<City> findRecommended();
+    @Query("SELECT c FROM City c")
+    List<City> findAnyCities(Pageable pageable);
 
     /**
      * pg_bigm 후보군 추출 (상위 300개)
@@ -39,5 +40,4 @@ public interface CityRepository extends JpaRepository<City, Long> {
               AND c.lng = :#{#cityUniqueDto.lng}
             """)
     Optional<City> findByCityUniqueDto(CityUniqueDto cityUniqueDto);
-    
 }

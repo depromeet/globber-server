@@ -14,7 +14,7 @@ import java.util.concurrent.TimeUnit;
 @RequiredArgsConstructor
 public class RecommendedCityListRepository {
 
-    @Qualifier("redisTemplate3")
+    @Qualifier("recommendResponseRedisTemplate")
     private final RedisTemplate<String, RecommendResponse> redisTemplate;
 
     private static final long TTL = 30; // 30일

@@ -99,7 +99,7 @@ class SearchServiceIntegrationTest {
     @DisplayName("최종 선택이 반영되면 랭킹 점수가 증가한다")
     void testRecordSelection() {
         // given
-        City city = new City(1L, "뉴델리", "인도");
+        City city = new City(1L, "뉴델리", "인도", 123.12, 123.12, "IND");
         searchService.recordSelection(city);
 
         // when
@@ -130,7 +130,7 @@ class SearchServiceIntegrationTest {
     @DisplayName("인기도 점수가 높은 도시는 유사도가 같을 경우 더 앞에 정렬된다 (뉴델리 vs 뭄바이)")
     void testPopularityRankingWithMultipleCities() {
 
-        City city = new City(1L, "뭄바이", "인도");
+        City city = new City(1L, "뉴델리", "인도", 123.12, 123.12, "IND");
         // given
         searchService.recordSelection(city);
         searchService.recordSelection(city);
@@ -156,7 +156,7 @@ class SearchServiceIntegrationTest {
     @DisplayName("인기도 점수가 높은 도시는 유사도가 같을 경우 더 앞에 정렬된다 2 (서울 vs 부산 vs 인천)")
     void testPopularityRankingWithMultipleCities2() {
         // given
-        City city = new City(1L, "서울", "대한민국");
+        City city = new City(1L, "서울", "대한민국", 123.12, 123.12, "KOR");
         searchService.recordSelection(city);
         searchService.recordSelection(city);
         searchService.recordSelection(city);
@@ -206,16 +206,16 @@ class SearchServiceIntegrationTest {
         cityRepository.deleteAll();
 
         List<City> cities = IntStream.rangeClosed(1, 40)
-                .mapToObj(i -> new City(null, "City" + i, "Country" + i))
+                .mapToObj(i -> new City(null, "City" + i, "Country" + i, 123.12, 123.12, "KOR"))
                 .toList();
         cityRepository.saveAll(cities);
 
         City city10 = cities.get(9);
-        City city5  = cities.get(4);
+        City city5 = cities.get(4);
         City city20 = cities.get(19);
 
 
-        IntStream.range(0,40).forEach(i -> searchService.recordSelection(cities.get(i)));
+        IntStream.range(0, 40).forEach(i -> searchService.recordSelection(cities.get(i)));
 
         IntStream.range(0, 10).forEach(i -> searchService.recordSelection(city10));
         IntStream.range(0, 5).forEach(i -> searchService.recordSelection(city5));

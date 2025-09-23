@@ -37,7 +37,7 @@ class CityServiceIntegrationTest {
     @DisplayName("인기 도시 조회 시 limit 개수만큼 반환된다")
     void getTopCities_limitTest() {
         List<City> cities = IntStream.rangeClosed(1, 50)
-                .mapToObj(i -> new City(null, "City" + i, "Country" + i))
+                .mapToObj(i -> new City(null, "City" + i, "Country" + i, 123.12, 123.12, "KOR"))
                 .toList();
         cityRepository.saveAll(cities);
         cities.forEach(rankingRepository::incrementScore);
@@ -54,7 +54,7 @@ class CityServiceIntegrationTest {
     @DisplayName("Redis에 데이터가 없으면 DB에서 limit 개수 조회한다")
     void getTopCities_fallbackToDb() {
         List<City> cities = IntStream.rangeClosed(1, 50)
-                .mapToObj(i -> new City(null, "City" + i, "Country" + i))
+                .mapToObj(i -> new City(null, "City" + i, "Country" + i, 123.12, 123.12, "KOR"))
                 .toList();
         cityRepository.saveAll(cities);
 
