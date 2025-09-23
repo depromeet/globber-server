@@ -5,15 +5,19 @@ import static org.assertj.core.api.Assertions.assertThat;
 import backend.globber.membertravel.controller.dto.TravelCityDto;
 import backend.globber.membertravel.controller.dto.response.MemberTravelAllResponse;
 import backend.globber.membertravel.controller.dto.response.MemberTravelResponse;
+import backend.globber.support.PostgresTestConfig;
 import backend.globber.travelinsight.controller.dto.response.TravelInsightResponse;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.TestPropertySource;
 
+
 @SpringBootTest
+@Import({PostgresTestConfig.class})
 @TestPropertySource(properties = {
     "gemini.api.url=https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent",
     "gemini.api.key=AIzaSyBDzIvw4dVH9HWUDLfgOKIX1hiOeVuZ4Uw"
