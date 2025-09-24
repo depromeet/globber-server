@@ -4,6 +4,7 @@ import static lombok.AccessLevel.PRIVATE;
 import static lombok.AccessLevel.PROTECTED;
 
 import backend.globber.auth.domain.Member;
+import backend.globber.common.entity.BaseTimeEntity;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -24,18 +25,17 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = PROTECTED)
 @AllArgsConstructor(access = PRIVATE)
 @Builder
-public class MemberTravel{
+public class MemberTravel extends BaseTimeEntity {
 
-  @Id
-  @GeneratedValue(strategy = GenerationType.IDENTITY)
-  private Long id;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-  @OneToOne
-  @JoinColumn(name = "member_id", unique = true, nullable = false)
-  private Member member;
+    @OneToOne
+    @JoinColumn(name = "member_id", unique = true, nullable = false)
+    private Member member;
 
-  @OneToMany(mappedBy = "memberTravel", cascade = CascadeType.ALL, orphanRemoval = true)
-  @Builder.Default
-  private List<MemberTravelCity> memberTravelCities = new ArrayList<>();
-
+    @OneToMany(mappedBy = "memberTravel", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<MemberTravelCity> memberTravelCities = new ArrayList<>();
 }
