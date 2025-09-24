@@ -1,0 +1,83 @@
+@startuml
+
+' === 유저 관련 ===
+class Member {
+  - Long id
+  - String uuid
+  - String email
+  - String name
+  - AuthProvider authProvider
+  - List<Role> roles
+}
+
+' === 지구본(여행 기록) 관련 ===
+class MemberTravel {
+  - Long id
+  - Member member
+  - List<MemberTravelCity> memberTravelCities
+  + getCityCount(): int
+  + getCountryCount(): int
+}
+
+class MemberTravelCity {
+  - Long id
+  - MemberTravel memberTravel
+  - City city
+}
+
+class City {
+  - Long cityId
+  - String cityName
+  - String countryName
+  - Double lat
+  - Double lng
+  - String countryCode
+}
+
+' === 서비스/로직 ===
+class AuthService {
+  + loginWithSocial(provider, authCode): TokenResponse
+}
+
+class GlobeService {
+  + createGlobe(uuid, globeData): ShareLinkDto
+  + getGlobe(uuid): GlobeSummaryDto
+}
+
+class TokenResponse {
+  - String accessToken
+  - String uuid
+}
+
+class GlobeSummaryDto {
+  - int cityCount
+  - int countryCount
+  - List<RegionDto> regions
+}
+
+class RegionDto {
+  - String regionName
+  - int cityCount
+  - List<CityDto> cities
+}
+
+class CityDto {
+  - String name
+  - Double lat
+  - Double lng
+  - String countryCode
+}
+
+' === 관계 ===
+Member "1" --> "1" MemberTravel : owns >
+MemberTravel "1" --> "*" MemberTravelCity : contains >
+MemberTravelCity "*" --> "1" City : refers >
+
+AuthService --> Member
+GlobeService --> MemberTravel
+
+GlobeService --> GlobeSummaryDto : returns >
+GlobeSummaryDto --> RegionDto : aggregates >
+RegionDto --> CityDto : aggregates >
+
+@enduml
