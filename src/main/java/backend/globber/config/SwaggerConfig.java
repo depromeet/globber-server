@@ -18,7 +18,19 @@ public class SwaggerConfig {
     @Bean
     // 명세서 생성
     public OpenAPI customOpenAPI() {
-        return new OpenAPI().info(new Info().title("GLOBBER").version("1.0").description("GLOBBER API 명세서입니다.")).components(new Components().addSecuritySchemes("bearerAuth", new SecurityScheme().name("Authorization").type(SecurityScheme.Type.HTTP).scheme("bearer").bearerFormat("JWT"))).addSecurityItem(new SecurityRequirement().addList("bearerAuth"));
+        return new OpenAPI()
+                .info(new Info()
+                        .title("GLOBBER")
+                        .version("1.0")
+                        .description("GLOBBER API 명세서입니다."))
+                .components(new Components()
+                        .addSecuritySchemes("bearerAuth",
+                                new SecurityScheme()
+                                        .type(SecurityScheme.Type.HTTP)
+                                        .scheme("bearer")
+                                        .bearerFormat("JWT")
+                                        .description("JWT 본문만 입력하세요. 'Bearer ' 접두사는 Swagger UI가 자동 추가합니다.")))
+                .addSecurityItem(new SecurityRequirement().addList("bearerAuth"));
     }
 
     @Bean
