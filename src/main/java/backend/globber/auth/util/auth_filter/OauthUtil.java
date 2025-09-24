@@ -13,9 +13,6 @@ import backend.globber.exception.spec.CustomIOException;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.util.Collection;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -31,6 +28,10 @@ import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.core.user.DefaultOAuth2User;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
+
+import java.io.IOException;
+import java.util.Collection;
+import java.util.List;
 
 @Slf4j
 @Service
@@ -69,14 +70,14 @@ public class OauthUtil implements OAuth2UserService<OAuth2UserRequest, OAuth2Use
         // 소셜 로그인 정보 추출 -> userNameAttributeName은 소셜 로그인을 통해 가져온 사용자 정보 중 username으로 지정할 값.
         // 우리는 이 userNameAttributeName에 해당하는값 + provider로 email을 만들어줄 예정이다.
         String userNameAttributeName = userRequest
-            .getClientRegistration()
-            .getProviderDetails()
-            .getUserInfoEndpoint()
-            .getUserNameAttributeName();
+                .getClientRegistration()
+                .getProviderDetails()
+                .getUserInfoEndpoint()
+                .getUserNameAttributeName();
 
         // 소셜 로그인 정보 추출
         OAuthAttributeDto oAuthAttributeDto = OAuthAttributeDto.of(oAuth2User.getAttributes(),
-            userNameAttributeName, provider);
+                userNameAttributeName, provider);
         Member member = oAuthAttributeDto.toEntity();
         // 이미 가입된 회원인지 확인
         if (!memberRepository.existsByEmail(member.getEmail())) {
@@ -84,13 +85,13 @@ public class OauthUtil implements OAuth2UserService<OAuth2UserRequest, OAuth2Use
         }
         // member의 Role 을 이용해 authorities를 구성.
         Collection<? extends GrantedAuthority> authorities = userDetailService.loadUserByUsername(
-            member.getEmail()).getAuthorities();
+                member.getEmail()).getAuthorities();
         return new DefaultOAuth2User(authorities, oAuthAttributeDto.getAttributes(),
-            userNameAttributeName);
+                userNameAttributeName);
     }
 
     public void oauthSuccessHandler(HttpServletRequest request, HttpServletResponse response,
-        Authentication authentication) {
+                                    Authentication authentication) {
 
         log.info("Oauth success handler");
         // 받아온 Authentication을 OAuth2AuthenticationToken으로 캐스팅
@@ -98,6 +99,10 @@ public class OauthUtil implements OAuth2UserService<OAuth2UserRequest, OAuth2Use
         OAuth2AuthenticationToken oAuth2AuthenticationToken = (OAuth2AuthenticationToken) authentication;
         String provider = oAuth2AuthenticationToken.getAuthorizedClientRegistrationId();
         String email = authentication.getName() + "@" + provider;
+
+        // DB에서 Member 조회해서 UUID 가져오기
+        Member member = memberRepository.findByEmail(email)
+                .orElseThrow(() -> new CustomAuthException("회원이 존재하지 않습니다."));
 
         // 리프레시 토큰
         String refreshToken = jwtTokenProvider.createRefreshToken();
@@ -110,15 +115,15 @@ public class OauthUtil implements OAuth2UserService<OAuth2UserRequest, OAuth2Use
 
         // 권한 추출 from Authentication
         List<String> roles = authentication.getAuthorities().stream()
-            .map(GrantedAuthority::getAuthority)
-            .toList();
+                .map(GrantedAuthority::getAuthority)
+                .toList();
 
         // 토큰 생성
         String accessToken = jwtTokenProvider.createAccessToken(email, roles);
         response.addHeader("Authorization", accessToken);
         try {
             // 리다이렉트
-            response.sendRedirect(successRedirectUri + accessToken);
+            response.sendRedirect(successRedirectUri + "?accessToken=" + accessToken + "&uuid=" + member.getUuid());
         } catch (IOException e) {
             throw new CustomAuthException();
         }
@@ -127,7 +132,7 @@ public class OauthUtil implements OAuth2UserService<OAuth2UserRequest, OAuth2Use
 
     // 실패시 로그인 페이지로 리다이렉트.
     public void oauthFailureHandler(HttpServletRequest request, HttpServletResponse response,
-        AuthenticationException exception) {
+                                    AuthenticationException exception) {
         log.error("OAuth2 login failed", exception);
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
         try {
