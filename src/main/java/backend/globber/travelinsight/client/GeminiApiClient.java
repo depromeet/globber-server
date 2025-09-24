@@ -47,8 +47,8 @@ public class GeminiApiClient {
             return parseResponse(response);
         } catch (Exception e) {
             log.error("GeminiApiClientAI.createTitle() 인사이트 생성 실패: {}", e.getMessage(), e);
-            throw new GeminiException();
-//            return TravelInsightResponse.empty(); 상위로 전달해서 empty() 생성
+//            throw new GeminiException();
+            return TravelInsightResponse.empty();
         }
     }
 
