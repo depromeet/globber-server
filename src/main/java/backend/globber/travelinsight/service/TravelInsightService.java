@@ -10,6 +10,7 @@ import backend.globber.travelinsight.domain.TravelInsight;
 import backend.globber.travelinsight.repository.TravelInsightRepository;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -52,7 +53,7 @@ public class TravelInsightService {
 
         LocalDateTime latestTravelUpdate = travels.stream()
             .map(MemberTravel::getUpdatedAt)
-            .filter(updatedAt -> updatedAt != null)
+            .filter(Objects::nonNull)
             .max(LocalDateTime::compareTo)
             .orElse(null);
 

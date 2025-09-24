@@ -105,7 +105,7 @@ public class GeminiApiClient {
                     .path("parts")
                     .get(0)
                     .path("text")
-                    .asText("세계 탐험가")) // default value
+                    .asText("여행 초보자")) // default value
                 .build();
         } catch (Exception e) {
             log.error("AI 응답 파싱 실패: {}", e.getMessage());
