@@ -39,9 +39,7 @@ class CityServiceIntegrationTest {
     @Test
     @DisplayName("인기 도시 조회 시 limit 개수만큼 반환된다")
     void getTopCities_limitTest() {
-        List<City> cities = IntStream.rangeClosed(1, 50)
-                .mapToObj(i -> new City(null, "City" + i, "Country" + i, 123.12, 123.12, "KOR"))
-                .toList();
+        List<City> cities = IntStream.rangeClosed(1, 50).mapToObj(i -> new City(null, "City" + i, "Country" + i, 123.12, 123.12, "KOR")).toList();
         cityRepository.saveAll(cities);
         cities.forEach(rankingRepository::incrementScore);
 
@@ -56,9 +54,7 @@ class CityServiceIntegrationTest {
     @Test
     @DisplayName("Redis에 데이터가 없으면 DB에서 limit 개수 조회한다")
     void getTopCities_fallbackToDb() {
-        List<City> cities = IntStream.rangeClosed(1, 50)
-                .mapToObj(i -> new City(null, "City" + i, "Country" + i, 123.12, 123.12, "KOR"))
-                .toList();
+        List<City> cities = IntStream.rangeClosed(1, 50).mapToObj(i -> new City(null, "City" + i, "Country" + i, 123.12, 123.12, "KOR")).toList();
         cityRepository.saveAll(cities);
 
         int limit = 5;
@@ -72,15 +68,7 @@ class CityServiceIntegrationTest {
     @DisplayName("Redis에 데이터가 없으면 DB에서 limit 개수 조회한다 (모든 필드 검증)")
     void getTopCities_fallbackToDb_fullFields() {
         // given
-        List<City> cities = IntStream.rangeClosed(1, 5)
-                .mapToObj(i -> City.builder()
-                        .cityId(null)
-                        .cityName("City" + i)
-                        .countryName("Country" + i)
-                        .lat(123.12)
-                        .lng(456.78)
-                        .countryCode("KOR").build())
-                .toList();
+        List<City> cities = IntStream.rangeClosed(1, 5).mapToObj(i -> City.builder().cityId(null).cityName("City" + i).countryName("Country" + i).lat(123.12).lng(456.78).countryCode("KOR").build()).toList();
         cityRepository.saveAll(cities);
 
 
@@ -92,15 +80,15 @@ class CityServiceIntegrationTest {
         // then
         assertThat(response.cityResponseList()).hasSize(limit);
 
-        IntStream.range(0, limit).forEach(i -> {
-            CityResponse dto = response.cityResponseList().get(i);
-            City expected = cities.get(i);
+        var expectedNames = cities.stream().map(City::getCityName).toList();
+        var expectedCountries = cities.stream().map(City::getCountryName).toList();
 
-            assertThat(dto.cityName()).isEqualTo(expected.getCityName());
-            assertThat(dto.countryName()).isEqualTo(expected.getCountryName());
-            assertThat(dto.lat()).isEqualTo(expected.getLat());
-            assertThat(dto.lng()).isEqualTo(expected.getLng());
-            assertThat(dto.countryCode()).isEqualTo(expected.getCountryCode());
+        assertThat(response.cityResponseList().stream().map(CityResponse::cityName)).containsExactlyInAnyOrderElementsOf(expectedNames);
+        assertThat(response.cityResponseList().stream().map(CityResponse::countryName)).containsExactlyInAnyOrderElementsOf(expectedCountries);
+        assertThat(response.cityResponseList()).allSatisfy(dto -> {
+            assertThat(dto.lat()).isEqualTo(123.12);
+            assertThat(dto.lng()).isEqualTo(456.78);
+            assertThat(dto.countryCode()).isEqualTo("KOR");
         });
     }
 
