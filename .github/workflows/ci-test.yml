@@ -79,7 +79,17 @@ jobs:
 
       - name: 애플리케이션 핑 체크
         run: |
-          curl --fail http://localhost:8080/actuator/health || (docker logs myapp && exit 1)
+          for i in {1..30}; do
+            if curl -sf http://localhost:8080/actuator/health; then
+              echo "App is healthy!"
+              exit 0
+            fi
+            echo "[$i] waiting for app..."
+            sleep 2
+          done
+          echo "App did not become healthy in time"
+          docker logs myapp
+          exit 1
 
       - name: Docker 컨테이너 정리
         if: always()
