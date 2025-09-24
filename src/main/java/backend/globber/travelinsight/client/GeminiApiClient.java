@@ -1,5 +1,6 @@
 package backend.globber.travelinsight.client;
 
+import backend.globber.exception.spec.GeminiException;
 import backend.globber.membertravel.controller.dto.response.MemberTravelAllResponse;
 import backend.globber.membertravel.controller.dto.response.MemberTravelResponse;
 import backend.globber.travelinsight.controller.dto.response.TravelInsightResponse;
@@ -45,7 +46,9 @@ public class GeminiApiClient {
 
             return parseResponse(response);
         } catch (Exception e) {
-            return TravelInsightResponse.empty();
+            log.error("GeminiApiClientAI.createTitle() 인사이트 생성 실패: {}", e.getMessage(), e);
+            throw new GeminiException();
+//            return TravelInsightResponse.empty(); 상위로 전달해서 empty() 생성
         }
     }
 
@@ -105,11 +108,11 @@ public class GeminiApiClient {
                     .path("parts")
                     .get(0)
                     .path("text")
-                    .asText("여행 초보자")) // default value
+                    .asText("자유로운 여행자")) // default value
                 .build();
         } catch (Exception e) {
-            log.error("AI 응답 파싱 실패: {}", e.getMessage());
-            return TravelInsightResponse.empty();
+            log.error("AI 응답 파싱 실패: {}", e.getMessage(), e);
+            throw new GeminiException();
         }
     }
 }

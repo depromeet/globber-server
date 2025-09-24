@@ -66,6 +66,10 @@ public class TravelInsightService {
             log.info("새로운 인사이트 생성 중 - memberId: {}, 여행 기록 수: {}", memberId, travels.size());
 
             TravelInsightResponse newInsight = aiClient.createTitle(memberTravelAllResponse);
+            if (newInsight == null || "자유로운 여행자".equals(newInsight.title())) {
+                log.warn("AI 인사이트 생성 실패 - memberId: {}, 기본값 반환", memberId);
+                return TravelInsightResponse.empty();
+            }
 
             if (savedTravelInsight != null) {
                 savedTravelInsight.updateTitle(newInsight.title());
@@ -78,11 +82,13 @@ public class TravelInsightService {
                 travelInsightRepository.save(insight);
                 log.info("새 인사이트 생성 - memberId: {}, title: {}", memberId, newInsight.title());
             }
-
             return newInsight;
         } catch (GeminiException e) {
             log.error("Gemini API 호출 실패 - memberId: {}, 원인: {}", memberId, e.getMessage(), e);
-            return TravelInsightResponse.empty(); // 일단 빈 응답 반환
+            return TravelInsightResponse.empty();
+        } catch (Exception e) {
+            log.error("예상치 못한 오류 - memberId: {}, 원인: {}", memberId, e.getMessage(), e);
+            return TravelInsightResponse.empty();
         }
     }
 }
