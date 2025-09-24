@@ -40,7 +40,7 @@ public class MemberTravelController {
 
         Boolean rtn = memberTravelService.deleteTravelRecord(memberId, city);
 
-        return ResponseEntity.status(HttpStatus.NO_CONTENT).body(ApiResponse.success());
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/{memberId}")
