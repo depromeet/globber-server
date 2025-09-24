@@ -237,5 +237,20 @@ class SearchServiceIntegrationTest {
         assertThat(names.get(2)).isEqualTo("City20");
     }
 
+    @Test
+    @DisplayName("뉴델리 데이터가 정확히 저장되고 조회된다")
+    void searchDataSuccess() {
+        // when
+        SearchResult result = searchService.search("뉴델리");
 
+        // then
+        assertThat(result.cities())
+                .anySatisfy(city -> {
+                    assertThat(city.cityName()).isEqualTo("뉴델리");
+                    assertThat(city.countryName()).isEqualTo("인도");
+                    assertThat(city.lat()).isEqualTo(28.6139);
+                    assertThat(city.lng()).isEqualTo(77.2090);
+                    assertThat(city.countryCode()).isEqualTo("IND");
+                });
+    }
 }
