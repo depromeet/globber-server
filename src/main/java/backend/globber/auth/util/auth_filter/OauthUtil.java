@@ -13,6 +13,7 @@ import backend.globber.exception.spec.CustomIOException;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -123,7 +124,22 @@ public class OauthUtil implements OAuth2UserService<OAuth2UserRequest, OAuth2Use
         response.addHeader("Authorization", accessToken);
         try {
             // 리다이렉트
-            response.sendRedirect(successRedirectUri + "?accessToken=" + accessToken + "&uuid=" + member.getUuid());
+            String redirect_uri = Optional.ofNullable(request.getParameter("redirect"))
+                    .orElse("");
+
+            List<String> allowed = List.of(
+                    "http://localhost:3000",
+                    "https://globber-fe.store"
+            );
+
+            String target = allowed.stream()
+                    .filter(redirect_uri::startsWith)
+                    .findFirst()
+                    .orElseThrow(() -> new CustomAuthException("허용되지 않은 리다이렉트 URI입니다."));
+
+            String uri = target + "/login/oauth/success";
+
+            response.sendRedirect(uri + "?accessToken=" + accessToken + "&uuid=" + member.getUuid());
         } catch (IOException e) {
             throw new CustomAuthException();
         }

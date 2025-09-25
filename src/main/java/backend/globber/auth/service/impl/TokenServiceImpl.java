@@ -74,4 +74,18 @@ public class TokenServiceImpl implements TokenService {
         // 토큰 삭제
         refreshTokenRepository.delete(refreshTokenEntity);
     }
+
+    @Override
+    public Long getMemberIdFromAccessToken(String accessToken) {
+        // 토큰 유효여부 체크
+        if (!jwtTokenProvider.validateToken(accessToken)) {
+            throw new CustomTokenException("토큰이 유효하지 않습니다.");
+        }
+        // 사용자 체크
+        Member member = memberRepository.findByEmail(
+            jwtTokenProvider.getEmailForAccessToken(accessToken)).orElseThrow(
+            () -> new UsernameNotFoundException("해당 이메일을 가진 사용자가 존재하지 않습니다.")
+        );
+        return member.getId();
+    }
 }
