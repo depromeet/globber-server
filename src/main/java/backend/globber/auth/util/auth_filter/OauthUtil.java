@@ -129,7 +129,7 @@ public class OauthUtil implements OAuth2UserService<OAuth2UserRequest, OAuth2Use
             String redirect_uri = Optional.ofNullable(request.getParameter("redirect"))
                 .map(uri -> URLDecoder.decode(uri, StandardCharsets.UTF_8))
                 .orElse("http://localhost:3000");
-
+          
 
             List<String> allowed = List.of(
                     "http://localhost:3000",
