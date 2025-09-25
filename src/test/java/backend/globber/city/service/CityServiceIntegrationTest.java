@@ -1,5 +1,6 @@
 package backend.globber.city.service;
 
+import backend.globber.city.controller.dto.CityResponse;
 import backend.globber.city.controller.dto.PagedRecommendResponse;
 import backend.globber.city.domain.City;
 import backend.globber.city.repository.CityRepository;
@@ -69,31 +70,50 @@ class CityServiceIntegrationTest {
     }
 
     @Test
-    @DisplayName("Redis에 데이터가 없으면 DB에서 limit 개수 조회한다 (모든 필드 검증)")
-    void getTopCities_fallbackToDb_fullFields() {
+    @DisplayName("Redis에 데이터가 없으면 DB에서 페이징된 결과와 모든 필드가 올바르게 조회된다")
+    void getTopCities_fallbackToDb_fullFields_withPaging() {
         // given
-        List<City> cities = IntStream.rangeClosed(1, 5).mapToObj(i -> City.builder().cityId(null).cityName("City" + i).countryName("Country" + i).lat(123.12).lng(456.78).countryCode("KOR").build()).toList();
+        List<City> cities = IntStream.rangeClosed(1, 15)
+                .mapToObj(i -> City.builder()
+                        .cityId(null)
+                        .cityName("City" + i)
+                        .countryName("Country" + i)
+                        .lat(123.12)
+                        .lng(456.78)
+                        .countryCode("KOR")
+                        .build())
+                .toList();
         cityRepository.saveAll(cities);
 
-
-        int limit = 5;
+        Pageable pageable = PageRequest.of(1, 5); // 2번째 페이지, size=5
 
         // when
-        RecommendResponse response = cityService.getTopCities(limit);
+        PagedRecommendResponse response = cityService.getTopCities(pageable);
 
         // then
-        assertThat(response.cityResponseList()).hasSize(limit);
+        assertThat(response.cityResponseList()).hasSize(5);
+        assertThat(response.totalElements()).isEqualTo(15);
+        assertThat(response.totalPages()).isEqualTo(3);
+        assertThat(response.page()).isEqualTo(1);
+        assertThat(response.size()).isEqualTo(5);
 
-        var expectedNames = cities.stream().map(City::getCityName).toList();
-        var expectedCountries = cities.stream().map(City::getCountryName).toList();
+        // 필드 값 검증 (해당 페이지 데이터)
+        var expectedCities = cities.subList(5, 10);
+        var expectedNames = expectedCities.stream().map(City::getCityName).toList();
+        var expectedCountries = expectedCities.stream().map(City::getCountryName).toList();
 
-        assertThat(response.cityResponseList().stream().map(CityResponse::cityName)).containsExactlyInAnyOrderElementsOf(expectedNames);
-        assertThat(response.cityResponseList().stream().map(CityResponse::countryName)).containsExactlyInAnyOrderElementsOf(expectedCountries);
+        assertThat(response.cityResponseList().stream().map(CityResponse::cityName))
+                .containsExactlyInAnyOrderElementsOf(expectedNames);
+
+        assertThat(response.cityResponseList().stream().map(CityResponse::countryName))
+                .containsExactlyInAnyOrderElementsOf(expectedCountries);
+
         assertThat(response.cityResponseList()).allSatisfy(dto -> {
             assertThat(dto.lat()).isEqualTo(123.12);
             assertThat(dto.lng()).isEqualTo(456.78);
             assertThat(dto.countryCode()).isEqualTo("KOR");
         });
     }
+
 
 }
