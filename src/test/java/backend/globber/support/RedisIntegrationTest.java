@@ -11,7 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
 @ContextConfiguration(initializers = RedisTestConfig.Initializer.class)
-@Import(RedisTestConfig.class)
+@Import({RedisTestConfig.class, PostgresTestConfig.class})
 class RedisIntegrationTest {
 
     @Autowired
