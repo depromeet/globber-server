@@ -1,13 +1,15 @@
 package backend.globber.city.controller;
 
-import backend.globber.city.controller.dto.RecommendResponse;
+import backend.globber.city.controller.dto.PagedRecommendResponse;
 import backend.globber.city.controller.dto.SearchResult;
 import backend.globber.city.service.CityService;
 import backend.globber.city.service.SearchService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.constraints.Max;
 import lombok.RequiredArgsConstructor;
+import org.springdoc.core.converters.models.PageableAsQueryParam;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -24,9 +26,10 @@ public class CityController {
     private final SearchService searchService;
 
     @GetMapping("/favorites")
+    @PageableAsQueryParam
     @Operation(summary = "인기 여행지 조회", description = "인기 여행지 목록을 조회합니다.")
-    public ResponseEntity<RecommendResponse> getFavorites(@RequestParam(defaultValue = "20") @Max(500) final int limit) {
-        return ResponseEntity.ok(cityService.getTopCities(limit));
+    public ResponseEntity<PagedRecommendResponse> getFavorites(@Parameter(hidden = true) Pageable pageable) {
+        return ResponseEntity.ok(cityService.getTopCities(pageable));
     }
 
     @GetMapping

@@ -1,6 +1,6 @@
 package backend.globber.city.service;
 
-import backend.globber.city.controller.dto.RecommendResponse;
+import backend.globber.city.controller.dto.PagedRecommendResponse;
 import backend.globber.city.domain.City;
 import backend.globber.city.repository.CityRepository;
 import backend.globber.city.repository.cache.RankingRepository;
@@ -11,6 +11,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.test.context.ContextConfiguration;
 
 import java.util.List;
@@ -42,11 +44,13 @@ class CityServiceIntegrationTest {
         cityRepository.saveAll(cities);
         cities.forEach(rankingRepository::incrementScore);
 
-        int limit = 10;
+        Pageable pageable = PageRequest.of(0, 10);
+        PagedRecommendResponse response = cityService.getTopCities(pageable);
 
-        RecommendResponse response = cityService.getTopCities(limit);
+        assertThat(response.cityResponseList()).hasSize(10);
+        assertThat(response.totalElements()).isEqualTo(50);
+        assertThat(response.totalPages()).isEqualTo(5);
 
-        assertThat(response.cityResponseList()).hasSize(limit);
     }
 
 
@@ -58,10 +62,11 @@ class CityServiceIntegrationTest {
                 .toList();
         cityRepository.saveAll(cities);
 
-        int limit = 5;
+        Pageable pageable = PageRequest.of(0, 10);
+        PagedRecommendResponse response = cityService.getTopCities(pageable);
 
-        RecommendResponse response = cityService.getTopCities(limit);
-
-        assertThat(response.cityResponseList()).hasSize(limit);
+        assertThat(response.cityResponseList()).hasSize(10);
+        assertThat(response.totalElements()).isEqualTo(50);
+        assertThat(response.totalPages()).isEqualTo(5);
     }
 }

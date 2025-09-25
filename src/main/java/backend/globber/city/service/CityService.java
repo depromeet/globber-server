@@ -1,14 +1,13 @@
 package backend.globber.city.service;
 
-import backend.globber.city.controller.dto.RecommendResponse;
+import backend.globber.city.controller.dto.PagedRecommendResponse;
 import backend.globber.city.domain.City;
 import backend.globber.city.repository.CityRepository;
 import backend.globber.city.repository.cache.RankingRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -20,12 +19,14 @@ public class CityService {
     /**
      * 인기 도시 조회
      */
-    public RecommendResponse getTopCities(int limit) {
-        List<City> topCities = rankingRepository.getTopCities(limit);
-        if (topCities.isEmpty()) {
-            return RecommendResponse.toResponse(cityRepository.findAnyCities(PageRequest.of(0, limit)));
+    public PagedRecommendResponse getTopCities(Pageable pageable) {
+        Page<City> topCities = rankingRepository.getTopCitiesPaging(pageable);
 
+        if (topCities.isEmpty()) {
+            Page<City> cities = cityRepository.findAll(pageable);
+            return PagedRecommendResponse.fromPage(cities);
         }
-        return RecommendResponse.toResponse(topCities);
+
+        return PagedRecommendResponse.fromPage(topCities);
     }
 }
