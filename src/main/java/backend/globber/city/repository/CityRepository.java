@@ -23,7 +23,10 @@ public interface CityRepository extends JpaRepository<City, Long> {
     @Query(value = """
             SELECT c.city_id   AS cityId,
                    c.city_name AS cityName,
-                   c.country_name AS countryName
+                   c.country_name AS countryName,
+                   c.lat AS lat,
+                   c.lng AS lng,
+                   c.country_code AS countryCode
             FROM city c
             WHERE c.city_name ILIKE '%' || :keyword || '%'
                OR c.country_name ILIKE '%' || :keyword || '%'

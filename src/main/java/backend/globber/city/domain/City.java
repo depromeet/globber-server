@@ -16,9 +16,14 @@ import lombok.NoArgsConstructor;
                 @Index(name = "idx_city_name", columnList = "cityName"),
                 @Index(name = "idx_country_name", columnList = "countryName"),
                 @Index(name = "idx_country_city", columnList = "countryName, cityName")
+        },
+        uniqueConstraints = {
+                @UniqueConstraint(
+                        name = "uk_country_code_city",
+                        columnNames = {"countryCode", "cityName"}
+                )
         }
 )
-// 확실해지기 전에는 빌더 필요
 @Builder
 public class City {
 
