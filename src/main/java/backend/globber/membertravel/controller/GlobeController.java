@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/globes")
+@RequestMapping("api/v1/globes")
 public class GlobeController {
 
     private final GlobeService globeService;
