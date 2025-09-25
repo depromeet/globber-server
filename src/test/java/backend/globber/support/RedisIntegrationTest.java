@@ -2,16 +2,16 @@ package backend.globber.support;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.data.redis.DataRedisTest;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.test.context.ContextConfiguration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@DataRedisTest
+@SpringBootTest
 @ContextConfiguration(initializers = RedisTestConfig.Initializer.class)
-@Import(RedisTestConfig.class)
+@Import({RedisTestConfig.class, PostgresTestConfig.class})
 class RedisIntegrationTest {
 
     @Autowired
