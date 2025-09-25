@@ -10,6 +10,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CookieValue;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
@@ -51,6 +52,14 @@ public class MemberController {
 
         return ResponseEntity.ok().header(HttpHeaders.SET_COOKIE, responseCookie.toString())
             .body(ApiResponse.success(jwtTokenResponse));
+    }
+
+    @GetMapping("/id")
+    @Operation(summary = "멤버아이디 리턴", description = "[테스트용] 토큰을 기반으로 멤버아이디를 리턴받습니다.")
+    public ResponseEntity<ApiResponse<Long>> getMemberId(
+        @RequestHeader("Authorization") String accessToken) {
+        Long memberId = tokenService.getMemberIdFromAccessToken(accessToken);
+        return ResponseEntity.ok(ApiResponse.success(memberId));
     }
 
 }

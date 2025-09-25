@@ -123,7 +123,14 @@ public class OauthUtil implements OAuth2UserService<OAuth2UserRequest, OAuth2Use
         response.addHeader("Authorization", accessToken);
         try {
             // 리다이렉트
-            response.sendRedirect(successRedirectUri + "?accessToken=" + accessToken + "&uuid=" + member.getUuid());
+            String redirect_uri = "";
+            if(request.getHeader("Host").equals("localhost:3000")){
+                redirect_uri = "http://localhost:3000/login/oauth/success";
+            }
+            else{
+                redirect_uri = "https://globber-fe.store/login/oauth/success";
+            }
+            response.sendRedirect(redirect_uri + "?accessToken=" + accessToken + "&uuid=" + member.getUuid());
         } catch (IOException e) {
             throw new CustomAuthException();
         }
