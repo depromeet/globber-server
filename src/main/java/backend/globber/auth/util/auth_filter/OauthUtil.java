@@ -13,6 +13,8 @@ import backend.globber.exception.spec.CustomIOException;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -125,7 +127,9 @@ public class OauthUtil implements OAuth2UserService<OAuth2UserRequest, OAuth2Use
         try {
             // 리다이렉트
             String redirect_uri = Optional.ofNullable(request.getParameter("redirect"))
-                    .orElse("");
+                .map(uri -> URLDecoder.decode(uri, StandardCharsets.UTF_8))
+                .orElse("http://localhost:3000");
+
 
             List<String> allowed = List.of(
                     "http://localhost:3000",
