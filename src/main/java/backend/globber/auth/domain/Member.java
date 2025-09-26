@@ -39,6 +39,7 @@ public class Member {
     private AuthProvider authProvider;
     @Column(nullable = false, unique = true, updatable = false)
     private String uuid;  // 공유 링크 식별자
+    private boolean isFirstLogin;
 
     // -- 생성자 메서드 -- //
     private Member(String email, String name, String password, AuthProvider authProvider,
@@ -49,6 +50,7 @@ public class Member {
         this.authProvider = authProvider;
         this.roles.addAll(roles);
         this.uuid = uuid;
+        this.isFirstLogin = true;
     }
 
     public static Member of(
@@ -69,6 +71,9 @@ public class Member {
         this.name = name;
     }
 
+    public void changeFirstLogin() {
+        this.isFirstLogin = false;
+    }
     // -- 비지니스 로직 (검증, setter) -- //
 
     // -- Equals & Hash -- //

@@ -18,9 +18,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -35,43 +35,48 @@ public class MemberTravelService {
     @Transactional
     public MemberTravelAllResponse createMemberTravel(Long memberId, List<CreateMemberTravelRequest> requests) {
         Member member = memberRepository.findById(memberId)
-            .orElseThrow(() -> new UsernameNotFoundException("존재하지 않는 멤버입니다."));
+                .orElseThrow(() -> new UsernameNotFoundException("존재하지 않는 멤버입니다."));
+
+        // 지구본 생성 시 Member의 FirstLogin 여부를 false로 반환한다.
+        if (member.isFirstLogin()) {
+            member.changeFirstLogin();
+        }
 
         // MemberTravel이 이미 있으면 재사용, 없으면 생성
         MemberTravel memberTravel = memberTravelRepository.findByMember_Id(memberId)
-            .orElseGet(() -> memberTravelRepository.save(
-                MemberTravel.builder().member(member).build()
-            ));
+                .orElseGet(() -> memberTravelRepository.save(
+                        MemberTravel.builder().member(member).build()
+                ));
 
         for (CreateMemberTravelRequest req : requests) {
             CityUniqueDto dto = CityUniqueDto.builder()
-                .cityName(req.cityName())
-                .countryCode(req.countryCode())
-                .lat(req.lat())
-                .lng(req.lng())
-                .build();
+                    .cityName(req.cityName())
+                    .countryCode(req.countryCode())
+                    .lat(req.lat())
+                    .lng(req.lng())
+                    .build();
 
             City city = cityRepository.findByCityUniqueDto(dto)
-                .orElseGet(() -> {
-                    City newCity = City.builder()
-                        .cityName(req.cityName())
-                        .countryName(req.countryName())
-                        .countryCode(req.countryCode())
-                        .lat(req.lat())
-                        .lng(req.lng())
-                        .build();
-                    return cityRepository.save(newCity);
-                });
+                    .orElseGet(() -> {
+                        City newCity = City.builder()
+                                .cityName(req.cityName())
+                                .countryName(req.countryName())
+                                .countryCode(req.countryCode())
+                                .lat(req.lat())
+                                .lng(req.lng())
+                                .build();
+                        return cityRepository.save(newCity);
+                    });
 
             boolean exists = memberTravelCityRepository.existsByMemberTravel_IdAndCity_CityId(
-                memberTravel.getId(), city.getCityId()
+                    memberTravel.getId(), city.getCityId()
             );
 
             if (!exists) {
                 MemberTravelCity mtc = MemberTravelCity.builder()
-                    .memberTravel(memberTravel)
-                    .city(city)
-                    .build();
+                        .memberTravel(memberTravel)
+                        .city(city)
+                        .build();
 
                 memberTravelCityRepository.save(mtc);
                 memberTravel.getMemberTravelCities().add(mtc);
@@ -79,7 +84,7 @@ public class MemberTravelService {
         }
 
         return MemberTravelAllResponse.from(memberId,
-            memberTravelRepository.findAllByMember_Id(memberId));
+                memberTravelRepository.findAllByMember_Id(memberId));
     }
 
 
@@ -87,7 +92,7 @@ public class MemberTravelService {
     @Transactional(readOnly = true)
     public MemberTravelAllResponse retrieveMemberTravel(Long memberId) {
         memberRepository.findById(memberId)
-            .orElseThrow(() -> new UsernameNotFoundException("존재하지 않는 멤버입니다."));
+                .orElseThrow(() -> new UsernameNotFoundException("존재하지 않는 멤버입니다."));
 
         List<MemberTravel> travels = memberTravelRepository.findAllByMember_Id(memberId);
         return MemberTravelAllResponse.from(memberId, travels);
@@ -97,10 +102,10 @@ public class MemberTravelService {
     @Transactional
     public Boolean deleteTravelRecord(Long memberId, CityUniqueDto cityDto) {
         MemberTravel memberTravel = memberTravelRepository.findByMember_Id(memberId)
-            .orElseThrow(TravelNotFoundException::new);
+                .orElseThrow(TravelNotFoundException::new);
 
         City city = cityRepository.findByCityUniqueDto(cityDto)
-            .orElseThrow(CityNotFoundException::new);
+                .orElseThrow(CityNotFoundException::new);
 
         memberTravelCityRepository.deleteByMemberTravel_IdAndCity_CityId(memberTravel.getId(), city.getCityId());
         return true;
