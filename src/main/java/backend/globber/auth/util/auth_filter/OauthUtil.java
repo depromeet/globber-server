@@ -126,9 +126,9 @@ public class OauthUtil implements OAuth2UserService<OAuth2UserRequest, OAuth2Use
         response.addHeader("Authorization", accessToken);
         try {
             // 리다이렉트
-            String redirect_uri = Optional.ofNullable(request.getParameter("redirect"))
+            String redirect_uri = Optional.ofNullable(request.getParameter("redirect_uri"))
                     .map(uri -> URLDecoder.decode(uri, StandardCharsets.UTF_8))
-                    .orElse("http://localhost:3000");
+                    .orElse("https://globber-fe.store");
 
 
             List<String> allowed = List.of(
