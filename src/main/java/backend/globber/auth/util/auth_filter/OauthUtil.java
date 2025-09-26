@@ -13,9 +13,6 @@ import backend.globber.exception.spec.CustomIOException;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
-import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -33,8 +30,11 @@ import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 @Slf4j
 @Service
@@ -127,9 +127,9 @@ public class OauthUtil implements OAuth2UserService<OAuth2UserRequest, OAuth2Use
         try {
             // 리다이렉트
             String redirect_uri = Optional.ofNullable(request.getParameter("redirect"))
-                .map(uri -> URLDecoder.decode(uri, StandardCharsets.UTF_8))
-                .orElse("http://localhost:3000");
-          
+                    .map(uri -> URLDecoder.decode(uri, StandardCharsets.UTF_8))
+                    .orElse("http://localhost:3000");
+
 
             List<String> allowed = List.of(
                     "http://localhost:3000",
@@ -143,7 +143,7 @@ public class OauthUtil implements OAuth2UserService<OAuth2UserRequest, OAuth2Use
 
             String uri = target + "/login/oauth/success";
 
-            response.sendRedirect(uri + "?accessToken=" + accessToken + "&uuid=" + member.getUuid());
+            response.sendRedirect(uri + "?accessToken=" + accessToken + "&uuid=" + member.getUuid() + "&firstLogin=" + member.isFirstLogin());
         } catch (IOException e) {
             throw new CustomAuthException();
         }
