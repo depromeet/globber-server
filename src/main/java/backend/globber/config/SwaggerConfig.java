@@ -12,7 +12,9 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-@OpenAPIDefinition(servers = {@Server(url = "https://globber.store", description = "운영 서버"), @Server(url = "http://localhost:8080", description = "로컬 서버")})
+@OpenAPIDefinition(servers = {@Server(url = "https://globber.store", description = "운영 서버"),
+        @Server(url = "https://globber-dev.store", description = "개발 서버"),
+        @Server(url = "http://localhost:8080", description = "로컬 서버")})
 public class SwaggerConfig {
 
     @Bean
