@@ -108,10 +108,10 @@ public class GeminiApiClient implements AiClient {
             JsonNode jsonNode = objectMapper.readTree(response);
             return TravelInsightResponse.builder()
                 .title(jsonNode.path("candidates")
-                    .get(0)
+                    .path(0)
                     .path("content")
                     .path("parts")
-                    .get(0)
+                    .path(0)
                     .path("text")
                     .asText("자유로운 여행자")) // default value
                 .build();
