@@ -12,7 +12,7 @@ import static org.mockito.Mockito.spy;
 import backend.globber.membertravel.controller.dto.response.MemberTravelAllResponse;
 import backend.globber.membertravel.domain.MemberTravel;
 import backend.globber.membertravel.repository.MemberTravelRepository;
-import backend.globber.travelinsight.client.GeminiApiClient;
+import backend.globber.travelinsight.client.AiClient;
 import backend.globber.travelinsight.controller.dto.response.TravelInsightResponse;
 import backend.globber.travelinsight.domain.TravelInsight;
 import backend.globber.travelinsight.repository.TravelInsightRepository;
@@ -33,7 +33,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 class TravelInsightServiceTest {
 
     @Mock
-    private GeminiApiClient aiClient;
+    private AiClient aiClient;
 
     @Mock
     private MemberTravelRepository memberTravelRepository;
