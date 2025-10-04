@@ -44,22 +44,6 @@ class TravelInsightServiceTest {
     @InjectMocks
     private TravelInsightService travelInsightService;
 
-//    @Test
-//    @DisplayName("여행 데이터가 없으면 빈 응답을 반환한다")
-//    void shouldReturnEmpty_WhenNoTravelData() {
-//        // given
-//        Long memberId = 1L;
-//        given(travelInsightRepository.findByMemberId(memberId)).willReturn(Optional.empty());
-//        given(memberTravelRepository.findAllByMember_Id(memberId)).willReturn(Collections.emptyList());
-//
-//        // when
-//        TravelInsightResponse result = travelInsightService.getOrCreateInsight(memberId);
-//
-//        // then
-//        assertThat(result.title()).isEqualTo("여행 초보자");
-//        then(aiClient).shouldHaveNoInteractions();
-//    }
-
     @Test
     @DisplayName("캐시가 유효하면 기존 인사이트를 반환한다")
     void shouldReturnCached_WhenCacheValid() {
@@ -186,7 +170,6 @@ class TravelInsightServiceTest {
     void shouldReturnDefault_WhenAiReturnsEmpty() {
         // given
         Long memberId = 1L;
-        LocalDateTime travelUpdatedAt = LocalDateTime.now();
         MemberTravel memberTravel = mock(MemberTravel.class);
 
         given(travelInsightRepository.findByMemberId(memberId)).willReturn(Optional.empty());
