@@ -1,0 +1,55 @@
+name: 백엔드 CD (PROD)
+
+on:
+  workflow_run:
+    workflows: [ "백엔드 공통 CI" ]
+    branches: [ "main" ]
+    types: [ completed ]
+
+jobs:
+  cd:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: [ self-hosted, prod ]
+
+    steps:
+      - name: 백엔드 로그 디렉토리 정리
+        run: |
+          sudo rm -rf globber/log/prod || true
+
+      - name: 저장소 체크아웃
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.SECRETS_SUBMODULE_ACCESS_TOKEN }}
+
+      - name: Docker Hub 로그인
+        uses: docker/login-action@v3.3.0
+        with:
+          username: ${{ secrets.DOCKERHUB_DEPLOY_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_DEPLOY_TOKEN }}
+
+      - name: 실행 중인 컨테이너 중지 및 삭제
+        run: |
+          echo "prod 컨테이너 중지 중..."
+          docker stop prod && echo "prod 컨테이너 중지 완료" || echo "prod 컨테이너 없음"
+          echo "promtail_prod 컨테이너 중지 중..."
+          docker stop promtail_prod && echo "promtail_prod 컨테이너 중지 완료" || echo "promtail_prod 컨테이너 없음"
+          echo "prod 컨테이너 삭제 중..."
+          docker rm prod && echo "prod 컨테이너 삭제 완료" || echo "prod 컨테이너 없음"
+          echo "promtail_prod 컨테이너 삭제 중..."
+          docker rm promtail_prod && echo "promtail_prod 컨테이너 삭제 완료" || echo "promtail_prod 컨테이너 없음"
+
+      - name: prod 네트워크 생성 확인
+        run: |
+          docker network create prod_network && echo "docker network 생성" || echo "docker network 이미 존재"
+
+      - name: Docker Compose Pull & Up 실행
+        run: |
+          docker compose -f config/docker-compose-prod.yml pull
+          docker compose -f config/docker-compose-prod.yml up -d
+          echo "docker compose-prod up"
+
+      - name: Docker 이미지 정리
+        run: |
+          echo "사용하지 않는 Docker 이미지 정리 중..."
+          sudo docker image prune -af
+          echo "이미지 정리 완료"

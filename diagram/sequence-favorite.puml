@@ -1,0 +1,16 @@
+@startuml
+actor Member
+control UI
+control Service
+database DB as "내부 DB"
+control Scheduler as "스케줄러"
+
+== 사용자 요청 흐름 ==
+Member -> UI : 인기 여행지 조회 요청
+UI -> Service : 인기 여행지 조회
+Service -> RankingRepository : TOP N 조회
+RankingRepository --> Service : List<City> 반환
+Service --> UI : RecommendedCityList 반환
+UI --> Member : 인기 여행지 화면 표시
+
+@enduml

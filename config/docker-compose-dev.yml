@@ -1,0 +1,71 @@
+version: '3.8'
+
+services:
+  dev:
+    container_name: dev
+    build:
+      context: ../..
+      dockerfile: ../Dockerfile.dev
+      args:
+        JAR_FILE: /build/libs/*.jar
+    image: mimiminu123/globber:dev-latest
+    ports:
+      - "8080:8080"
+    volumes:
+      - ../log:/log
+    environment:
+      - SPRING_PROFILES_ACTIVE=dev
+    depends_on:
+      - postgres
+      - redis
+    restart: always
+    networks:
+      - dev_network
+
+  postgres:
+    container_name: postgres_dev
+    image: postgres:16
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=globber
+      - POSTGRES_USER=globber
+      - POSTGRES_PASSWORD=globber123
+      - TZ=Asia/Seoul
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: always
+    networks:
+      - dev_network
+
+  redis:
+    container_name: redis_dev
+    image: redis:7.2
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: always
+    networks:
+      - dev_network
+
+  promtail:
+    container_name: promtail_dev
+    image: grafana/promtail:latest
+    ports:
+      - "9080:9080"
+    volumes:
+      - ../config/promtail-config-dev.yml:/etc/promtail/promtail.yml
+      - ../log:/log
+    command: -config.file=/etc/promtail/promtail.yml
+    restart: always
+    networks:
+      - dev_network
+
+networks:
+  dev_network:
+    external: true
+
+volumes:
+  redis_data:
+  postgres_data:

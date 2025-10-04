@@ -1,0 +1,41 @@
+@startuml
+class SearchService {
+    - CacheRepository cacheRepository
+    - CityRepository cityRepository
+    - RankingRepository rankingRepository
+    + SearchResult search(String keyword)
+    + void recordSelection(String cityName)
+    + SearchResult getPopularCities(int limit)
+}
+
+interface CacheRepository {
+    + List<String> get(String key)
+    + void set(String key, List<String> value, int ttlMinutes)
+}
+
+
+interface CityRepository {
+    + List<City> searchByKeyword(String keyword)
+}
+
+interface RankingRepository {
+    + void incrementScore(String cityName)
+    + Map<String, Integer> getScores(List<String> cityNames)
+    + List<String> getTopCities(int limit)
+}
+
+class City {
+    - Long id
+    - String cityName
+    - String countryName
+}
+
+class User {
+}
+
+User --> SearchService : "검색 요청/선택"
+SearchService --> CacheRepository : "캐시 조회/저장"
+SearchService --> CityRepository : "DB 조회"
+SearchService --> RankingRepository : "점수 갱신/조회"
+CityRepository --> City : "엔티티 반환"
+@enduml

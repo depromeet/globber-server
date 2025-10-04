@@ -1,0 +1,32 @@
+@startuml
+class Member {
+  - id: Long
+  - email: String
+  - name: String
+  - password: String
+  - authProvider: AuthProvider
+  - roles: List<Role>
+}
+
+class RecommendedCityList {
+  - listId: Long
+  - cities: List<City>
+  + getCities(): List<City>
+}
+
+class City {
+  - cityId: Long
+  - cityName: String
+  - countryName: String
+}
+
+class RankingRepository {
+  + incrementScore(key: String): Object
+  + set(key: String, value: Object, ttl: long): void
+}
+
+
+
+Member --> RecommendedCityList : 조회한다
+RecommendedCityList *-- City : 포함한다
+@enduml

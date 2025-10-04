@@ -1,0 +1,98 @@
+name: 백엔드 CI 테스트
+
+on:
+  pull_request:
+    branches: [ "main", "develop" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        shell: bash
+        working-directory: .
+
+    permissions: write-all
+
+    steps:
+      - name: 저장소 체크아웃
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
+          token: ${{ secrets.SECRETS_SUBMODULE_ACCESS_TOKEN }}
+
+      - name: JDK 21 설정
+        uses: actions/setup-java@v3
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: gradlew 실행 권한 부여
+        run: chmod +x gradlew
+
+      - name: 프로젝트 클린
+        run: ./gradlew clean
+
+      - name: 단위 테스트 실행
+        run: ./gradlew test
+
+      - name: 빌드 실행
+        run: ./gradlew build
+
+      - name: 테스트 결과 게시
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: always()
+        with:
+          files: ${{ github.workspace }}/build/test-results/**/*.xml
+
+      - name: Jacoco 테스트 커버리지 리포트(PR 반영)
+        id: jacoco
+        uses: madrapps/jacoco-report@v1.6.1
+        with:
+          paths: ${{ github.workspace }}/build/reports/jacoco/test/jacocoTestReport.xml
+          token: ${{ secrets.GITHUB_TOKEN }}
+          min-coverage-overall: 50
+          min-coverage-changed-files: 50
+          title: "🌻 테스트 커버리지 리포트"
+          update-comment: true
+
+      - name: Docker 이미지 빌드
+        run: |
+          docker build -t myapp:test -f Dockerfile.prod .
+
+      - name: Redis 컨테이너 실행
+        run: |
+          docker run -d --name redis_dev -p 6379:6379 redis:7.4-alpine
+          sleep 5
+
+      - name: Docker 컨테이너 실행
+        run: |
+          docker run -d --name myapp --link redis_dev:redis_dev -p 8080:8080 \
+            -e SPRING_PROFILES_ACTIVE=prod \
+            -e SPRING_REDIS_HOST=redis_dev \
+            -e SPRING_REDIS_PORT=6379 \
+            myapp:test
+          sleep 15
+
+      - name: 애플리케이션 핑 체크
+        run: |
+          for i in {1..30}; do
+            if curl -sf http://localhost:8080/actuator/health; then
+              echo "App is healthy!"
+              exit 0
+            fi
+            echo "[$i] waiting for app..."
+            sleep 2
+          done
+          echo "App did not become healthy in time"
+          docker logs myapp
+          exit 1
+
+      - name: Docker 컨테이너 정리
+        if: always()
+        run: |
+          docker stop myapp
+          docker rm myapp

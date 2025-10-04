@@ -1,0 +1,32 @@
+@startuml
+actor User
+actor "Anyone with Link" as Guest
+participant "Frontend (globber-fe.store)" as Front
+participant "Backend API (globber.store)" as Back
+database "DB" as DB
+participant "Social Auth Provider" as Social
+
+== 소셜 로그인 ==
+User -> Front: "소셜 로그인" 클릭
+Front -> Back: POST /auth/social (provider, authCode)
+Back -> Social: accessToken 요청
+Social -> Back: accessToken 반환
+Back -> Social: 사용자 프로필 요청
+Social -> Back: 사용자 프로필 반환
+
+alt 신규 사용자
+    Back -> DB: 사용자 정보 저장 + UUID 생성
+else 기존 사용자
+    Back -> DB: 사용자 정보 조회(UUID 반환)
+end
+
+Back -> Front: {accessToken, UUID}
+Front -> User: 로그인 완료 화면
+
+== 불특정 다수 접근 ==
+Guest -> Front: GET https://globber-fe.store/globe/{UUID}
+Front -> Back: GET /globes/{UUID}
+Back -> DB: 지구본 데이터 조회
+Back -> Front: 지구본 JSON 반환
+Front -> Guest: 지구본 UI 렌더링
+@enduml
