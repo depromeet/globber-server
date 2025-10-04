@@ -15,6 +15,36 @@ services:
       - ../log:/log
     environment:
       - SPRING_PROFILES_ACTIVE=dev
+    depends_on:
+      - postgres
+      - redis
+    restart: always
+    networks:
+      - dev_network
+
+  postgres:
+    container_name: postgres_dev
+    image: postgres:16
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=globber
+      - POSTGRES_USER=globber
+      - POSTGRES_PASSWORD=globber123
+      - TZ=Asia/Seoul
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: always
+    networks:
+      - dev_network
+
+  redis:
+    container_name: redis_dev
+    image: redis:7.2
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
     restart: always
     networks:
       - dev_network
@@ -32,20 +62,10 @@ services:
     networks:
       - dev_network
 
-  redis:
-    container_name: redis_dev
-    image: redis:7.2
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
-    restart: always
-    networks:
-      - dev_network
-
 networks:
   dev_network:
     external: true
 
 volumes:
   redis_data:
+  postgres_data:
