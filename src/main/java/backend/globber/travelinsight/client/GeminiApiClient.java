@@ -42,7 +42,8 @@ public class GeminiApiClient implements AiClient {
 
         try {
             String response = restClient.post()
-                .uri(uriBuilder -> uriBuilder.queryParam("key", apiKey).build())
+                .uri("")
+                .header("x-goog-api-key", apiKey)
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(requestBody)
                 .retrieve()
