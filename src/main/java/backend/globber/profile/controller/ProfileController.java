@@ -2,6 +2,7 @@ package backend.globber.profile.controller;
 
 import backend.globber.auth.service.TokenService;
 import backend.globber.common.dto.ApiResponse;
+import backend.globber.profile.controller.dto.request.UpdateProfileImageRequest;
 import backend.globber.profile.controller.dto.request.UpdateProfileRequest;
 import backend.globber.profile.controller.dto.response.ProfileResponse;
 import backend.globber.profile.service.ProfileService;
@@ -44,5 +45,17 @@ public class ProfileController {
         ProfileResponse profile = profileService.updateProfile(memberId, request);
 
         return ResponseEntity.ok(ApiResponse.success(profile));
+    }
+
+    @PatchMapping("/me/image")
+    @Operation(summary = "프로필 이미지 수정", description = "현재 로그인한 사용자의 프로필 이미지를 수정합니다.(프론트에서 S3에 업로드 후 S3 key를 전달)")
+    public ResponseEntity<ApiResponse<ProfileResponse>> updateProfileImage(
+        @RequestHeader("Authorization") String accessToken,
+        @Valid @RequestBody UpdateProfileImageRequest request
+    ) {
+        Long memberId = tokenService.getMemberIdFromAccessToken(accessToken);
+        ProfileResponse response = profileService.updateProfileImage(memberId, request);
+
+        return ResponseEntity.ok(ApiResponse.success(response));
     }
 }
