@@ -13,7 +13,7 @@ public record ProfileResponse(
     AuthProvider authProvider
 ) {
 
-    public static ProfileResponse from(Member member, String s3BaseUrl) {
+    public static ProfileResponse from(final Member member, final String s3BaseUrl) {
         String imageKey = member.getProfileImageKey();
         String fullUrl = (imageKey != null && !imageKey.isEmpty())
             ? s3BaseUrl + "/" + imageKey
