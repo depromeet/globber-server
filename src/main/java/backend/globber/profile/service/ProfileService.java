@@ -37,6 +37,7 @@ public class ProfileService {
         return ProfileResponse.from(member, s3BaseUrl);
     }
 
+    @Transactional
     public ProfileResponse updateProfileImage(Long memberId, UpdateProfileImageRequest request) {
         Member member = memberRepository.findById(memberId)
             .orElseThrow(() -> new UsernameNotFoundException("존재하지 않는 멤버입니다."));
