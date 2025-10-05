@@ -4,7 +4,7 @@ import backend.globber.exception.spec.GeminiException;
 import backend.globber.membertravel.controller.dto.response.MemberTravelAllResponse;
 import backend.globber.membertravel.domain.MemberTravel;
 import backend.globber.membertravel.repository.MemberTravelRepository;
-import backend.globber.travelinsight.client.GeminiApiClient;
+import backend.globber.travelinsight.client.AiClient;
 import backend.globber.travelinsight.controller.dto.response.TravelInsightResponse;
 import backend.globber.travelinsight.domain.TravelInsight;
 import backend.globber.travelinsight.repository.TravelInsightRepository;
@@ -22,7 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class TravelInsightService {
 
-    private final GeminiApiClient aiClient;
+    private final AiClient aiClient;
     private final MemberTravelRepository memberTravelRepository;
     private final TravelInsightRepository travelInsightRepository;
 
