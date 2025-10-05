@@ -9,28 +9,32 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Primary;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
 @Slf4j
 @Component
-public class GeminiApiClient {
+@Primary
+public class GeminiApiClient implements AiClient {
 
     private final RestClient restClient;
     private final String apiKey;
     private final ObjectMapper objectMapper;
 
-    public GeminiApiClient(@Value("${gemini.api.url}") String apiUrl,
-        @Value("${gemini.api.key}") String apiKey) {
-        this.restClient = RestClient.builder()
-            .baseUrl(apiUrl)
-            .build();
+    public GeminiApiClient(
+        @Qualifier("geminiRestClient") RestClient restClient,
+        @Value("${gemini.api.key}") String apiKey,
+        ObjectMapper objectMapper) {
+        this.restClient = restClient;
         this.apiKey = apiKey;
-        this.objectMapper = new ObjectMapper();
+        this.objectMapper = objectMapper;
     }
 
+    @Override
     public TravelInsightResponse createTitle(MemberTravelAllResponse travels) {
         String prompt = createPrompt(travels);
 
@@ -38,7 +42,8 @@ public class GeminiApiClient {
 
         try {
             String response = restClient.post()
-                .uri(uriBuilder -> uriBuilder.queryParam("key", apiKey).build())
+                .uri("")
+                .header("x-goog-api-key", apiKey)
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(requestBody)
                 .retrieve()
@@ -103,10 +108,10 @@ public class GeminiApiClient {
             JsonNode jsonNode = objectMapper.readTree(response);
             return TravelInsightResponse.builder()
                 .title(jsonNode.path("candidates")
-                    .get(0)
+                    .path(0)
                     .path("content")
                     .path("parts")
-                    .get(0)
+                    .path(0)
                     .path("text")
                     .asText("자유로운 여행자")) // default value
                 .build();
