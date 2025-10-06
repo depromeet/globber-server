@@ -10,6 +10,7 @@ import backend.globber.auth.domain.Member;
 import backend.globber.auth.domain.constant.AuthProvider;
 import backend.globber.auth.domain.constant.Role;
 import backend.globber.auth.repository.MemberRepository;
+import backend.globber.exception.spec.InvalidS3KeyException;
 import backend.globber.exception.spec.UsernameNotFoundException;
 import backend.globber.profile.controller.dto.request.UpdateProfileImageRequest;
 import backend.globber.profile.controller.dto.request.UpdateProfileRequest;
@@ -184,6 +185,38 @@ class ProfileServiceTest {
         assertThatThrownBy(() -> profileService.updateProfileImage(memberId, request))
             .isInstanceOf(UsernameNotFoundException.class)
             .hasMessage("존재하지 않는 멤버입니다.");
+        verify(memberRepository, times(1)).findById(memberId);
+    }
+
+    @Test
+    @DisplayName("다른 사용자의 s3Key로 프로필 이미지 수정 시 예외가 발생한다")
+    void updateImageWithOtherMemberS3Key() {
+        // given
+        Long memberId = 1L;
+        String otherMemberS3Key = "profiles/999/hacker-image.jpg";  // 다른 사용자 경로
+        UpdateProfileImageRequest request = new UpdateProfileImageRequest(otherMemberS3Key);
+        given(memberRepository.findById(memberId)).willReturn(Optional.of(member));
+
+        // when & then
+        assertThatThrownBy(() -> profileService.updateProfileImage(memberId, request))
+            .isInstanceOf(InvalidS3KeyException.class)
+            .hasMessageContaining("유효하지 않은 이미지 경로입니다");
+        verify(memberRepository, times(1)).findById(memberId);
+    }
+
+    @Test
+    @DisplayName("잘못된 prefix의 s3Key로 프로필 이미지 수정 시 예외가 발생한다")
+    void updateImageWithWrongPrefix() {
+        // given
+        Long memberId = 1L;
+        String wrongPrefixKey = "travels/1/image.jpg";  // profiles가 아닌 travels
+        UpdateProfileImageRequest request = new UpdateProfileImageRequest(wrongPrefixKey);
+        given(memberRepository.findById(memberId)).willReturn(Optional.of(member));
+
+        // when & then
+        assertThatThrownBy(() -> profileService.updateProfileImage(memberId, request))
+            .isInstanceOf(InvalidS3KeyException.class)
+            .hasMessageContaining("유효하지 않은 이미지 경로입니다");
         verify(memberRepository, times(1)).findById(memberId);
     }
 }
