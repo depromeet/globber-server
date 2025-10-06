@@ -133,13 +133,7 @@ public class OauthUtil implements OAuth2UserService<OAuth2UserRequest, OAuth2Use
                     .map(uri -> URLDecoder.decode(uri, StandardCharsets.UTF_8))
                     .orElse(allowedRedirectUri.getFirst());
 
-
-            List<String> allowed = List.of(
-                    "http://localhost:3000",
-                    "https://globber-fe.store"
-            );
-
-            String target = allowed.stream()
+            String target = allowedRedirectUri.stream()
                     .filter(redirect_uri::startsWith)
                     .findFirst()
                     .orElseThrow(() -> new CustomAuthException("허용되지 않은 리다이렉트 URI입니다."));
