@@ -7,6 +7,7 @@ import backend.globber.profile.controller.dto.request.UpdateProfileRequest;
 import backend.globber.profile.controller.dto.response.ProfileResponse;
 import backend.globber.profile.service.ProfileService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -20,6 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/profiles")
 @RequiredArgsConstructor
+@Tag(name = "사용자 프로필 API", description = "사용자 프로필 관련 API")
 public class ProfileController {
 
     private final TokenService tokenService;
