@@ -51,6 +51,9 @@ public class OauthUtil implements OAuth2UserService<OAuth2UserRequest, OAuth2Use
     private String successRedirectUri;
     @Value("${oauth2_redirect_uri.failure}")
     private String failureRedirectUri;
+    @Value("${oauth.redirect.allowed}")
+    private String allowedRedirectUri;
+
 
     @Override
     public OAuth2User loadUser(OAuth2UserRequest userRequest) throws OAuth2AuthenticationException {
@@ -128,7 +131,7 @@ public class OauthUtil implements OAuth2UserService<OAuth2UserRequest, OAuth2Use
             // 리다이렉트
             String redirect_uri = Optional.ofNullable(request.getParameter("redirect_uri"))
                     .map(uri -> URLDecoder.decode(uri, StandardCharsets.UTF_8))
-                    .orElse("https://globber-fe.store");
+                    .orElse(allowedRedirectUri);
 
 
             List<String> allowed = List.of(
