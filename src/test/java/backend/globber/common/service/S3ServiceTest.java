@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import backend.globber.common.controller.dto.request.PresignedUrlRequest;
 import backend.globber.common.dto.PresignedUrlResponse;
 import backend.globber.common.enums.S3UploadType;
+import backend.globber.config.S3Config;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -15,7 +16,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import software.amazon.awssdk.services.s3.S3Client;
 
-@SpringBootTest
+@SpringBootTest(classes = {
+    S3Service.class,
+    S3Config.class  // S3 관련 설정 클래스만
+})
 class S3ServiceTest {
 
     @Autowired
