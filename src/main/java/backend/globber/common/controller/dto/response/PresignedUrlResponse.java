@@ -1,4 +1,4 @@
-package backend.globber.common.dto;
+package backend.globber.common.controller.dto.response;
 
 import lombok.Builder;
 

@@ -2,8 +2,8 @@ package backend.globber.common.controller;
 
 import backend.globber.auth.service.TokenService;
 import backend.globber.common.controller.dto.request.PresignedUrlRequest;
+import backend.globber.common.controller.dto.response.PresignedUrlResponse;
 import backend.globber.common.dto.ApiResponse;
-import backend.globber.common.dto.PresignedUrlResponse;
 import backend.globber.common.service.S3Service;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;

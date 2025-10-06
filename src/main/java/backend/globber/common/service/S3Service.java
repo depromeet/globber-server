@@ -1,7 +1,7 @@
 package backend.globber.common.service;
 
 import backend.globber.common.controller.dto.request.PresignedUrlRequest;
-import backend.globber.common.dto.PresignedUrlResponse;
+import backend.globber.common.controller.dto.response.PresignedUrlResponse;
 import backend.globber.common.enums.S3UploadType;
 import java.time.Duration;
 import java.util.UUID;

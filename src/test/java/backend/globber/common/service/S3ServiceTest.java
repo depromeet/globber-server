@@ -3,7 +3,7 @@ package backend.globber.common.service;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import backend.globber.common.controller.dto.request.PresignedUrlRequest;
-import backend.globber.common.dto.PresignedUrlResponse;
+import backend.globber.common.controller.dto.response.PresignedUrlResponse;
 import backend.globber.common.enums.S3UploadType;
 import backend.globber.config.S3Config;
 import java.io.OutputStream;
