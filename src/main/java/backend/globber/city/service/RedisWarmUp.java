@@ -27,7 +27,10 @@ public class RedisWarmUp {
             Long rankingCount = stringRedisTemplate.opsForZSet().zCard(RANKING_KEY);
             Long cityDataCount = stringRedisTemplate.opsForHash().size(CITY_DATA_KEY);
 
-            if (rankingCount != null && rankingCount > 0 || cityDataCount > 0) {
+            boolean hasRankingData = rankingCount != null && rankingCount > 0;
+            boolean hasCityData = cityDataCount > 0;
+
+            if (hasRankingData && hasCityData) {
                 log.info("Redis에 이미 데이터가 존재합니다. 초기화를 건너뜁니다. (rankingCount={}, cityDataCount={})",
                         rankingCount, cityDataCount);
                 return;
@@ -59,13 +62,10 @@ public class RedisWarmUp {
                 int currentScore = score;
                 cityRepository.findByCountryNameAndCityName(city.getCountryName(), city.getCityName())
                         .ifPresent(savedCity -> {
-                            for (int i = 0; i < currentScore; i++) {
-                                rankingRepository.incrementScore(savedCity);
-                            }
+                            rankingRepository.setScore(savedCity, currentScore);
                             log.debug("'{}' ({}) Redis에 점수 {}로 등록 완료",
                                     savedCity.getCityName(), savedCity.getCountryName(), currentScore);
                         });
-
                 score--;
             }
 
