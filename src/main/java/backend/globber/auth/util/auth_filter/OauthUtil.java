@@ -52,7 +52,7 @@ public class OauthUtil implements OAuth2UserService<OAuth2UserRequest, OAuth2Use
     @Value("${oauth2_redirect_uri.failure}")
     private String failureRedirectUri;
     @Value("${oauth.redirect.allowed}")
-    private String allowedRedirectUri;
+    private List<String> allowedRedirectUri;
 
 
     @Override
@@ -131,7 +131,7 @@ public class OauthUtil implements OAuth2UserService<OAuth2UserRequest, OAuth2Use
             // 리다이렉트
             String redirect_uri = Optional.ofNullable(request.getParameter("redirect_uri"))
                     .map(uri -> URLDecoder.decode(uri, StandardCharsets.UTF_8))
-                    .orElse(allowedRedirectUri);
+                    .orElse(allowedRedirectUri.getFirst());
 
 
             List<String> allowed = List.of(
