@@ -51,6 +51,9 @@ public class OauthUtil implements OAuth2UserService<OAuth2UserRequest, OAuth2Use
     private String successRedirectUri;
     @Value("${oauth2_redirect_uri.failure}")
     private String failureRedirectUri;
+    @Value("${oauth.redirect.allowed}")
+    private List<String> allowedRedirectUri;
+
 
     @Override
     public OAuth2User loadUser(OAuth2UserRequest userRequest) throws OAuth2AuthenticationException {
@@ -128,15 +131,9 @@ public class OauthUtil implements OAuth2UserService<OAuth2UserRequest, OAuth2Use
             // 리다이렉트
             String redirect_uri = Optional.ofNullable(request.getParameter("redirect_uri"))
                     .map(uri -> URLDecoder.decode(uri, StandardCharsets.UTF_8))
-                    .orElse("https://globber-fe.store");
+                    .orElse(allowedRedirectUri.getFirst());
 
-
-            List<String> allowed = List.of(
-                    "http://localhost:3000",
-                    "https://globber-fe.store"
-            );
-
-            String target = allowed.stream()
+            String target = allowedRedirectUri.stream()
                     .filter(redirect_uri::startsWith)
                     .findFirst()
                     .orElseThrow(() -> new CustomAuthException("허용되지 않은 리다이렉트 URI입니다."));
