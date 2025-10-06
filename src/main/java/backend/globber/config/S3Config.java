@@ -24,16 +24,19 @@ public class S3Config {
     private String secretKey;
 
     @Bean
+    public AwsCredentialsProviderChain awsCredentialsProvider() {
+        return AwsCredentialsProviderChain.builder()
+            .addCredentialsProvider(DefaultCredentialsProvider.create())  // 1순위: IAM Role
+            .addCredentialsProvider(StaticCredentialsProvider.create(     // 2순위: 환경변수
+                AwsBasicCredentials.create(accessKey, secretKey)))
+            .build();
+    }
+
+    @Bean
     public S3Client s3Client() {
         return S3Client.builder()
             .region(Region.of(region))
-            .credentialsProvider(
-                AwsCredentialsProviderChain.builder()
-                    .addCredentialsProvider(DefaultCredentialsProvider.create())  // 1순위: IAM Role
-                    .addCredentialsProvider(StaticCredentialsProvider.create(     // 2순위: 환경변수
-                        AwsBasicCredentials.create(accessKey, secretKey)))
-                    .build()
-            )
+            .credentialsProvider(awsCredentialsProvider())
             .build();
     }
 
@@ -41,9 +44,7 @@ public class S3Config {
     public S3Presigner s3Presigner() {
         return S3Presigner.builder()
             .region(Region.of(region))
-            .credentialsProvider(StaticCredentialsProvider.create(
-                AwsBasicCredentials.create(accessKey, secretKey)
-            ))
+            .credentialsProvider(awsCredentialsProvider())
             .build();
     }
 }
