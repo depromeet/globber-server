@@ -21,7 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/profiles")
 @RequiredArgsConstructor
-@Tag(name = "사용자 프로필 API", description = "사용자 프로필 관련 API")
+@Tag(name = "프로필 API", description = "사용자 프로필 조회 및 수정 API")
 public class ProfileController {
 
     private final TokenService tokenService;
