@@ -63,17 +63,41 @@ jobs:
         run: |
           docker build -t myapp:test -f Dockerfile.prod .
 
+      - name: PostgreSQL 컨테이너 실행
+        run: |
+          docker run -d --name postgres_prod \
+            -e POSTGRES_DB=globber \
+            -e POSTGRES_USER=globber \
+            -e POSTGRES_PASSWORD=globber123 \
+            -p 5432:5432 \
+            postgres:16-alpine
+          echo "Waiting for PostgreSQL to be ready..."
+          for i in {1..15}; do
+            if docker exec postgres_prod pg_isready -U globber > /dev/null 2>&1; then
+              echo "PostgreSQL is ready!"
+              break
+            fi
+            echo "[$i] waiting for postgres..."
+            sleep 2
+          done
+
       - name: Redis 컨테이너 실행
         run: |
-          docker run -d --name redis_dev -p 6379:6379 redis:7.4-alpine
+          docker run -d --name redis_prod -p 6379:6379 redis:7.4-alpine
           sleep 5
 
-      - name: Docker 컨테이너 실행
+      - name: Docker 컨테이너 실행 (Spring Boot)
         run: |
-          docker run -d --name myapp --link redis_dev:redis_dev -p 8080:8080 \
+          docker run -d --name myapp \
+            --link redis_prod:redis_prod \
+            --link postgres_prod:postgres_prod \
+            -p 8080:8080 \
             -e SPRING_PROFILES_ACTIVE=prod \
-            -e SPRING_REDIS_HOST=redis_dev \
+            -e SPRING_REDIS_HOST=redis_prod \
             -e SPRING_REDIS_PORT=6379 \
+            -e SPRING_DATASOURCE_URL=jdbc:postgresql://postgres_prod:5432/globber \
+            -e SPRING_DATASOURCE_USERNAME=globber \
+            -e SPRING_DATASOURCE_PASSWORD=globber123 \
             myapp:test
           sleep 15
 

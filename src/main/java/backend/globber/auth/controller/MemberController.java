@@ -1,10 +1,11 @@
 package backend.globber.auth.controller;
 
-import backend.globber.common.dto.ApiResponse;
 import backend.globber.auth.dto.response.JwtTokenResponse;
 import backend.globber.auth.service.TokenService;
 import backend.globber.auth.util.CookieProvider;
+import backend.globber.common.dto.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequiredArgsConstructor
+@Tag(name = "인증 API", description = "로그인, 로그아웃, 토큰 재발급 등 인증 관련 API")
 public class MemberController {
 
     private final CookieProvider cookieProvider;

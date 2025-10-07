@@ -12,7 +12,7 @@ import static org.mockito.Mockito.spy;
 import backend.globber.membertravel.controller.dto.response.MemberTravelAllResponse;
 import backend.globber.membertravel.domain.MemberTravel;
 import backend.globber.membertravel.repository.MemberTravelRepository;
-import backend.globber.travelinsight.client.GeminiApiClient;
+import backend.globber.travelinsight.client.AiClient;
 import backend.globber.travelinsight.controller.dto.response.TravelInsightResponse;
 import backend.globber.travelinsight.domain.TravelInsight;
 import backend.globber.travelinsight.repository.TravelInsightRepository;
@@ -33,7 +33,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 class TravelInsightServiceTest {
 
     @Mock
-    private GeminiApiClient aiClient;
+    private AiClient aiClient;
 
     @Mock
     private MemberTravelRepository memberTravelRepository;
@@ -43,22 +43,6 @@ class TravelInsightServiceTest {
 
     @InjectMocks
     private TravelInsightService travelInsightService;
-
-//    @Test
-//    @DisplayName("여행 데이터가 없으면 빈 응답을 반환한다")
-//    void shouldReturnEmpty_WhenNoTravelData() {
-//        // given
-//        Long memberId = 1L;
-//        given(travelInsightRepository.findByMemberId(memberId)).willReturn(Optional.empty());
-//        given(memberTravelRepository.findAllByMember_Id(memberId)).willReturn(Collections.emptyList());
-//
-//        // when
-//        TravelInsightResponse result = travelInsightService.getOrCreateInsight(memberId);
-//
-//        // then
-//        assertThat(result.title()).isEqualTo("여행 초보자");
-//        then(aiClient).shouldHaveNoInteractions();
-//    }
 
     @Test
     @DisplayName("캐시가 유효하면 기존 인사이트를 반환한다")
@@ -186,7 +170,6 @@ class TravelInsightServiceTest {
     void shouldReturnDefault_WhenAiReturnsEmpty() {
         // given
         Long memberId = 1L;
-        LocalDateTime travelUpdatedAt = LocalDateTime.now();
         MemberTravel memberTravel = mock(MemberTravel.class);
 
         given(travelInsightRepository.findByMemberId(memberId)).willReturn(Optional.empty());
