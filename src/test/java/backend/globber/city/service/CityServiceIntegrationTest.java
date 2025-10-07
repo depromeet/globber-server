@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
@@ -25,6 +26,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Import({PostgresTestConfig.class, RedisTestConfig.class})
 @Transactional
 class CityServiceIntegrationTest {
+
+    @MockitoBean
+    private RedisWarmUp redisWarmUp;
 
     @Autowired
     private CityService cityService;

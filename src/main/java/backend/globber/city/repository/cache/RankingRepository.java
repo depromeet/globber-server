@@ -63,5 +63,14 @@ public class RankingRepository {
                 .filter(Objects::nonNull)
                 .toList();
     }
+
+    public void setScore(final City city, final double score) {
+        if (city == null || city.getCityId() == null) return;
+
+        String member = CITY_MEMBER_PREFIX + city.getCityId();
+
+        zsetTemplate.opsForZSet().add(RANKING_KEY, member, score);
+        redisTemplate.opsForHash().put(CITY_DATA_KEY, city.getCityId().toString(), city);
+    }
 }
 
