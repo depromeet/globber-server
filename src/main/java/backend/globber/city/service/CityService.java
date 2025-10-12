@@ -1,5 +1,6 @@
 package backend.globber.city.service;
 
+import backend.globber.city.controller.dto.CityUniqueDto;
 import backend.globber.city.controller.dto.RecommendResponse;
 import backend.globber.city.domain.City;
 import backend.globber.city.repository.CityRepository;
@@ -27,5 +28,14 @@ public class CityService {
 
         }
         return RecommendResponse.toResponse(topCities);
+    }
+
+    public Long getCityIdByUnique(CityUniqueDto cityUniqueDto) {
+        City city = cityRepository.findByUnique(cityUniqueDto.cityName(),
+                                                cityUniqueDto.countryCode(),
+                                                cityUniqueDto.lat(),
+                                                cityUniqueDto.lng())
+            .orElseThrow(() -> new IllegalArgumentException("해당 도시를 찾을 수 없습니다."));
+        return city.getCityId();
     }
 }

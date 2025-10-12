@@ -1,5 +1,6 @@
 package backend.globber.diary.domain;
 
+import backend.globber.common.entity.BaseTimeEntity;
 import backend.globber.diary.domain.constant.PhotoTag;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -24,7 +25,7 @@ import org.hibernate.annotations.OnDeleteAction;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
-public class Photo {
+public class Photo extends BaseTimeEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

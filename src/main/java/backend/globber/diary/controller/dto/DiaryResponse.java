@@ -6,7 +6,7 @@ import java.util.List;
 public record DiaryResponse(
     Long diaryId,         // 일기 ID
     City city,         // 도시 ID
-    String comment,      // 기록 내용
+    String text,      // 기록 내용
     String emoji,        // 이모지
     String createdAt,    // 생성 날짜
     String updatedAt,    // 수정 날짜

@@ -1,6 +1,7 @@
 package backend.globber.diary.controller;
 
 import backend.globber.common.dto.ApiResponse;
+import backend.globber.common.service.CommonService;
 import backend.globber.diary.controller.dto.DiaryRequest;
 import backend.globber.diary.controller.dto.DiaryResponse;
 import backend.globber.diary.controller.dto.PhotoRequest;
@@ -28,6 +29,7 @@ public class DiaryController {
 
     private final DiaryService diaryService;
     private final PhotoService photoService;
+    private final CommonService commonService;
 
 
     @PostMapping
@@ -38,7 +40,9 @@ public class DiaryController {
     ) {
         //  Diary 저장
         // 이 트랜잭션에서 다이어리 저장 & 사진메타데이터 저장까지 처리
-        DiaryResponse diary = diaryService.createDiaryWithPhoto(accessToken, diaryRequest);
+        Long memberId = commonService.getMemberIdFromToken(accessToken);
+
+        DiaryResponse diary = diaryService.createDiaryWithPhoto(memberId, diaryRequest);
         return ResponseEntity.ok(ApiResponse.success(diary));
     }
 
@@ -51,7 +55,9 @@ public class DiaryController {
         @RequestBody DiaryRequest diaryRequest
     ) {
         // 프론트에서 기존 + 수정 데이터 모두 전달됨 → 서비스에서 update 처리만
-        DiaryResponse diary = diaryService.updateDiary(accessToken, diary_id, diaryRequest);
+        Long memberId = commonService.getMemberIdFromToken(accessToken);
+
+        DiaryResponse diary = diaryService.updateDiary(memberId, diary_id, diaryRequest);
         return ResponseEntity.ok(ApiResponse.success(diary));
     }
 
@@ -65,9 +71,11 @@ public class DiaryController {
     ) {
         // 사진 저장 로직 실행
         // 이 트랜잭션에서 사진추가 & 다이어리에서의 저장까지 처리
-        photoService.savePhoto(diary_id, photoRequest);
+        Long memberId = commonService.getMemberIdFromToken(accessToken);
+
+        photoService.savePhoto(memberId, diary_id, photoRequest);
         // 사진 추가된 Diary 정보 반환
-        DiaryResponse diary = diaryService.getDiaryDetail(accessToken, diary_id);
+        DiaryResponse diary = diaryService.getDiaryDetail(memberId, diary_id);
 
         return ResponseEntity.ok(ApiResponse.success(diary));
     }
@@ -80,10 +88,11 @@ public class DiaryController {
         @PathVariable Long diary_id,
         @RequestBody PhotoRequest photoRequest
     ) {
+        Long memberId = commonService.getMemberIdFromToken(accessToken);
         // 사진 수정 로직 실행
-        photoService.updatePhoto(diary_id, photoRequest);
+        photoService.updatePhoto(memberId, diary_id, photoRequest);
         // 사진 수정된 Diary 정보 반환
-        DiaryResponse diary = diaryService.getDiaryDetail(accessToken, diary_id);
+        DiaryResponse diary = diaryService.getDiaryDetail(memberId, diary_id);
 
         return ResponseEntity.ok(ApiResponse.success(diary));
     }
@@ -96,12 +105,13 @@ public class DiaryController {
         @PathVariable Long diary_id,
         @PathVariable Long photo_id
     ) {
+        Long memberId = commonService.getMemberIdFromToken(accessToken);
         // 사진 삭제 로직 실행
         // 이 트랜잭션에서 사진삭제 & 다이어리에서의 삭제까지 처리
-        photoService.deletePhoto(diary_id, photo_id);
+        photoService.deletePhoto(memberId, diary_id, photo_id);
 
         // 사진 삭제된 Diary 정보 반환
-        DiaryResponse diary = diaryService.getDiaryDetail(accessToken, diary_id);
+        DiaryResponse diary = diaryService.getDiaryDetail(memberId, diary_id);
         return ResponseEntity.ok(ApiResponse.success(diary));
     }
 
@@ -112,7 +122,8 @@ public class DiaryController {
         @RequestHeader("Authorization") String accessToken,
         @PathVariable Long diary_id
     ) {
-        diaryService.deleteDiary(accessToken, diary_id);
+        Long memberId = commonService.getMemberIdFromToken(accessToken);
+        diaryService.deleteDiary(memberId, diary_id);
         return ResponseEntity.ok(ApiResponse.success());
     }
 
@@ -123,7 +134,8 @@ public class DiaryController {
         @RequestHeader("Authorization") String accessToken,
         @PathVariable Long diary_id
     ) {
-        DiaryResponse response = diaryService.getDiaryDetail(accessToken, diary_id);
+        Long memberId = commonService.getMemberIdFromToken(accessToken);
+        DiaryResponse response = diaryService.getDiaryDetail(memberId, diary_id);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 }

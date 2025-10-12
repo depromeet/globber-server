@@ -13,6 +13,7 @@ import backend.globber.exception.spec.DiaryNotFoundException;
 import backend.globber.exception.spec.PhotoCountException;
 import backend.globber.exception.spec.PhotoNotFoundException;
 import java.util.List;
+import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,7 +28,13 @@ public class PhotoServiceImpl implements PhotoService {
 
     @Transactional
     @Override
-    public PhotoResponse savePhoto(Long diaryId, PhotoRequest request) {
+    public PhotoResponse savePhoto(Long memberId, Long diaryId, PhotoRequest request) {
+        // 일기장의 소유자 확인
+        if(!Objects.equals(memberId, diaryRepository.findMemberIdById(diaryId))) {
+            throw new DiaryNotFoundException("해당 기록의 소유자가 아닙니다.");
+        }
+
+        // 일기장 존재 여부 확인
         Diary diary = diaryRepository.findById(diaryId)
             .orElseThrow(() -> new DiaryNotFoundException("기록을 찾을 수 없습니다."));
 
@@ -73,7 +80,11 @@ public class PhotoServiceImpl implements PhotoService {
 
     @Transactional
     @Override
-    public PhotoResponse updatePhoto(Long diaryId, PhotoRequest request) {
+    public PhotoResponse updatePhoto(Long memberId, Long diaryId, PhotoRequest request) {
+        // 일기장의 소유자 확인
+        if(!Objects.equals(memberId, diaryRepository.findMemberIdById(diaryId))) {
+            throw new DiaryNotFoundException("해당 기록의 소유자가 아닙니다.");
+        }
         Diary diary = diaryRepository.findById(diaryId)
             .orElseThrow(() -> new DiaryNotFoundException("기록을 찾을 수 없습니다."));
         Photo photo = photoRepository.findById(request.photoId())
@@ -98,7 +109,11 @@ public class PhotoServiceImpl implements PhotoService {
 
     @Transactional
     @Override
-    public void deletePhoto(Long diaryId, Long photoId) {
+    public void deletePhoto(Long memberId, Long diaryId, Long photoId) {
+        // 일기장의 소유자 확인
+        if(!Objects.equals(memberId, diaryRepository.findMemberIdById(diaryId))) {
+            throw new DiaryNotFoundException("해당 기록의 소유자가 아닙니다.");
+        }
         Photo photo = photoRepository.findById(photoId)
             .orElseThrow(() -> new PhotoNotFoundException("사진을 찾을 수 없습니다."));
         Diary diary = diaryRepository.findById(diaryId)
@@ -123,6 +138,7 @@ public class PhotoServiceImpl implements PhotoService {
             photo.getWidth(),
             photo.getHeight(),
             photo.getTakenMonth(),
+            photo.getPlaceName(),
             photo.getTag()
         );
     }

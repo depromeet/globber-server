@@ -43,4 +43,10 @@ public interface CityRepository extends JpaRepository<City, Long> {
               AND c.lng = :#{#cityUniqueDto.lng}
             """)
     Optional<City> findByCityUniqueDto(CityUniqueDto cityUniqueDto);
+
+    @Query("SELECT c FROM City c WHERE c.cityName = :cityName AND c.countryCode = :countryCode AND c.lat = :lat AND c.lng = :lng")
+    Optional<City> findByUnique(@Param("cityName") String cityName,
+                                @Param("countryCode") String countryCode,
+                                @Param("lat") Double lat,
+                                @Param("lng") Double lng);
 }

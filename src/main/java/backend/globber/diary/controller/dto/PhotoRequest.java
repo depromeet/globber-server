@@ -4,6 +4,7 @@ import backend.globber.diary.domain.constant.PhotoTag;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.time.YearMonth;
@@ -25,12 +26,14 @@ public record PhotoRequest(
     Double lng,      // 사진 경도
 
     @NotNull(message = "너비는 필수입니다.")
+    @Min(value = 1, message = "너비는 1 이상이어야 합니다")
     Long width,      // 사진 너비
 
     @NotNull(message = "높이는 필수입니다.")
+    @Min(value = 1, message = "높이는 1 이상이어야 합니다")
     Long height,     // 사진 높이
 
-    @NotBlank(message = "사진이 찍힌 시각은 필수입니다.")
+    @NotNull(message = "사진이 찍힌 시각은 필수입니다.")
     @JsonFormat(pattern = "yyyyMM")
     YearMonth takenMonth,   // 사진이 찍힌 시각
 

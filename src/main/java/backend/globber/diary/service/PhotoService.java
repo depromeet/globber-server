@@ -6,15 +6,15 @@ import java.util.List;
 
 public interface PhotoService {
 
-    PhotoResponse savePhoto(Long diaryId, PhotoRequest photoRequest);
+    PhotoResponse savePhoto(Long memberId, Long diaryId, PhotoRequest photoRequest);
 
     List<PhotoResponse> getAllPhoto(Long diaryId);
 
     PhotoResponse getPhotoId(Long photoId);
 
-    PhotoResponse updatePhoto(Long diaryId, PhotoRequest photoRequest);
+    PhotoResponse updatePhoto(Long memberId, Long diaryId, PhotoRequest photoRequest);
 
-    void deletePhoto(Long diaryId, Long photoId);
+    void deletePhoto(Long memberId, Long diaryId, Long photoId);
 
 
 }

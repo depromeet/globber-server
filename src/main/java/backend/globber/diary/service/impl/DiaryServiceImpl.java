@@ -46,11 +46,10 @@ public class DiaryServiceImpl implements DiaryService {
 
     @Transactional
     @Override
-    public DiaryResponse createDiaryWithPhoto(String accessToken, DiaryRequest diaryRequest) {
+    public DiaryResponse createDiaryWithPhoto(Long memberId, DiaryRequest diaryRequest) {
 
         // 해당사용자가 해당 여행지를 선택했는지 검증.
-        String email = jwtTokenProvider.getEmailForAccessToken(accessToken);
-        Member member = memberRepository.findByEmail(email)
+        Member member = memberRepository.findById(memberId)
             .orElseThrow(() -> new UsernameNotFoundException("회원 정보를 찾을 수 없습니다."));
 
         City city = cityRepository.findById(diaryRequest.cityId())
@@ -73,14 +72,14 @@ public class DiaryServiceImpl implements DiaryService {
         // Diary 생성
         Diary diary = Diary.builder()
             .memberTravelCity(MemberTraveledCity)
-            .comment(diaryRequest.comment())
+            .text(diaryRequest.text())
             .emoji(diaryRequest.emoji())
             .build();
         diaryRepository.save(diary);
 
         // Photo 저장
         for (PhotoRequest photoRequest : diaryRequest.photos()) {
-            photoService.savePhoto(diary.getId(), photoRequest);
+            photoService.savePhoto(memberId , diary.getId(), photoRequest);
         }
 
         // 저장된 Diary + Photo 리스트 변환
@@ -89,9 +88,8 @@ public class DiaryServiceImpl implements DiaryService {
 
     @Transactional
     @Override
-    public DiaryResponse updateDiary(String accessToken, Long diaryId, DiaryRequest diaryRequest) {
-        String email = jwtTokenProvider.getEmailForAccessToken(accessToken);
-        Member member = memberRepository.findByEmail(email)
+    public DiaryResponse updateDiary(Long memberId, Long diaryId, DiaryRequest diaryRequest) {
+        Member member = memberRepository.findById(memberId)
             .orElseThrow(() -> new UsernameNotFoundException("회원 정보를 찾을 수 없습니다."));
 
         Diary diary = diaryRepository.findById(diaryId)
@@ -101,15 +99,14 @@ public class DiaryServiceImpl implements DiaryService {
             throw new NoCredException("본인의 기록만 수정할 수 있습니다.");
         }
 
-        diary.update(diaryRequest.comment(), diaryRequest.emoji());
+        diary.update(diaryRequest.text(), diaryRequest.emoji());
         return toDiaryResponse(diary);
     }
 
     @Transactional
     @Override
-    public void deleteDiary(String accessToken, Long diaryId) {
-        String email = jwtTokenProvider.getEmailForAccessToken(accessToken);
-        Member member = memberRepository.findByEmail(email)
+    public void deleteDiary(Long memberId, Long diaryId) {
+        Member member = memberRepository.findById(memberId)
             .orElseThrow(() -> new UsernameNotFoundException("회원 정보를 찾을 수 없습니다."));
 
         Diary diary = diaryRepository.findById(diaryId)
@@ -124,9 +121,8 @@ public class DiaryServiceImpl implements DiaryService {
 
     @Transactional(readOnly = true)
     @Override
-    public DiaryResponse getDiaryDetail(String accessToken, Long diaryId) {
-        String email = jwtTokenProvider.getEmailForAccessToken(accessToken);
-        Member member = memberRepository.findByEmail(email)
+    public DiaryResponse getDiaryDetail(Long memberId, Long diaryId) {
+        Member member = memberRepository.findById(memberId)
             .orElseThrow(() -> new NoCredException("회원 정보를 찾을 수 없습니다."));
 
         Diary diary = diaryRepository.findById(diaryId)
@@ -150,6 +146,7 @@ public class DiaryServiceImpl implements DiaryService {
                 photo.getWidth(),
                 photo.getHeight(),
                 photo.getTakenMonth(),
+                photo.getPlaceName(),
                 photo.getTag()
             ))
             .collect(toList());
@@ -157,7 +154,7 @@ public class DiaryServiceImpl implements DiaryService {
         return new DiaryResponse(
             diary.getId(),
             diary.getMemberTravelCity().getCity(),
-            diary.getComment(),
+            diary.getText(),
             diary.getEmoji(),
             diary.getCreatedAt().toString(),
             diary.getUpdatedAt().toString(),

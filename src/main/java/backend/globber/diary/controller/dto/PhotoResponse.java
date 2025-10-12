@@ -11,6 +11,7 @@ public record PhotoResponse(
     Long width,
     Long height,
     YearMonth takenMonth,
+    String placeName,
     PhotoTag tag) {
 
 }

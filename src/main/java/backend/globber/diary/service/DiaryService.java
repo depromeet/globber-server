@@ -5,11 +5,11 @@ import backend.globber.diary.controller.dto.DiaryResponse;
 
 public interface DiaryService {
 
-    DiaryResponse createDiaryWithPhoto(String accessToken, DiaryRequest diaryRequest);
+    DiaryResponse createDiaryWithPhoto(Long memberId, DiaryRequest diaryRequest);
 
-    DiaryResponse updateDiary(String accessToken, Long diaryID, DiaryRequest diaryRequest);
+    DiaryResponse updateDiary(Long memberId, Long diaryID, DiaryRequest diaryRequest);
 
-    void deleteDiary(String accessToken, Long diaryId);
+    void deleteDiary(Long memberId, Long diaryId);
 
-    DiaryResponse getDiaryDetail(String accessToken, Long diaryId);
+    DiaryResponse getDiaryDetail(Long memberId, Long diaryId);
 }
