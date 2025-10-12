@@ -57,18 +57,17 @@ public interface CityRepository extends JpaRepository<City, Long> {
             ON CONFLICT (country_code, city_name) DO NOTHING
             """, nativeQuery = true)
     void upsertCity(
-        @Param("cityName") String cityName,
-        @Param("countryName") String countryName,
-        @Param("lat") Double lat,
-        @Param("lng") Double lng,
-        @Param("countryCode") String countryCode
+            @Param("cityName") String cityName,
+            @Param("countryName") String countryName,
+            @Param("lat") Double lat,
+            @Param("lng") Double lng,
+            @Param("countryCode") String countryCode
     );
 
     /**
      * 국가명 + 도시명으로 조회
      */
     Optional<City> findByCountryNameAndCityName(String countryName, String cityName);
-
     @Query("SELECT c FROM City c WHERE c.cityName = :cityName AND c.countryCode = :countryCode AND c.lat = :lat AND c.lng = :lng")
     Optional<City> findByUnique(@Param("cityName") String cityName,
                                 @Param("countryCode") String countryCode,
