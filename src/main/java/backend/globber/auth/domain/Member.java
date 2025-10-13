@@ -4,32 +4,22 @@ import backend.globber.auth.domain.constant.AuthProvider;
 import backend.globber.auth.domain.constant.Role;
 import backend.globber.auth.domain.converter.AuthProviderConverter;
 import io.micrometer.common.util.StringUtils;
-import jakarta.persistence.Column;
-import jakarta.persistence.Convert;
-import jakarta.persistence.ElementCollection;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Index;
-import jakarta.persistence.Table;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.UUID;
+import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.UUID;
+
 
 @Entity
 @Table(
-    indexes = {
-        @Index(columnList = "email", unique = true),
-    })
+        indexes = {
+                @Index(columnList = "email", unique = true),
+        })
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Member {
@@ -57,7 +47,7 @@ public class Member {
 
     // -- 생성자 메서드 -- //
     private Member(String email, String name, String password, AuthProvider authProvider,
-        List<Role> roles, String uuid) {
+                   List<Role> roles, String uuid) {
         this.email = email;
         this.name = name;
         this.password = password;
@@ -68,11 +58,11 @@ public class Member {
     }
 
     public static Member of(
-        String email,
-        String name,
-        String password,
-        AuthProvider authProvider,
-        List<Role> roles
+            String email,
+            String name,
+            String password,
+            AuthProvider authProvider,
+            List<Role> roles
     ) {
         return new Member(email, name, password, authProvider, roles, UUID.randomUUID().toString());
     }
@@ -99,7 +89,7 @@ public class Member {
         }
         return s3BaseUrl + "/" + profileImageKey;
     }
-    
+
     // -- 비지니스 로직 (검증, setter) -- //
 
     // -- Equals & Hash -- //
