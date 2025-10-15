@@ -20,7 +20,7 @@ public enum Continent {
     private final List<String> countryCodes;
 
     Continent(List<String> countryCodes) {
-        this.countryCodes = countryCodes;
+        this.countryCodes = List.copyOf(countryCodes);
     }
 
     public static Continent fromCountryCode(String code) {
