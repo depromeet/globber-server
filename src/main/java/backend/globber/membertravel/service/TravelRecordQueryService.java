@@ -48,9 +48,9 @@ public class TravelRecordQueryService {
                 .toList();
 
         return TravelRecordWithDiaryResponse.builder()
-                .totalCountries(getTotalCountries(records))
-                .totalCities(getTotalCities(records))
-                .totalDiaries(diaries.size())
+                .totalCountriesCounts(getTotalCountries(records))
+                .totalCitiesCounts(getTotalCities(records))
+                .totalDiariesCounts(diaries.size())
                 .records(records)
                 .build();
     }
@@ -80,7 +80,7 @@ public class TravelRecordQueryService {
 
     private static List<String> getThumbnails(List<Diary> cityDiaries) {
         return cityDiaries.stream()
-                .flatMap(d -> d.getPhotos().stream())
+                .flatMap(diary -> diary.getPhotos().stream())
                 .map(Photo::getPhotoCode)
                 .distinct()
                 .limit(3)
