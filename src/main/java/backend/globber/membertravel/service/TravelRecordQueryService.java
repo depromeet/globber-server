@@ -21,6 +21,8 @@ import java.util.stream.Collectors;
 @Transactional(readOnly = true)
 public class TravelRecordQueryService {
 
+    private static final int MAX_THUMBNAILS = 3;
+
     private final MemberTravelCityRepository memberTravelCityRepository;
     private final DiaryRepository diaryRepository;
 
@@ -85,7 +87,7 @@ public class TravelRecordQueryService {
                 .flatMap(diary -> diary.getPhotos().stream())
                 .map(Photo::getPhotoCode)
                 .distinct()
-                .limit(3)
+                .limit(MAX_THUMBNAILS)
                 .toList();
     }
 
