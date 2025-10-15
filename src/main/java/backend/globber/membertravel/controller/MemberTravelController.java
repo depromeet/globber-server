@@ -7,7 +7,7 @@ import backend.globber.membertravel.controller.dto.request.CreateMemberTravelReq
 import backend.globber.membertravel.controller.dto.response.MemberTravelAllResponse;
 import backend.globber.membertravel.controller.dto.response.TravelRecordWithDiaryResponse;
 import backend.globber.membertravel.service.MemberTravelService;
-import backend.globber.membertravel.service.TravelQueryService;
+import backend.globber.membertravel.service.TravelRecordQueryService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -32,7 +32,7 @@ public class MemberTravelController {
 
     private final MemberTravelService memberTravelService;
     private final CommonService commonService;
-    private final TravelQueryService travelQueryService;
+    private final TravelRecordQueryService travelRecordQueryService;
 
     @PostMapping()
     @Operation(summary = "멤버 여행 기록 생성", description = "특정 멤버의 여행 기록을 생성합니다.")
@@ -75,7 +75,7 @@ public class MemberTravelController {
             @RequestHeader("Authorization") String accessToken) {
         Long memberId = commonService.getMemberIdFromToken(accessToken);
 
-        TravelRecordWithDiaryResponse response = travelQueryService.getRecordsWithDiaries(memberId);
+        TravelRecordWithDiaryResponse response = travelRecordQueryService.getRecordsWithDiaries(memberId);
 
         return ResponseEntity
                 .status(HttpStatus.OK)

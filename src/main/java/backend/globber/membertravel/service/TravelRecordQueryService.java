@@ -19,7 +19,7 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
-public class TravelQueryService {
+public class TravelRecordQueryService {
 
     private final MemberTravelCityRepository memberTravelCityRepository;
     private final DiaryRepository diaryRepository;

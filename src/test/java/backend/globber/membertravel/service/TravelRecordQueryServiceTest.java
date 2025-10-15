@@ -26,10 +26,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest
 @Transactional
 @Import(PostgresTestConfig.class)
-class TravelQueryServiceTest {
+class TravelRecordQueryServiceTest {
 
     @Autowired
-    private TravelQueryService travelQueryService;
+    private TravelRecordQueryService travelRecordQueryService;
 
     @Autowired
     private EntityManager em;
@@ -112,7 +112,7 @@ class TravelQueryServiceTest {
     @DisplayName("회원 여행 기록 조회 - 국가별/도시별 일기 정상 매핑")
     void testGetRecordsWithDiaries() {
         // when
-        TravelRecordWithDiaryResponse response = travelQueryService.getRecordsWithDiaries(memberId);
+        TravelRecordWithDiaryResponse response = travelRecordQueryService.getRecordsWithDiaries(memberId);
 
         // then
         assertThat(response).isNotNull();
