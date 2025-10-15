@@ -7,9 +7,9 @@ import java.util.List;
 
 @Builder
 public record TravelRecordWithDiaryResponse(
-        int totalCountries,
-        int totalCities,
-        int totalDiaries,
+        int totalCountriesCounts,
+        int totalCitiesCounts,
+        int totalDiariesCounts,
         List<CountryRecordDto> records
 ) {
 }

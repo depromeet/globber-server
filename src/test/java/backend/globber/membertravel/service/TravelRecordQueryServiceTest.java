@@ -116,9 +116,9 @@ class TravelRecordQueryServiceTest {
 
         // then
         assertThat(response).isNotNull();
-        assertThat(response.totalCountries()).isEqualTo(1);
-        assertThat(response.totalCities()).isEqualTo(1);
-        assertThat(response.totalDiaries()).isEqualTo(1);
+        assertThat(response.totalCountriesCounts()).isEqualTo(1);
+        assertThat(response.totalCitiesCounts()).isEqualTo(1);
+        assertThat(response.totalDiariesCounts()).isEqualTo(1);
 
         var country = response.records().get(0);
         assertThat(country.countryName()).isEqualTo("일본");
