@@ -31,16 +31,18 @@ public class TravelRecordQueryService {
 
         Map<Long, List<Diary>> cityToDiaries = getCityToDiaries(diaries);
 
-        List<CountryRecordDto> records = visitedCities.stream()
-                .collect(Collectors.groupingBy(City::getCountryCode))
-                .values().stream()
-                .map(cities -> {
-                    List<CityRecordDto> cityDtos = cities.stream().map(city -> {
-                        List<Diary> cityDiaries = cityToDiaries.getOrDefault(city.getCityId(), List.of());
-                        List<String> thumbnails = getThumbnails(cityDiaries);
+        Map<String, List<City>> citiesByCountry = visitedCities.stream()
+                .collect(Collectors.groupingBy(City::getCountryCode));
 
-                        return getCityRecordDto(city, cityDiaries, thumbnails);
-                    }).toList();
+        List<CountryRecordDto> records = citiesByCountry.values().stream()
+                .map(cities -> {
+                    List<CityRecordDto> cityDtos = cities.stream()
+                            .map(city -> {
+                                List<Diary> cityDiaries = cityToDiaries.getOrDefault(city.getCityId(), List.of());
+                                List<String> thumbnails = getThumbnails(cityDiaries);
+                                return getCityRecordDto(city, cityDiaries, thumbnails);
+                            })
+                            .toList();
 
                     City sample = cities.getFirst();
                     return getCountryRecordDto(sample, cityDtos);
@@ -65,8 +67,8 @@ public class TravelRecordQueryService {
                 .build();
     }
 
-    private static int getDiaryCount(List<CityRecordDto> cityDtos) {
-        return (int) cityDtos.stream().filter(CityRecordDto::hasDiary).count();
+    private static long getDiaryCount(List<CityRecordDto> cityDtos) {
+        return cityDtos.stream().filter(CityRecordDto::hasDiary).count();
     }
 
     private static CityRecordDto getCityRecordDto(City city, List<Diary> cityDiaries, List<String> thumbnails) {
@@ -92,14 +94,14 @@ public class TravelRecordQueryService {
                 .collect(Collectors.groupingBy(d -> d.getMemberTravelCity().getCity().getCityId()));
     }
 
-    private static int getTotalCountries(List<CountryRecordDto> records) {
-        return (int) records.stream()
+    private static long getTotalCountries(List<CountryRecordDto> records) {
+        return records.stream()
                 .filter(r -> r.diaryCount() > 0)
                 .count();
     }
 
-    private static int getTotalCities(List<CountryRecordDto> records) {
-        return (int) records.stream()
+    private static long getTotalCities(List<CountryRecordDto> records) {
+        return records.stream()
                 .flatMap(r -> r.cities().stream())
                 .filter(CityRecordDto::hasDiary)
                 .count();

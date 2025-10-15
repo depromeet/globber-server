@@ -75,10 +75,10 @@ public class MemberTravelController {
             @RequestHeader("Authorization") String accessToken) {
         Long memberId = commonService.getMemberIdFromToken(accessToken);
 
-        TravelRecordWithDiaryResponse response = travelRecordQueryService.getRecordsWithDiaries(memberId);
+        TravelRecordWithDiaryResponse travelRecordWithDiaryResponse = travelRecordQueryService.getRecordsWithDiaries(memberId);
 
         return ResponseEntity
                 .status(HttpStatus.OK)
-                .body(ApiResponse.success(response));
+                .body(ApiResponse.success(travelRecordWithDiaryResponse));
     }
 }

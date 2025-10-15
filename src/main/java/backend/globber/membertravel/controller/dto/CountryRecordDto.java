@@ -9,7 +9,7 @@ public record CountryRecordDto(
         String countryName,
         String countryCode,
         String continent,
-        int diaryCount,
+        long diaryCount,
         List<CityRecordDto> cities
 ) {
 }
