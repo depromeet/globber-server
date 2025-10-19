@@ -2,18 +2,19 @@ name: 백엔드 CD (DEV)
 
 on:
   workflow_run:
-    workflows: ["백엔드 공통 CI"]
+    workflows: [ "백엔드 공통 CI" ]
     branches: [ "develop" ]
-    types: [completed]
+    types: [ completed ]
 
 jobs:
   cd:
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
-    runs-on: [self-hosted, dev]
+    runs-on: [ self-hosted, dev ]
 
     steps:
       - name: 백엔드 로그 디렉토리 정리
         run: |
+          sudo chmod -R 777 /home/ubuntu/actions-runner/_work/globber-server/globber-server/log || true
           sudo rm -rf globber/log/dev || true
 
       - name: 저장소 체크아웃
