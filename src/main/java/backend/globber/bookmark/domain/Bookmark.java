@@ -1,6 +1,7 @@
 package backend.globber.bookmark.domain;
 
 import backend.globber.auth.domain.Member;
+import backend.globber.common.entity.BaseTimeEntity;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
@@ -25,7 +26,7 @@ import lombok.NoArgsConstructor;
     uniqueConstraints = @UniqueConstraint(name = "uk_bookmark", columnNames = {"member_id",
         "target_member_id"})
 )
-public class Bookmark {
+public class Bookmark extends BaseTimeEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
