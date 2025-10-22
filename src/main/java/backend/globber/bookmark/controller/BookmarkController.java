@@ -2,15 +2,19 @@ package backend.globber.bookmark.controller;
 
 import backend.globber.auth.service.TokenService;
 import backend.globber.bookmark.controller.dto.request.BookmarkRequest;
+import backend.globber.bookmark.controller.dto.response.BookmarkedFriendResponse;
 import backend.globber.bookmark.service.BookmarkService;
 import backend.globber.common.dto.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -31,5 +35,16 @@ public class BookmarkController {
         bookmarkService.addBookmark(memberId, request.targetMemberId());
         return ResponseEntity.ok(ApiResponse.success(null));
     }
+
+    @GetMapping
+    public ResponseEntity<ApiResponse<List<BookmarkedFriendResponse>>> getBookmarks(
+        @RequestHeader("Authorization") String accessToken,
+        @RequestParam(defaultValue = "latest") String sort
+    ) {
+        Long memberId = tokenService.getMemberIdFromAccessToken(accessToken);
+        List<BookmarkedFriendResponse> result = bookmarkService.getBookmarkedFriends(memberId, sort);
+        return ResponseEntity.ok(ApiResponse.success(result));
+    }
+
 
 }

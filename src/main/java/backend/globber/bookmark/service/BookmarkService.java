@@ -2,10 +2,13 @@ package backend.globber.bookmark.service;
 
 import backend.globber.auth.domain.Member;
 import backend.globber.auth.repository.MemberRepository;
+import backend.globber.bookmark.controller.dto.response.BookmarkedFriendResponse;
 import backend.globber.bookmark.domain.Bookmark;
 import backend.globber.bookmark.repository.BookmarkRepository;
-import backend.globber.exception.BookmarkNotFoundException;
+import backend.globber.exception.spec.BookmarkException;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,21 +16,26 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class BookmarkService {
 
-    private BookmarkRepository bookmarkRepository;
-    private MemberRepository memberRepository;
+    private final BookmarkRepository bookmarkRepository;
+    private final MemberRepository memberRepository;
+
+    @Value("${aws.s3.base-url}")
+    private String s3BaseUrl;
 
     @Transactional
     public void addBookmark(final Long memberId, final Long targetMemberId) {
         if (memberId.equals(targetMemberId)) {
-            throw new BookmarkNotFoundException("본인은 북마크 할 수 없습니다");
+            throw new BookmarkException("자기 자신은 북마크할 수 없습니다.");
         }
 
         if (bookmarkRepository.existsByMember_IdAndTargetMember_Id(memberId, targetMemberId)) {
-            throw new BookmarkNotFoundException("이미 북마크 했습니다.");
+            throw new BookmarkException("이미 북마크한 사용자입니다.");
         }
 
-        Member me = memberRepository.findById(memberId).orElseThrow(() -> new IllegalArgumentException("내 계정이 존재하지 않습니다."));
-        Member target = memberRepository.findById(targetMemberId).orElseThrow(() -> new IllegalArgumentException("대상 회원이 존재하지 않습니다."));
+        Member me = memberRepository.findById(memberId)
+            .orElseThrow(() -> new BookmarkException("사용자를 찾을 수 없습니다."));
+        Member target = memberRepository.findById(targetMemberId)
+            .orElseThrow(() -> new BookmarkException("북마크 대상 사용자를 찾을 수 없습니다."));
 
         Bookmark bookmark = Bookmark.builder()
             .member(me)
@@ -35,5 +43,28 @@ public class BookmarkService {
             .build();
 
         bookmarkRepository.save(bookmark);
+    }
+
+    @Transactional(readOnly = true)
+    public List<BookmarkedFriendResponse> getBookmarkedFriends(Long memberId, String sort) {
+        List<Bookmark> bookmarks;
+
+        if ("name".equalsIgnoreCase(sort)) {
+            bookmarks = bookmarkRepository.findAllByMember_IdOrderByTargetMember_NameAsc(memberId);
+        } else {
+            bookmarks = bookmarkRepository.findAllByMember_IdOrderByCreatedAtDesc(memberId);
+        }
+
+        return bookmarks.stream()
+            .map(bookmark -> {
+                Member target = bookmark.getTargetMember();
+                return BookmarkedFriendResponse.builder()
+                    .memberId(target.getId())
+                    .nickname(target.getName())
+                    .profileImageUrl(target.getProfileImageUrl(s3BaseUrl))
+                    .bookmarked(true)
+                    .build();
+            })
+            .toList();
     }
 }
