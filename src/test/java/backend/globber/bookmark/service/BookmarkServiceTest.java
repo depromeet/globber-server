@@ -201,9 +201,9 @@ class BookmarkServiceTest {
 
         // then
         assertThat(result).hasSize(1);
-        assertThat(result.get(0).memberId()).isEqualTo(2L);
-        assertThat(result.get(0).nickname()).isEqualTo("타겟유저");
-        assertThat(result.get(0).bookmarked()).isTrue();
+        assertThat(result.getFirst().memberId()).isEqualTo(2L);
+        assertThat(result.getFirst().nickname()).isEqualTo("타겟유저");
+        assertThat(result.getFirst().bookmarked()).isTrue();
         verify(bookmarkRepository, times(1)).findAllByMember_IdOrderByCreatedAtDesc(memberId);
     }
 
@@ -223,9 +223,9 @@ class BookmarkServiceTest {
 
         // then
         assertThat(result).hasSize(1);
-        assertThat(result.get(0).memberId()).isEqualTo(2L);
-        assertThat(result.get(0).nickname()).isEqualTo("타겟유저");
-        assertThat(result.get(0).bookmarked()).isTrue();
+        assertThat(result.getFirst().memberId()).isEqualTo(2L);
+        assertThat(result.getFirst().nickname()).isEqualTo("타겟유저");
+        assertThat(result.getFirst().bookmarked()).isTrue();
         verify(bookmarkRepository, times(1)).findAllByMember_IdOrderByTargetMember_NameAsc(
             memberId);
     }
@@ -248,7 +248,7 @@ class BookmarkServiceTest {
 
         // then
         assertThat(result).hasSize(1);
-        assertThat(result.get(0).profileImageUrl()).isEqualTo(s3BaseUrl + "/" + s3Key);
+        assertThat(result.getFirst().profileImageUrl()).isEqualTo(s3BaseUrl + "/" + s3Key);
         verify(bookmarkRepository, times(1)).findAllByMember_IdOrderByCreatedAtDesc(memberId);
     }
 
