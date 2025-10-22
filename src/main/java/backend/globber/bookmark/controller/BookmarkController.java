@@ -32,7 +32,7 @@ public class BookmarkController {
 
     @PostMapping
     @Operation(summary = "북마크 추가", description = "특정 사용자를 북마크에 추가합니다.")
-    public ResponseEntity<ApiResponse<?>> addBookmark(
+    public ResponseEntity<ApiResponse<Void>> addBookmark(
         @RequestBody BookmarkRequest request,
         @RequestHeader("Authorization") String accessToken
     ) {
@@ -55,7 +55,7 @@ public class BookmarkController {
 
     @DeleteMapping("/{targetMemberId}")
     @Operation(summary = "북마크 삭제", description = "특정 사용자를 북마크에서 제거합니다.")
-    public ResponseEntity<ApiResponse<?>> removeBookmark(
+    public ResponseEntity<ApiResponse<Void>> removeBookmark(
         @PathVariable Long targetMemberId,
         @RequestHeader("Authorization") String accessToken
     ) {
