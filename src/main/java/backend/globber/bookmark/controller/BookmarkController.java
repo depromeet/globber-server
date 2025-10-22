@@ -30,6 +30,7 @@ public class BookmarkController {
     private final BookmarkService bookmarkService;
 
     @PostMapping
+    @Operation(summary = "북마크 추가", description = "특정 사용자를 북마크에 추가합니다.")
     public ResponseEntity<ApiResponse<?>> addBookmark(
         @RequestBody BookmarkRequest request,
         @RequestHeader("Authorization") String accessToken
@@ -40,6 +41,7 @@ public class BookmarkController {
     }
 
     @GetMapping
+    @Operation(summary = "북마크 목록 조회", description = "내가 북마크한 사용자 목록을 조회합니다.")
     public ResponseEntity<ApiResponse<List<BookmarkedFriendResponse>>> getBookmarks(
         @RequestHeader("Authorization") String accessToken,
         @RequestParam(defaultValue = "latest") String sort
