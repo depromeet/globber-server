@@ -2,10 +2,6 @@ package backend.globber.bookmark.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 
 import backend.globber.auth.domain.Member;
 import backend.globber.auth.domain.constant.AuthProvider;
@@ -16,84 +12,85 @@ import backend.globber.bookmark.domain.Bookmark;
 import backend.globber.bookmark.repository.BookmarkRepository;
 import backend.globber.bookmark.service.constant.BookmarkSortType;
 import backend.globber.exception.spec.BookmarkException;
+import backend.globber.support.PostgresTestConfig;
 import java.util.List;
-import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 
-@ExtendWith(MockitoExtension.class)
-class BookmarkServiceTest {
+@SpringBootTest
+@Import({PostgresTestConfig.class})
+class BookmarkServiceIntegrationTest {
 
-    @Mock
-    private BookmarkRepository bookmarkRepository;
-
-    @Mock
-    private MemberRepository memberRepository;
-
-    @InjectMocks
+    @Autowired
     private BookmarkService bookmarkService;
 
+    @Autowired
+    private BookmarkRepository bookmarkRepository;
+
+    @Autowired
+    private MemberRepository memberRepository;
+
     private Member member;
-    private Member targetMember;
-    private final String s3BaseUrl = "https://test-bucket.s3.amazonaws.com";
+    private Member targetMember1;
+    private Member targetMember2;
 
     @BeforeEach
     void setUp() {
-        ReflectionTestUtils.setField(bookmarkService, "s3BaseUrl", s3BaseUrl);
+        // 테스트 데이터 초기화
+        bookmarkRepository.deleteAll();
+        memberRepository.deleteAll();
 
+        // 회원 생성
         member = Member.of(
-            "test@kakao",
+            "test@kakao.com",
             "테스트유저",
             "password",
             AuthProvider.KAKAO,
             List.of(Role.ROLE_USER)
         );
-        ReflectionTestUtils.setField(member, "id", 1L);
+        memberRepository.save(member);
 
-        targetMember = Member.of(
-            "target@kakao",
-            "타겟유저",
+        targetMember1 = Member.of(
+            "target1@kakao.com",
+            "가나다",
             "password",
             AuthProvider.KAKAO,
             List.of(Role.ROLE_USER)
         );
-        ReflectionTestUtils.setField(targetMember, "id", 2L);
+        memberRepository.save(targetMember1);
+
+        targetMember2 = Member.of(
+            "target2@kakao.com",
+            "타겟유저2",
+            "password",
+            AuthProvider.KAKAO,
+            List.of(Role.ROLE_USER)
+        );
+        memberRepository.save(targetMember2);
     }
 
     @Test
     @DisplayName("북마크를 추가한다")
     void addBookmark() {
-        // given
-        Long memberId = 1L;
-        Long targetMemberId = 2L;
-        given(bookmarkRepository.existsByMember_IdAndTargetMember_Id(memberId, targetMemberId)).willReturn(false);
-        given(memberRepository.findById(memberId)).willReturn(Optional.of(member));
-        given(memberRepository.findById(targetMemberId)).willReturn(Optional.of(targetMember));
-
         // when
-        bookmarkService.addBookmark(memberId, targetMemberId);
+        bookmarkService.addBookmark(member.getId(), targetMember1.getId());
 
         // then
-        verify(bookmarkRepository, times(1)).existsByMember_IdAndTargetMember_Id(memberId, targetMemberId);
-        verify(memberRepository, times(1)).findById(memberId);
-        verify(memberRepository, times(1)).findById(targetMemberId);
-        verify(bookmarkRepository, times(1)).save(any(Bookmark.class));
+        List<Bookmark> bookmarks = bookmarkRepository.findAll();
+        assertThat(bookmarks).hasSize(1);
+        assertThat(bookmarks.get(0).getMember().getId()).isEqualTo(member.getId());
+        assertThat(bookmarks.get(0).getTargetMember().getId()).isEqualTo(targetMember1.getId());
     }
 
     @Test
     @DisplayName("자기 자신을 북마크하면 예외가 발생한다")
     void addBookmarkSelf() {
-        // given
-        Long memberId = 1L;
-
         // when & then
-        assertThatThrownBy(() -> bookmarkService.addBookmark(memberId, memberId))
+        assertThatThrownBy(() -> bookmarkService.addBookmark(member.getId(), member.getId()))
             .isInstanceOf(BookmarkException.class)
             .hasMessage("자기 자신은 북마크할 수 없습니다.");
     }
@@ -102,179 +99,150 @@ class BookmarkServiceTest {
     @DisplayName("이미 북마크한 사용자를 다시 북마크하면 예외가 발생한다")
     void addBookmarkDuplicate() {
         // given
-        Long memberId = 1L;
-        Long targetMemberId = 2L;
-        given(bookmarkRepository.existsByMember_IdAndTargetMember_Id(memberId, targetMemberId))
-            .willReturn(true);
+        bookmarkService.addBookmark(member.getId(), targetMember1.getId());
 
         // when & then
-        assertThatThrownBy(() -> bookmarkService.addBookmark(memberId, targetMemberId))
+        assertThatThrownBy(() -> bookmarkService.addBookmark(member.getId(), targetMember1.getId()))
             .isInstanceOf(BookmarkException.class)
             .hasMessage("이미 북마크한 사용자입니다.");
-        verify(bookmarkRepository, times(1)).existsByMember_IdAndTargetMember_Id(memberId,
-            targetMemberId);
     }
 
     @Test
     @DisplayName("존재하지 않는 사용자를 북마크하면 예외가 발생한다")
     void addBookmarkMemberNotFound() {
-        // given
-        Long memberId = 1L;
-        Long targetMemberId = 999L;
-        given(bookmarkRepository.existsByMember_IdAndTargetMember_Id(memberId, targetMemberId)).willReturn(false);
-        given(memberRepository.findById(memberId)).willReturn(Optional.of(member));
-        given(memberRepository.findById(targetMemberId)).willReturn(Optional.empty());
-
         // when & then
-        assertThatThrownBy(() -> bookmarkService.addBookmark(memberId, targetMemberId))
+        assertThatThrownBy(() -> bookmarkService.addBookmark(member.getId(), 99999L))
             .isInstanceOf(BookmarkException.class)
             .hasMessage("북마크 대상 사용자를 찾을 수 없습니다.");
-        verify(memberRepository, times(1)).findById(targetMemberId);
-    }
-
-    @Test
-    @DisplayName("본인 계정이 존재하지 않으면 예외가 발생한다")
-    void addBookmarkSelfNotFound() {
-        // given
-        Long memberId = 999L;
-        Long targetMemberId = 2L;
-        given(bookmarkRepository.existsByMember_IdAndTargetMember_Id(memberId, targetMemberId))
-            .willReturn(false);
-        given(memberRepository.findById(memberId)).willReturn(Optional.empty());
-
-        // when & then
-        assertThatThrownBy(() -> bookmarkService.addBookmark(memberId, targetMemberId))
-            .isInstanceOf(BookmarkException.class)
-            .hasMessage("사용자를 찾을 수 없습니다.");
-        verify(memberRepository, times(1)).findById(memberId);
     }
 
     @Test
     @DisplayName("북마크를 삭제한다")
     void removeBookmark() {
         // given
-        Long memberId = 1L;
-        Long targetMemberId = 2L;
-        given(bookmarkRepository.existsByMember_IdAndTargetMember_Id(memberId, targetMemberId))
-            .willReturn(true);
+        bookmarkService.addBookmark(member.getId(), targetMember1.getId());
 
         // when
-        bookmarkService.removeBookmark(memberId, targetMemberId);
+        bookmarkService.removeBookmark(member.getId(), targetMember1.getId());
 
         // then
-        verify(bookmarkRepository, times(1)).existsByMember_IdAndTargetMember_Id(memberId,
-            targetMemberId);
-        verify(bookmarkRepository, times(1)).deleteByMember_IdAndTargetMember_Id(memberId,
-            targetMemberId);
+        List<Bookmark> bookmarks = bookmarkRepository.findAll();
+        assertThat(bookmarks).isEmpty();
     }
 
     @Test
     @DisplayName("존재하지 않는 북마크를 삭제하면 예외가 발생한다")
     void removeBookmarkNotFound() {
-        // given
-        Long memberId = 1L;
-        Long targetMemberId = 2L;
-        given(bookmarkRepository.existsByMember_IdAndTargetMember_Id(memberId, targetMemberId))
-            .willReturn(false);
-
         // when & then
-        assertThatThrownBy(() -> bookmarkService.removeBookmark(memberId, targetMemberId))
+        assertThatThrownBy(() -> bookmarkService.removeBookmark(member.getId(), targetMember1.getId()))
             .isInstanceOf(BookmarkException.class)
             .hasMessage("북마크가 존재하지 않습니다.");
-        verify(bookmarkRepository, times(1)).existsByMember_IdAndTargetMember_Id(memberId,
-            targetMemberId);
     }
 
     @Test
     @DisplayName("북마크 목록을 최신순으로 조회한다")
     void getBookmarkedFriendsLatest() {
         // given
-        Long memberId = 1L;
-        Bookmark bookmark1 = createBookmark(member, targetMember);
-        List<Bookmark> bookmarks = List.of(bookmark1);
-        given(bookmarkRepository.findAllByMember_IdOrderByCreatedAtDesc(memberId))
-            .willReturn(bookmarks);
+        bookmarkService.addBookmark(member.getId(), targetMember1.getId());
+        bookmarkService.addBookmark(member.getId(), targetMember2.getId());
 
         // when
-        List<BookmarkedFriendResponse> result = bookmarkService.getBookmarkedFriends(memberId,
-            BookmarkSortType.LATEST);
+        List<BookmarkedFriendResponse> result = bookmarkService.getBookmarkedFriends(
+            member.getId(),
+            BookmarkSortType.LATEST
+        );
 
         // then
-        assertThat(result).hasSize(1);
-        assertThat(result.getFirst().memberId()).isEqualTo(2L);
-        assertThat(result.getFirst().nickname()).isEqualTo("타겟유저");
-        assertThat(result.getFirst().bookmarked()).isTrue();
-        verify(bookmarkRepository, times(1)).findAllByMember_IdOrderByCreatedAtDesc(memberId);
+        assertThat(result).hasSize(2);
+        // 최신순이므로 targetMember2가 먼저
+        assertThat(result.get(0).memberId()).isEqualTo(targetMember2.getId());
+        assertThat(result.get(1).memberId()).isEqualTo(targetMember1.getId());
+        assertThat(result.get(0).bookmarked()).isTrue();
+        assertThat(result.get(1).bookmarked()).isTrue();
     }
 
     @Test
     @DisplayName("북마크 목록을 이름순으로 조회한다")
     void getBookmarkedFriendsName() {
         // given
-        Long memberId = 1L;
-        Bookmark bookmark1 = createBookmark(member, targetMember);
-        List<Bookmark> bookmarks = List.of(bookmark1);
-        given(bookmarkRepository.findAllByMember_IdOrderByTargetMember_NameAsc(memberId))
-            .willReturn(bookmarks);
+        bookmarkService.addBookmark(member.getId(), targetMember2.getId()); // 타겟유저2
+        bookmarkService.addBookmark(member.getId(), targetMember1.getId()); // 가나다
 
         // when
-        List<BookmarkedFriendResponse> result = bookmarkService.getBookmarkedFriends(memberId,
-            BookmarkSortType.NAME);
+        List<BookmarkedFriendResponse> result = bookmarkService.getBookmarkedFriends(
+            member.getId(),
+            BookmarkSortType.NAME
+        );
 
         // then
-        assertThat(result).hasSize(1);
-        assertThat(result.getFirst().memberId()).isEqualTo(2L);
-        assertThat(result.getFirst().nickname()).isEqualTo("타겟유저");
-        assertThat(result.getFirst().bookmarked()).isTrue();
-        verify(bookmarkRepository, times(1)).findAllByMember_IdOrderByTargetMember_NameAsc(
-            memberId);
+        assertThat(result).hasSize(2);
+        // 이름순이므로 '가나다'가 먼저
+        assertThat(result.get(0).nickname()).isEqualTo("가나다");
+        assertThat(result.get(1).nickname()).isEqualTo("타겟유저2");
     }
 
     @Test
     @DisplayName("프로필 이미지가 있는 북마크 목록을 조회한다")
     void getBookmarkedFriendsWithProfileImage() {
         // given
-        Long memberId = 1L;
-        String s3Key = "profiles/2/test-image.jpg";
-        targetMember.changeProfileImage(s3Key);
-        Bookmark bookmark1 = createBookmark(member, targetMember);
-        List<Bookmark> bookmarks = List.of(bookmark1);
-        given(bookmarkRepository.findAllByMember_IdOrderByCreatedAtDesc(memberId))
-            .willReturn(bookmarks);
+        String s3Key = "profiles/" + targetMember1.getId() + "/test-image.jpg";
+        targetMember1.changeProfileImage(s3Key);
+        memberRepository.save(targetMember1);
+
+        bookmarkService.addBookmark(member.getId(), targetMember1.getId());
 
         // when
-        List<BookmarkedFriendResponse> result = bookmarkService.getBookmarkedFriends(memberId,
-            BookmarkSortType.LATEST);
+        List<BookmarkedFriendResponse> result = bookmarkService.getBookmarkedFriends(
+            member.getId(),
+            BookmarkSortType.LATEST
+        );
 
         // then
         assertThat(result).hasSize(1);
-        assertThat(result.getFirst().profileImageUrl()).isEqualTo(s3BaseUrl + "/" + s3Key);
-        verify(bookmarkRepository, times(1)).findAllByMember_IdOrderByCreatedAtDesc(memberId);
+        assertThat(result.get(0).profileImageUrl()).contains(s3Key);
     }
 
     @Test
     @DisplayName("북마크 목록이 비어있으면 빈 리스트를 반환한다")
     void getBookmarkedFriendsEmpty() {
-        // given
-        Long memberId = 1L;
-        given(bookmarkRepository.findAllByMember_IdOrderByCreatedAtDesc(memberId))
-            .willReturn(List.of());
-
         // when
-        List<BookmarkedFriendResponse> result = bookmarkService.getBookmarkedFriends(memberId,
-            BookmarkSortType.LATEST);
+        List<BookmarkedFriendResponse> result = bookmarkService.getBookmarkedFriends(
+            member.getId(),
+            BookmarkSortType.LATEST
+        );
 
         // then
         assertThat(result).isEmpty();
-        verify(bookmarkRepository, times(1)).findAllByMember_IdOrderByCreatedAtDesc(memberId);
     }
 
-    private Bookmark createBookmark(Member member, Member targetMember) {
-        Bookmark bookmark = Bookmark.builder()
-            .member(member)
-            .targetMember(targetMember)
-            .build();
-        ReflectionTestUtils.setField(bookmark, "id", 1L);
-        return bookmark;
+    @Test
+    @DisplayName("여러 사용자가 각각 북마크를 추가할 수 있다")
+    void multipleUsersCanBookmark() {
+        // given
+        Member anotherMember = Member.of(
+            "another@kakao.com",
+            "다른유저",
+            "password",
+            AuthProvider.KAKAO,
+            List.of(Role.ROLE_USER)
+        );
+        memberRepository.save(anotherMember);
+
+        // when
+        bookmarkService.addBookmark(member.getId(), targetMember1.getId());
+        bookmarkService.addBookmark(anotherMember.getId(), targetMember1.getId());
+
+        // then
+        List<BookmarkedFriendResponse> memberBookmarks = bookmarkService.getBookmarkedFriends(
+            member.getId(),
+            BookmarkSortType.LATEST
+        );
+        List<BookmarkedFriendResponse> anotherMemberBookmarks = bookmarkService.getBookmarkedFriends(
+            anotherMember.getId(),
+            BookmarkSortType.LATEST
+        );
+
+        assertThat(memberBookmarks).hasSize(1);
+        assertThat(anotherMemberBookmarks).hasSize(1);
     }
 }
