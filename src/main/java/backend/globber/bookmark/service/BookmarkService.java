@@ -5,6 +5,7 @@ import backend.globber.auth.repository.MemberRepository;
 import backend.globber.bookmark.controller.dto.response.BookmarkedFriendResponse;
 import backend.globber.bookmark.domain.Bookmark;
 import backend.globber.bookmark.repository.BookmarkRepository;
+import backend.globber.bookmark.service.constant.BookmarkSortType;
 import backend.globber.exception.spec.BookmarkException;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -45,14 +46,27 @@ public class BookmarkService {
         bookmarkRepository.save(bookmark);
     }
 
+    @Transactional
+    public void removeBookmark(final Long memberId, final Long targetMemberId) {
+        if (!bookmarkRepository.existsByMember_IdAndTargetMember_Id(memberId, targetMemberId)) {
+            throw new BookmarkException("북마크가 존재하지 않습니다.");
+        }
+
+        bookmarkRepository.deleteByMember_IdAndTargetMember_Id(memberId, targetMemberId);
+    }
+
     @Transactional(readOnly = true)
-    public List<BookmarkedFriendResponse> getBookmarkedFriends(Long memberId, String sort) {
+    public List<BookmarkedFriendResponse> getBookmarkedFriends(Long memberId,
+        BookmarkSortType sortType) {
         List<Bookmark> bookmarks;
 
-        if ("name".equalsIgnoreCase(sort)) {
-            bookmarks = bookmarkRepository.findAllByMember_IdOrderByTargetMember_NameAsc(memberId);
-        } else {
-            bookmarks = bookmarkRepository.findAllByMember_IdOrderByCreatedAtDesc(memberId);
+        switch (sortType) {
+            case NAME ->
+                bookmarks = bookmarkRepository.findAllByMember_IdOrderByTargetMember_NameAsc(
+                    memberId);
+            case LATEST ->
+                bookmarks = bookmarkRepository.findAllByMember_IdOrderByCreatedAtDesc(memberId);
+            default -> throw new BookmarkException("지원하지 않는 정렬 방식입니다.");
         }
 
         return bookmarks.stream()
@@ -67,14 +81,4 @@ public class BookmarkService {
             })
             .toList();
     }
-
-    @Transactional
-    public void removeBookmark(final Long memberId, final Long targetMemberId) {
-        if (!bookmarkRepository.existsByMember_IdAndTargetMember_Id(memberId, targetMemberId)) {
-            throw new BookmarkException("북마크가 존재하지 않습니다.");
-        }
-
-        bookmarkRepository.deleteByMember_IdAndTargetMember_Id(memberId, targetMemberId);
-    }
-
 }

@@ -4,6 +4,7 @@ import backend.globber.auth.service.TokenService;
 import backend.globber.bookmark.controller.dto.request.BookmarkRequest;
 import backend.globber.bookmark.controller.dto.response.BookmarkedFriendResponse;
 import backend.globber.bookmark.service.BookmarkService;
+import backend.globber.bookmark.service.constant.BookmarkSortType;
 import backend.globber.common.dto.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -44,7 +45,7 @@ public class BookmarkController {
     @Operation(summary = "북마크 목록 조회", description = "내가 북마크한 사용자 목록을 조회합니다.")
     public ResponseEntity<ApiResponse<List<BookmarkedFriendResponse>>> getBookmarks(
         @RequestHeader("Authorization") String accessToken,
-        @RequestParam(defaultValue = "latest") String sort
+        @RequestParam(defaultValue = "latest") BookmarkSortType sort
     ) {
         Long memberId = tokenService.getMemberIdFromAccessToken(accessToken);
         List<BookmarkedFriendResponse> result = bookmarkService.getBookmarkedFriends(memberId,
