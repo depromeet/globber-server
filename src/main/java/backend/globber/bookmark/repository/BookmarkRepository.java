@@ -11,4 +11,6 @@ public interface BookmarkRepository extends JpaRepository<Bookmark, Long> {
     List<Bookmark> findAllByMember_IdOrderByCreatedAtDesc(Long memberId);
 
     List<Bookmark> findAllByMember_IdOrderByTargetMember_NameAsc(Long memberId);
+
+    void deleteByMember_IdAndTargetMember_Id(Long memberId, Long targetMemberId);
 }

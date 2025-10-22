@@ -67,4 +67,14 @@ public class BookmarkService {
             })
             .toList();
     }
+
+    @Transactional
+    public void removeBookmark(final Long memberId, final Long targetMemberId) {
+        if (!bookmarkRepository.existsByMember_IdAndTargetMember_Id(memberId, targetMemberId)) {
+            throw new BookmarkException("북마크가 존재하지 않습니다.");
+        }
+
+        bookmarkRepository.deleteByMember_IdAndTargetMember_Id(memberId, targetMemberId);
+    }
+
 }
