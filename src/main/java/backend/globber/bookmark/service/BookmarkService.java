@@ -49,11 +49,11 @@ public class BookmarkService {
 
     @Transactional
     public void removeBookmark(final Long memberId, final Long targetMemberId) {
-        if (!bookmarkRepository.existsByMember_IdAndTargetMember_Id(memberId, targetMemberId)) {
+        int deletedCount = bookmarkRepository.deleteByMember_IdAndTargetMember_Id(memberId, targetMemberId);
+
+        if (deletedCount == 0) {
             throw new BookmarkException("북마크가 존재하지 않습니다.");
         }
-
-        bookmarkRepository.deleteByMember_IdAndTargetMember_Id(memberId, targetMemberId);
     }
 
     @Transactional(readOnly = true)

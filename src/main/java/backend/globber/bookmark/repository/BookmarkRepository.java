@@ -7,12 +7,10 @@ import org.springframework.data.jpa.repository.Modifying;
 
 public interface BookmarkRepository extends JpaRepository<Bookmark, Long> {
 
-    boolean existsByMember_IdAndTargetMember_Id(Long memberId, Long targetMemberId);
-
     List<Bookmark> findAllByMember_IdOrderByCreatedAtDesc(Long memberId);
 
     List<Bookmark> findAllByMember_IdOrderByTargetMember_NameAsc(Long memberId);
 
     @Modifying
-    void deleteByMember_IdAndTargetMember_Id(Long memberId, Long targetMemberId);
+    int deleteByMember_IdAndTargetMember_Id(Long memberId, Long targetMemberId);
 }
