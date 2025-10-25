@@ -8,6 +8,7 @@ import backend.globber.bookmark.service.constant.BookmarkSortType;
 import backend.globber.common.dto.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -33,7 +34,7 @@ public class BookmarkController {
     @PostMapping
     @Operation(summary = "북마크 추가", description = "특정 사용자를 북마크에 추가합니다.")
     public ResponseEntity<ApiResponse<Void>> addBookmark(
-        @RequestBody BookmarkRequest request,
+        @RequestBody @Valid BookmarkRequest request,
         @RequestHeader("Authorization") String accessToken
     ) {
         Long memberId = tokenService.getMemberIdFromAccessToken(accessToken);
