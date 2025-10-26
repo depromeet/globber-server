@@ -22,7 +22,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/diaries")
+@RequestMapping("/api/v1/diaries")
 @RequiredArgsConstructor
 @Tag(name = "여행기록 API", description = "여행기록 생성, 수정, 삭제, 조회 API")
 public class DiaryController {
