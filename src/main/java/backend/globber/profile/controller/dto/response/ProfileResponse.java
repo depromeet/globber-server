@@ -14,10 +14,7 @@ public record ProfileResponse(
 ) {
 
     public static ProfileResponse from(final Member member, final String s3BaseUrl) {
-        String imageKey = member.getProfileImageKey();
-        String fullUrl = (imageKey != null && !imageKey.isEmpty())
-            ? s3BaseUrl + "/" + imageKey
-            : null;
+        String fullUrl = member.getProfileImageUrl(s3BaseUrl);
 
         return ProfileResponse.builder()
             .memberId(member.getId())

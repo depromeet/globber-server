@@ -8,4 +8,5 @@ public class NoCredException extends CustomException {
     public NoCredException() {
         super(HttpStatus.UNAUTHORIZED, "인증 정보가 없습니다.");
     }
+    public NoCredException(String message) {super(HttpStatus.UNAUTHORIZED, message);}
 }
