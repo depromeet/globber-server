@@ -57,18 +57,8 @@ public class BookmarkService {
     }
 
     @Transactional(readOnly = true)
-    public List<BookmarkedFriendResponse> getBookmarkedFriends(Long memberId,
-        BookmarkSortType sortType) {
-        List<Bookmark> bookmarks;
-
-        switch (sortType) {
-            case NAME ->
-                bookmarks = bookmarkRepository.findAllByMember_IdOrderByTargetMember_NameAsc(
-                    memberId);
-            case LATEST ->
-                bookmarks = bookmarkRepository.findAllByMember_IdOrderByCreatedAtDesc(memberId);
-            default -> throw new BookmarkException("지원하지 않는 정렬 방식입니다.");
-        }
+    public List<BookmarkedFriendResponse> getBookmarkedFriends(Long memberId, BookmarkSortType sortType) {
+        List<Bookmark> bookmarks = getBookmarks(memberId, sortType);
 
         return bookmarks.stream()
             .map(bookmark -> {
@@ -81,5 +71,18 @@ public class BookmarkService {
                     .build();
             })
             .toList();
+    }
+
+    private List<Bookmark> getBookmarks(Long memberId, BookmarkSortType sortType) {
+        List<Bookmark> bookmarks;
+        switch (sortType) {
+            case NAME ->
+                bookmarks = bookmarkRepository.findAllByMember_IdOrderByTargetMember_NameAsc(
+                    memberId);
+            case LATEST ->
+                bookmarks = bookmarkRepository.findAllByMember_IdOrderByCreatedAtDesc(memberId);
+            default -> throw new BookmarkException("지원하지 않는 정렬 방식입니다.");
+        }
+        return bookmarks;
     }
 }
