@@ -1,14 +1,5 @@
 package backend.globber.travelinsight.service;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.then;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.spy;
-
 import backend.globber.membertravel.controller.dto.response.MemberTravelAllResponse;
 import backend.globber.membertravel.domain.MemberTravel;
 import backend.globber.membertravel.repository.MemberTravelRepository;
@@ -16,9 +7,6 @@ import backend.globber.travelinsight.client.AiClient;
 import backend.globber.travelinsight.controller.dto.response.TravelInsightResponse;
 import backend.globber.travelinsight.domain.TravelInsight;
 import backend.globber.travelinsight.repository.TravelInsightRepository;
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -28,6 +16,19 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 import org.springframework.test.util.ReflectionTestUtils;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
 
 @ExtendWith(MockitoExtension.class)
 class TravelInsightServiceTest {
@@ -53,9 +54,9 @@ class TravelInsightServiceTest {
         LocalDateTime travelUpdatedAt = insightUpdatedAt.minusHours(1); // 인사이트가 더 최신
 
         TravelInsight savedInsight = TravelInsight.builder()
-            .memberId(memberId)
-            .title("아시아 탐험가")
-            .build();
+                .memberId(memberId)
+                .title("아시아 탐험가")
+                .build();
         ReflectionTestUtils.setField(savedInsight, "updatedAt", insightUpdatedAt);
 
         MemberTravel memberTravel = createMemberTravel(travelUpdatedAt);
@@ -82,8 +83,8 @@ class TravelInsightServiceTest {
         MemberTravel memberTravel = createMemberTravel(travelUpdatedAt);
 
         TravelInsightResponse aiResponse = TravelInsightResponse.builder()
-            .title("세계 탐험가")
-            .build();
+                .title("세계 탐험가")
+                .build();
 
         given(travelInsightRepository.findByMemberId(memberId)).willReturn(Optional.empty());
         given(memberTravelRepository.findAllByMember_Id(memberId)).willReturn(List.of(memberTravel));
@@ -96,8 +97,8 @@ class TravelInsightServiceTest {
         assertThat(result.title()).isEqualTo("세계 탐험가");
         then(aiClient).should().createTitle(any(MemberTravelAllResponse.class));
         then(travelInsightRepository).should().save(argThat(insight ->
-            insight.getMemberId().equals(memberId) &&
-                insight.getTitle().equals("세계 탐험가")
+                insight.getMemberId().equals(memberId) &&
+                        insight.getTitle().equals("세계 탐험가")
         ));
     }
 
@@ -110,16 +111,16 @@ class TravelInsightServiceTest {
         LocalDateTime travelUpdatedAt = LocalDateTime.now(); // 여행 데이터가 더 최신
 
         TravelInsight savedInsight = spy(TravelInsight.builder()
-            .memberId(memberId)
-            .title("기존 탐험가")
-            .build());
+                .memberId(memberId)
+                .title("기존 탐험가")
+                .build());
         ReflectionTestUtils.setField(savedInsight, "updatedAt", insightUpdatedAt);
 
         MemberTravel memberTravel = createMemberTravel(travelUpdatedAt);
 
         TravelInsightResponse aiResponse = TravelInsightResponse.builder()
-            .title("새로운 탐험가")
-            .build();
+                .title("새로운 탐험가")
+                .build();
 
         given(travelInsightRepository.findByMemberId(memberId)).willReturn(Optional.of(savedInsight));
         given(memberTravelRepository.findAllByMember_Id(memberId)).willReturn(List.of(memberTravel));
@@ -144,11 +145,11 @@ class TravelInsightServiceTest {
 
         // ✅ 명확하게 모든 stub 설정
         given(travelInsightRepository.findByMemberId(memberId))
-            .willReturn(Optional.empty());
+                .willReturn(Optional.empty());
         given(memberTravelRepository.findAllByMember_Id(memberId))
-            .willReturn(List.of(memberTravel));
+                .willReturn(List.of(memberTravel));
         given(aiClient.createTitle(any(MemberTravelAllResponse.class)))
-            .willThrow(new RuntimeException("AI 호출 실패"));
+                .willThrow(new RuntimeException("AI 호출 실패"));
 
         // when
         TravelInsightResponse result = travelInsightService.getOrCreateInsight(memberId);
@@ -175,7 +176,7 @@ class TravelInsightServiceTest {
         given(travelInsightRepository.findByMemberId(memberId)).willReturn(Optional.empty());
         given(memberTravelRepository.findAllByMember_Id(memberId)).willReturn(List.of(memberTravel));
         given(aiClient.createTitle(any(MemberTravelAllResponse.class)))
-            .willReturn(TravelInsightResponse.empty());
+                .willReturn(TravelInsightResponse.empty());
 
         // when
         TravelInsightResponse result = travelInsightService.getOrCreateInsight(memberId);
