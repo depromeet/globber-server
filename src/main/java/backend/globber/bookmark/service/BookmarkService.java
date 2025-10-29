@@ -10,6 +10,7 @@ import backend.globber.exception.spec.BookmarkException;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,10 +30,6 @@ public class BookmarkService {
             throw new BookmarkException("자기 자신은 북마크할 수 없습니다.");
         }
 
-        if (bookmarkRepository.existsByMember_IdAndTargetMember_Id(memberId, targetMemberId)) {
-            throw new BookmarkException("이미 북마크한 사용자입니다.");
-        }
-
         Member me = memberRepository.findById(memberId)
             .orElseThrow(() -> new BookmarkException("사용자를 찾을 수 없습니다."));
         Member target = memberRepository.findById(targetMemberId)
@@ -43,31 +40,25 @@ public class BookmarkService {
             .targetMember(target)
             .build();
 
-        bookmarkRepository.save(bookmark);
+        try {
+            bookmarkRepository.save(bookmark);
+        } catch (DataIntegrityViolationException e) {
+            throw new BookmarkException("이미 북마크한 사용자입니다.");
+        }
     }
 
     @Transactional
     public void removeBookmark(final Long memberId, final Long targetMemberId) {
-        if (!bookmarkRepository.existsByMember_IdAndTargetMember_Id(memberId, targetMemberId)) {
+        int deletedCount = bookmarkRepository.deleteByMember_IdAndTargetMember_Id(memberId, targetMemberId);
+
+        if (deletedCount == 0) {
             throw new BookmarkException("북마크가 존재하지 않습니다.");
         }
-
-        bookmarkRepository.deleteByMember_IdAndTargetMember_Id(memberId, targetMemberId);
     }
 
     @Transactional(readOnly = true)
-    public List<BookmarkedFriendResponse> getBookmarkedFriends(Long memberId,
-        BookmarkSortType sortType) {
-        List<Bookmark> bookmarks;
-
-        switch (sortType) {
-            case NAME ->
-                bookmarks = bookmarkRepository.findAllByMember_IdOrderByTargetMember_NameAsc(
-                    memberId);
-            case LATEST ->
-                bookmarks = bookmarkRepository.findAllByMember_IdOrderByCreatedAtDesc(memberId);
-            default -> throw new BookmarkException("지원하지 않는 정렬 방식입니다.");
-        }
+    public List<BookmarkedFriendResponse> getBookmarkedFriends(Long memberId, BookmarkSortType sortType) {
+        List<Bookmark> bookmarks = getBookmarks(memberId, sortType);
 
         return bookmarks.stream()
             .map(bookmark -> {
@@ -80,5 +71,18 @@ public class BookmarkService {
                     .build();
             })
             .toList();
+    }
+
+    private List<Bookmark> getBookmarks(Long memberId, BookmarkSortType sortType) {
+        List<Bookmark> bookmarks;
+        switch (sortType) {
+            case NAME ->
+                bookmarks = bookmarkRepository.findAllByMember_IdOrderByTargetMember_NameAsc(
+                    memberId);
+            case LATEST ->
+                bookmarks = bookmarkRepository.findAllByMember_IdOrderByCreatedAtDesc(memberId);
+            default -> throw new BookmarkException("지원하지 않는 정렬 방식입니다.");
+        }
+        return bookmarks;
     }
 }
