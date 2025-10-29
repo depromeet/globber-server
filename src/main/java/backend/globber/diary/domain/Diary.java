@@ -11,8 +11,6 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
-import java.util.ArrayList;
-import java.util.List;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -20,6 +18,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Getter
@@ -41,8 +42,10 @@ public class Diary extends BaseTimeEntity {
 
     private String text;
 
-    private String emoji;
-
+    // 이모지 리스트
+    @OneToMany(mappedBy = "diary", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<DiaryEmoji> emojis = new ArrayList<>();
 
     // 사진 리스트
     @OneToMany(mappedBy = "diary", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -50,8 +53,12 @@ public class Diary extends BaseTimeEntity {
     private List<Photo> photos = new ArrayList<>();
 
 
-    public void update(String comment, String emoji) {
+    public void changeText(String comment) {
         this.text = comment;
-        this.emoji = emoji;
+    }
+
+    public void addEmoji(DiaryEmoji emoji) {
+        emojis.add(emoji);
+        emoji.setDiary(this);
     }
 }

@@ -9,6 +9,7 @@ import backend.globber.diary.domain.Photo;
 import backend.globber.membertravel.domain.MemberTravel;
 import backend.globber.membertravel.domain.MemberTravelCity;
 
+import java.util.Collections;
 import java.util.List;
 
 public class TestEntityFactory {
@@ -40,11 +41,11 @@ public class TestEntityFactory {
                 .build();
     }
 
-    public static Diary createDiary(MemberTravelCity mtc, String text, String emoji) {
+    public static Diary createDiary(MemberTravelCity mtc, String text) {
         return Diary.builder()
                 .memberTravelCity(mtc)
                 .text(text)
-                .emoji(emoji)
+                .emojis(Collections.emptyList())
                 .build();
     }
 
