@@ -36,8 +36,8 @@ jobs:
       - name: 프로젝트 클린
         run: ./gradlew clean
 
-      - name: 단위 테스트 실행
-        run: ./gradlew test
+      - name: 단위 테스트 및 커버리지 리포트 생성
+        run: ./gradlew test jacocoTestReport
 
       - name: 빌드 실행
         run: ./gradlew build
