@@ -9,12 +9,14 @@ import backend.globber.city.controller.dto.RecommendResponse;
 import backend.globber.city.domain.City;
 import backend.globber.city.repository.CityRepository;
 import backend.globber.city.repository.cache.RankingRepository;
+import backend.globber.exception.spec.CityNotFoundException;
 import backend.globber.exception.spec.UsernameNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -41,7 +43,7 @@ public class CityService {
                                                 cityUniqueDto.countryCode(),
                                                 cityUniqueDto.lat(),
                                                 cityUniqueDto.lng())
-            .orElseThrow(() -> new IllegalArgumentException("해당 도시를 찾을 수 없습니다."));
+            .orElseThrow(() -> new CityNotFoundException("해당 도시를 찾을 수 없습니다."));
         return city.getCityId();
     }
 
@@ -53,6 +55,7 @@ public class CityService {
         return CityResponse.toResponse(cityRepository.save(cityRequest.toCity()));
     }
 
+    @Transactional
     public CityResponse updateCity(Long memberId, Long cityId, CityRequest cityRequest) {
         Member member = memberRepository.findById(memberId)
             .orElseThrow(() -> new UsernameNotFoundException("존재하지 않는 멤버입니다."));
@@ -70,6 +73,7 @@ public class CityService {
             ));
     }
 
+    @Transactional
     public CityResponse deleteCity(Long memberId, Long cityId) {
         Member member = memberRepository.findById(memberId)
             .orElseThrow(() -> new UsernameNotFoundException("존재하지 않는 멤버입니다."));
@@ -79,12 +83,12 @@ public class CityService {
                 cityRepository.delete(city);
                 return CityResponse.toResponse(city);
             })
-            .orElseThrow(() -> new IllegalArgumentException("해당 도시를 찾을 수 없습니다."));
+            .orElseThrow(() -> new CityNotFoundException("해당 도시를 찾을 수 없습니다."));
     }
 
     public CityResponse findCityByCountryAndCityName(String countryCode, String cityName) {
         return cityRepository.findByCountryCodeAndCityName(countryCode, cityName).map(CityResponse::toResponse)
-            .orElseThrow(() -> new IllegalArgumentException("해당 도시를 찾을 수 없습니다."));
+            .orElseThrow(() -> new CityNotFoundException("해당 도시를 찾을 수 없습니다."));
 
     }
 }

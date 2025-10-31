@@ -5,14 +5,16 @@ import backend.globber.city.controller.dto.CityResponse;
 import backend.globber.city.controller.dto.CityUniqueDto;
 import backend.globber.city.controller.dto.RecommendResponse;
 import backend.globber.city.controller.dto.SearchResult;
-import backend.globber.city.repository.CityRepository;
 import backend.globber.city.service.CityService;
 import backend.globber.city.service.SearchService;
 import backend.globber.common.dto.ApiResponse;
 import backend.globber.common.service.CommonService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -34,7 +36,6 @@ public class CityController {
 
     private final CityService cityService;
     private final SearchService searchService;
-    private final CityRepository cityRepository;
     private final CommonService commonService;
 
     @GetMapping("/favorites")
@@ -64,7 +65,7 @@ public class CityController {
     @Operation(summary = "도시 추가", description = "새로운 도시를 추가합니다.")
     public ResponseEntity<ApiResponse<CityResponse>> addCity(
         @RequestHeader("Authorization") String accessToken,
-        @RequestBody final CityRequest cityRequest
+        @Valid @RequestBody final CityRequest cityRequest
     ) {
         Long memberId = commonService.getMemberIdFromToken(accessToken);
         CityResponse cityResponse = cityService.addCity(memberId ,cityRequest);
@@ -75,7 +76,7 @@ public class CityController {
     @Operation(summary = "도시 수정", description = "기존 도시 정보를 수정합니다.")
     public ResponseEntity<ApiResponse<CityResponse>> updateCity(@PathVariable final Long cityId,
         @RequestHeader("Authorization") String accessToken,
-        @RequestBody final CityRequest cityRequest
+        @Valid @RequestBody final CityRequest cityRequest
     ) {
         Long memberId = commonService.getMemberIdFromToken(accessToken);
         CityResponse cityResponse = cityService.updateCity(memberId, cityId, cityRequest);
@@ -95,8 +96,8 @@ public class CityController {
     @GetMapping("/findCity")
     @Operation(summary = "도시 찾기", description = "나라코드와 도시명으로 도시를 찾습니다.")
     public ResponseEntity<ApiResponse<CityResponse>> findCityByCountryAndCityName(
-        @RequestParam String countryCode,
-        @RequestParam String cityName
+        @Pattern(regexp = "^[A-Z]{3}$", message = "ISO 3166-1 Alpha-3 형식이어야 합니다") @RequestParam String countryCode,
+        @NotNull(message = "도시명은 필수입니다") @RequestParam String cityName
     ) {
         CityResponse cityResponse = cityService.findCityByCountryAndCityName(countryCode, cityName);
         return ResponseEntity.ok(ApiResponse.success(cityResponse));
