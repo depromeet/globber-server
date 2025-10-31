@@ -46,4 +46,14 @@ public class City {
     @Column(nullable = false, length = 3)
     @Pattern(regexp = "^[A-Z]{3}$", message = "ISO 3166-1 Alpha-3 형식이어야 합니다 (예: KOR, USA, JPN)")
     private String countryCode;
+
+    public City updateCity(String cityName, String countryName, Double lat, Double lng,
+                           String countryCode) {
+        this.cityName = cityName;
+        this.countryName = countryName;
+        this.lat = lat;
+        this.lng = lng;
+        this.countryCode = countryCode;
+        return this;
+    }
 }
