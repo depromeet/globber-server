@@ -1,8 +1,5 @@
 package backend.globber.bookmark.service;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-
 import backend.globber.auth.domain.Member;
 import backend.globber.auth.domain.constant.AuthProvider;
 import backend.globber.auth.domain.constant.Role;
@@ -13,13 +10,17 @@ import backend.globber.bookmark.repository.BookmarkRepository;
 import backend.globber.bookmark.service.constant.BookmarkSortType;
 import backend.globber.exception.spec.BookmarkException;
 import backend.globber.support.PostgresTestConfig;
-import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
+
+import java.util.List;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @SpringBootTest
 @Import({PostgresTestConfig.class})
@@ -46,29 +47,29 @@ class BookmarkServiceIntegrationTest {
 
         // 회원 생성
         member = Member.of(
-            "test@kakao.com",
-            "테스트유저",
-            "password",
-            AuthProvider.KAKAO,
-            List.of(Role.ROLE_USER)
+                "test@kakao.com",
+                "테스트유저",
+                "password",
+                AuthProvider.KAKAO,
+                List.of(Role.ROLE_USER)
         );
         memberRepository.save(member);
 
         targetMember1 = Member.of(
-            "target1@kakao.com",
-            "가나다",
-            "password",
-            AuthProvider.KAKAO,
-            List.of(Role.ROLE_USER)
+                "target1@kakao.com",
+                "가나다",
+                "password",
+                AuthProvider.KAKAO,
+                List.of(Role.ROLE_USER)
         );
         memberRepository.save(targetMember1);
 
         targetMember2 = Member.of(
-            "target2@kakao.com",
-            "타겟유저2",
-            "password",
-            AuthProvider.KAKAO,
-            List.of(Role.ROLE_USER)
+                "target2@kakao.com",
+                "타겟유저2",
+                "password",
+                AuthProvider.KAKAO,
+                List.of(Role.ROLE_USER)
         );
         memberRepository.save(targetMember2);
     }
@@ -91,8 +92,8 @@ class BookmarkServiceIntegrationTest {
     void addBookmarkSelf() {
         // when & then
         assertThatThrownBy(() -> bookmarkService.addBookmark(member.getId(), member.getId()))
-            .isInstanceOf(BookmarkException.class)
-            .hasMessage("자기 자신은 북마크할 수 없습니다.");
+                .isInstanceOf(BookmarkException.class)
+                .hasMessage("자기 자신은 북마크할 수 없습니다.");
     }
 
     @Test
@@ -103,8 +104,8 @@ class BookmarkServiceIntegrationTest {
 
         // when & then
         assertThatThrownBy(() -> bookmarkService.addBookmark(member.getId(), targetMember1.getId()))
-            .isInstanceOf(BookmarkException.class)
-            .hasMessage("이미 북마크한 사용자입니다.");
+                .isInstanceOf(BookmarkException.class)
+                .hasMessage("이미 북마크한 사용자입니다.");
     }
 
     @Test
@@ -112,8 +113,8 @@ class BookmarkServiceIntegrationTest {
     void addBookmarkMemberNotFound() {
         // when & then
         assertThatThrownBy(() -> bookmarkService.addBookmark(member.getId(), 99999L))
-            .isInstanceOf(BookmarkException.class)
-            .hasMessage("북마크 대상 사용자를 찾을 수 없습니다.");
+                .isInstanceOf(BookmarkException.class)
+                .hasMessage("북마크 대상 사용자를 찾을 수 없습니다.");
     }
 
     @Test
@@ -135,8 +136,8 @@ class BookmarkServiceIntegrationTest {
     void removeBookmarkNotFound() {
         // when & then
         assertThatThrownBy(() -> bookmarkService.removeBookmark(member.getId(), targetMember1.getId()))
-            .isInstanceOf(BookmarkException.class)
-            .hasMessage("북마크가 존재하지 않습니다.");
+                .isInstanceOf(BookmarkException.class)
+                .hasMessage("북마크가 존재하지 않습니다.");
     }
 
     @Test
@@ -148,8 +149,8 @@ class BookmarkServiceIntegrationTest {
 
         // when
         List<BookmarkedFriendResponse> result = bookmarkService.getBookmarkedFriends(
-            member.getId(),
-            BookmarkSortType.LATEST
+                member.getId(),
+                BookmarkSortType.LATEST
         );
 
         // then
@@ -170,8 +171,8 @@ class BookmarkServiceIntegrationTest {
 
         // when
         List<BookmarkedFriendResponse> result = bookmarkService.getBookmarkedFriends(
-            member.getId(),
-            BookmarkSortType.NAME
+                member.getId(),
+                BookmarkSortType.NAME
         );
 
         // then
@@ -193,8 +194,8 @@ class BookmarkServiceIntegrationTest {
 
         // when
         List<BookmarkedFriendResponse> result = bookmarkService.getBookmarkedFriends(
-            member.getId(),
-            BookmarkSortType.LATEST
+                member.getId(),
+                BookmarkSortType.LATEST
         );
 
         // then
@@ -207,8 +208,8 @@ class BookmarkServiceIntegrationTest {
     void getBookmarkedFriendsEmpty() {
         // when
         List<BookmarkedFriendResponse> result = bookmarkService.getBookmarkedFriends(
-            member.getId(),
-            BookmarkSortType.LATEST
+                member.getId(),
+                BookmarkSortType.LATEST
         );
 
         // then
@@ -220,11 +221,11 @@ class BookmarkServiceIntegrationTest {
     void multipleUsersCanBookmark() {
         // given
         Member anotherMember = Member.of(
-            "another@kakao.com",
-            "다른유저",
-            "password",
-            AuthProvider.KAKAO,
-            List.of(Role.ROLE_USER)
+                "another@kakao.com",
+                "다른유저",
+                "password",
+                AuthProvider.KAKAO,
+                List.of(Role.ROLE_USER)
         );
         memberRepository.save(anotherMember);
 
@@ -234,12 +235,12 @@ class BookmarkServiceIntegrationTest {
 
         // then
         List<BookmarkedFriendResponse> memberBookmarks = bookmarkService.getBookmarkedFriends(
-            member.getId(),
-            BookmarkSortType.LATEST
+                member.getId(),
+                BookmarkSortType.LATEST
         );
         List<BookmarkedFriendResponse> anotherMemberBookmarks = bookmarkService.getBookmarkedFriends(
-            anotherMember.getId(),
-            BookmarkSortType.LATEST
+                anotherMember.getId(),
+                BookmarkSortType.LATEST
         );
 
         assertThat(memberBookmarks).hasSize(1);
