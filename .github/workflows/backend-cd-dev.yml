@@ -15,7 +15,7 @@ jobs:
       - name: 백엔드 로그 디렉토리 정리
         run: |
           sudo chmod -R 777 /home/ubuntu/actions-runner/_work/globber-server/globber-server/log || true
-          sudo rm -rf globber/log/dev || true
+          sudo rm -rf globber/log || true
 
       - name: 저장소 체크아웃
         uses: actions/checkout@v4
