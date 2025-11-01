@@ -39,7 +39,7 @@ public class TestDataInitializer {
         em.persist(tokyoMtc);
         em.persist(osakaMtc);
 
-        Diary diary = TestEntityFactory.createDiary(tokyoMtc, "도쿄 여행기", "😊");
+        Diary diary = TestEntityFactory.createDiary(tokyoMtc, "도쿄 여행기");
         em.persist(diary);
 
         List.of("tokyo_1", "tokyo_2")

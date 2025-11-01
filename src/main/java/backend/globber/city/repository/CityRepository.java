@@ -73,4 +73,6 @@ public interface CityRepository extends JpaRepository<City, Long> {
                                 @Param("countryCode") String countryCode,
                                 @Param("lat") Double lat,
                                 @Param("lng") Double lng);
+
+    Optional<City> findByCountryCodeAndCityName(String countryCode, String cityName);
 }
