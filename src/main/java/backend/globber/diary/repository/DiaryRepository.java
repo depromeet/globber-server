@@ -10,6 +10,8 @@ import java.util.List;
 
 @Repository
 public interface DiaryRepository extends JpaRepository<Diary, Long> {
+
+    @Query("select d.memberTravelCity.memberTravel.member.id from Diary d where d.id = :diaryId")
     Long findMemberIdById(Long diaryId);
 
     @Query("""
@@ -22,5 +24,3 @@ public interface DiaryRepository extends JpaRepository<Diary, Long> {
             """)
     List<Diary> findAllWithPhotoByMemberId(@Param("memberId") Long memberId);
 }
-
-

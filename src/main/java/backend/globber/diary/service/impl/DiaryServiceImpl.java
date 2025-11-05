@@ -3,6 +3,7 @@ package backend.globber.diary.service.impl;
 import backend.globber.auth.domain.Member;
 import backend.globber.auth.repository.MemberRepository;
 import backend.globber.auth.util.JwtTokenProvider;
+import backend.globber.city.controller.dto.CityResponse;
 import backend.globber.city.domain.City;
 import backend.globber.city.repository.CityRepository;
 import backend.globber.diary.controller.dto.DiaryRequest;
@@ -169,7 +170,7 @@ public class DiaryServiceImpl implements DiaryService {
 
         return new DiaryResponse(
                 diary.getId(),
-                diary.getMemberTravelCity().getCity(),
+                CityResponse.toResponse(diary.getMemberTravelCity().getCity()),
                 diary.getText(),
                 diary.getCreatedAt().toString(),
                 diary.getUpdatedAt().toString(),
