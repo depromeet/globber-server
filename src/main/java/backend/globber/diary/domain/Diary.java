@@ -1,5 +1,6 @@
 package backend.globber.diary.domain;
 
+import backend.globber.auth.domain.Member;
 import backend.globber.common.entity.BaseTimeEntity;
 import backend.globber.membertravel.domain.MemberTravelCity;
 import jakarta.persistence.CascadeType;
@@ -57,8 +58,9 @@ public class Diary extends BaseTimeEntity {
         this.text = comment;
     }
 
-    public void addEmoji(DiaryEmoji emoji) {
-        emojis.add(emoji);
-        emoji.setDiary(this);
+    public boolean isOwnedBy(Member member) {
+        return this.memberTravelCity.getMemberTravel()
+                .getMember()
+                .equals(member);
     }
 }

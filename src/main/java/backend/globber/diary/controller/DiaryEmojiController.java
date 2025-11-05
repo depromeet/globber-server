@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/diaries/{diaryId}/emojis")
+@RequestMapping("/api/v1/diaries/{diaryId}/emojis")
 @RequiredArgsConstructor
 @Tag(name = "이모지 API", description = "여행 기록의 이모지 등록 및 반응(리액션) 관련 API")
 public class DiaryEmojiController {
