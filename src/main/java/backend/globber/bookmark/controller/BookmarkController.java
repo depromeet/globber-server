@@ -46,7 +46,7 @@ public class BookmarkController {
     @Operation(summary = "북마크 목록 조회", description = "내가 북마크한 사용자 목록을 조회합니다.")
     public ResponseEntity<ApiResponse<List<BookmarkedFriendResponse>>> getBookmarks(
         @RequestHeader("Authorization") String accessToken,
-        @RequestParam(defaultValue = "latest") BookmarkSortType sort
+        @RequestParam(defaultValue = "LATEST") BookmarkSortType sort
     ) {
         Long memberId = tokenService.getMemberIdFromAccessToken(accessToken);
         List<BookmarkedFriendResponse> result = bookmarkService.getBookmarkedFriends(memberId,
