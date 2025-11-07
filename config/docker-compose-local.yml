@@ -13,7 +13,7 @@ services:
 
   postgres:
     container_name: postgres_dev
-    image: postgres:16-bookworm
+    image: postgres:16
     environment:
       POSTGRES_USER: root
       POSTGRES_PASSWORD: 1234
