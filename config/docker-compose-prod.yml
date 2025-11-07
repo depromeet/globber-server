@@ -24,7 +24,7 @@ services:
 
   postgres:
     container_name: postgres_prod
-    image: postgres:16
+    image: postgres:16-bookworm
     ports:
       - "5432:5432"
     environment:
