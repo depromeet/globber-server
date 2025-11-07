@@ -1,16 +1,17 @@
 package backend.globber.common.enums;
 
 import backend.globber.exception.spec.InvalidUploadTypeException;
-import java.util.function.BiFunction;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+
+import java.util.function.BiFunction;
 
 @Getter
 @RequiredArgsConstructor
 public enum S3UploadType {
     PROFILE(false, (memberId, resourceId) -> "profiles/" + memberId),
     TRAVEL(true, (memberId, resourceId) -> "travels/" + resourceId),
-    ;
+    THUMBNAIL(true, (memberId, resourceId) -> "thumbnails/" + resourceId);
 
     private final boolean requiresResourceId;
 

@@ -6,6 +6,7 @@ public record GlobeSummaryDto(
         String nickname,
         int cityCount,
         int countryCount,
-        List<RegionDto> regions
+        List<RegionDto> regions,
+        String thumbnailUrl
 ) {
 }
