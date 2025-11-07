@@ -7,10 +7,17 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface DiaryRepository extends JpaRepository<Diary, Long> {
+
+    @Query("select d.memberTravelCity.memberTravel.member.id from Diary d where d.id = :diaryId")
     Long findMemberIdById(Long diaryId);
+
+    @Query("SELECT d FROM Diary d JOIN FETCH d.memberTravelCity c JOIN FETCH c.city WHERE d.id = :id")
+    Optional<Diary> findWithCityById(@Param("id") Long id);
+
 
     @Query("""
                 select distinct d
@@ -22,5 +29,3 @@ public interface DiaryRepository extends JpaRepository<Diary, Long> {
             """)
     List<Diary> findAllWithPhotoByMemberId(@Param("memberId") Long memberId);
 }
-
-

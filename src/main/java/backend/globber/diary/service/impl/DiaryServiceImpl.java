@@ -2,6 +2,8 @@ package backend.globber.diary.service.impl;
 
 import backend.globber.auth.domain.Member;
 import backend.globber.auth.repository.MemberRepository;
+import backend.globber.auth.util.JwtTokenProvider;
+import backend.globber.city.controller.dto.CityResponse;
 import backend.globber.city.domain.City;
 import backend.globber.city.repository.CityRepository;
 import backend.globber.diary.controller.dto.DiaryRequest;
@@ -12,6 +14,7 @@ import backend.globber.diary.controller.dto.PhotoResponse;
 import backend.globber.diary.domain.Diary;
 import backend.globber.diary.repository.DiaryEmojiRepository;
 import backend.globber.diary.repository.DiaryRepository;
+import backend.globber.diary.repository.PhotoRepository;
 import backend.globber.diary.service.DiaryService;
 import backend.globber.diary.service.PhotoService;
 import backend.globber.exception.spec.CityNotFoundException;
@@ -38,8 +41,10 @@ public class DiaryServiceImpl implements DiaryService {
 
     private static final int MAX_PHOTOS = 3; // 한 게시물당 최대 3장
     private final DiaryRepository diaryRepository;
+    private final PhotoRepository photoRepository;
     private final MemberRepository memberRepository;
     private final CityRepository cityRepository;
+    private final JwtTokenProvider jwtTokenProvider;
     private final PhotoService photoService;
     private final MemberTravelCityRepository memberTravelCityRepository;
     private final MemberTravelRepository memberTravelRepository;
@@ -93,10 +98,10 @@ public class DiaryServiceImpl implements DiaryService {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new UsernameNotFoundException("회원 정보를 찾을 수 없습니다."));
 
-        Diary diary = diaryRepository.findById(diaryId)
+        Diary diary = diaryRepository.findWithCityById(diaryId)
                 .orElseThrow(() -> new DiaryNotFoundException("기록을 찾을 수 없습니다."));
 
-        if (!diary.isOwnedBy(member)) {
+        if (!diary.getMemberTravelCity().getMemberTravel().getMember().getId().equals(member.getId())) {
             throw new NoCredException("본인의 기록만 수정할 수 있습니다.");
         }
 
@@ -114,7 +119,7 @@ public class DiaryServiceImpl implements DiaryService {
         Diary diary = diaryRepository.findById(diaryId)
                 .orElseThrow(() -> new DiaryNotFoundException("기록을 찾을 수 없습니다."));
 
-        if (!diary.isOwnedBy(member)) {
+        if (!diary.getMemberTravelCity().getMemberTravel().getMember().getId().equals(member.getId())) {
             throw new NoCredException("본인의 기록만 삭제할 수 있습니다.");
         }
 
@@ -127,7 +132,7 @@ public class DiaryServiceImpl implements DiaryService {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new NoCredException("회원 정보를 찾을 수 없습니다."));
 
-        Diary diary = diaryRepository.findById(diaryId)
+        Diary diary = diaryRepository.findWithCityById(diaryId)
                 .orElseThrow(() -> new DiaryNotFoundException("기록을 찾을 수 없습니다."));
 
         if (!diary.getMemberTravelCity().getMemberTravel().getMember().getId().equals(member.getId())) {
@@ -165,7 +170,7 @@ public class DiaryServiceImpl implements DiaryService {
 
         return new DiaryResponse(
                 diary.getId(),
-                diary.getMemberTravelCity().getCity(),
+                CityResponse.toResponse(diary.getMemberTravelCity().getCity()),
                 diary.getText(),
                 diary.getCreatedAt().toString(),
                 diary.getUpdatedAt().toString(),
