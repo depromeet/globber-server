@@ -3,9 +3,10 @@ package backend.globber.city.service;
 import backend.globber.city.domain.City;
 import backend.globber.city.repository.CityRepository;
 import backend.globber.city.repository.cache.RankingRepository;
-import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 
@@ -21,7 +22,7 @@ public class RedisWarmUp {
     private static final String RANKING_KEY = "search_ranking";
     private static final String CITY_DATA_KEY = "city:data";
 
-    @PostConstruct
+    @EventListener(ApplicationReadyEvent.class)
     public void restoreIfEmpty() {
         try {
             Long rankingCount = stringRedisTemplate.opsForZSet().zCard(RANKING_KEY);
