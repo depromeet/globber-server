@@ -34,7 +34,9 @@ public class GlobeService {
         Map<String, List<MemberTravelCity>> groupedByCountry = getStringListMap(travelCities);
         List<RegionDto> regions = getRegionDtos(groupedByCountry);
 
-        return new GlobeSummaryDto(memberTravel.getMember().getName(), cityCount, (int) countryCount, regions);
+        String thumbnailUrl = memberTravel.getThumbnailUrl(); // (아래 설명 참고)
+
+        return new GlobeSummaryDto(memberTravel.getMember().getName(), cityCount, (int) countryCount, regions, thumbnailUrl);
     }
 
     private static long getCount(List<MemberTravelCity> travelCities) {
