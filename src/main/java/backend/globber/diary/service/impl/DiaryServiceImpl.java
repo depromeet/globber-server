@@ -98,7 +98,7 @@ public class DiaryServiceImpl implements DiaryService {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new UsernameNotFoundException("회원 정보를 찾을 수 없습니다."));
 
-        Diary diary = diaryRepository.findById(diaryId)
+        Diary diary = diaryRepository.findWithCityById(diaryId)
                 .orElseThrow(() -> new DiaryNotFoundException("기록을 찾을 수 없습니다."));
 
         if (!diary.getMemberTravelCity().getMemberTravel().getMember().getId().equals(member.getId())) {
@@ -132,7 +132,7 @@ public class DiaryServiceImpl implements DiaryService {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new NoCredException("회원 정보를 찾을 수 없습니다."));
 
-        Diary diary = diaryRepository.findById(diaryId)
+        Diary diary = diaryRepository.findWithCityById(diaryId)
                 .orElseThrow(() -> new DiaryNotFoundException("기록을 찾을 수 없습니다."));
 
         if (!diary.getMemberTravelCity().getMemberTravel().getMember().getId().equals(member.getId())) {
