@@ -58,6 +58,7 @@ public class GlobeService {
                     String countryName = entry.getKey();
                     List<CityDto> cities = entry.getValue().stream()
                             .map(tc -> new CityDto(
+                                    tc.getCity().getCityId(),
                                     tc.getCity().getCityName(),
                                     tc.getCity().getLat(),
                                     tc.getCity().getLng(),
