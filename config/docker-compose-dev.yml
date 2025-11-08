@@ -43,9 +43,9 @@ services:
     image: redis:7.2
     ports:
       - "6379:6379"
-    command: [ "redis-server", "--cluster-enabled", "no", "--protected-mode", "no" ]
+    command: [ "redis-server", "--cluster-enabled", "no", "--protected-mode", "no",  "--appendonly", "yes" ]
     volumes:
-      - redis_data:/data
+      - ./redis-data:/data
     restart: always
     networks:
       - dev_network
