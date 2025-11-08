@@ -36,7 +36,7 @@ public class GlobeService {
 
         String thumbnailUrl = memberTravel.getThumbnailUrl(); // (아래 설명 참고)
 
-        return new GlobeSummaryDto(memberTravel.getMember().getName(), cityCount, (int) countryCount, regions, thumbnailUrl);
+        return new GlobeSummaryDto(memberTravel.getMember().getId(), memberTravel.getMember().getName(), cityCount, (int) countryCount, regions, thumbnailUrl);
     }
 
     private static long getCount(List<MemberTravelCity> travelCities) {
