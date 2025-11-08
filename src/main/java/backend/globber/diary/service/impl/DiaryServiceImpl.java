@@ -6,6 +6,7 @@ import backend.globber.auth.util.JwtTokenProvider;
 import backend.globber.city.controller.dto.CityResponse;
 import backend.globber.city.domain.City;
 import backend.globber.city.repository.CityRepository;
+import backend.globber.diary.controller.dto.DiaryListResponse;
 import backend.globber.diary.controller.dto.DiaryRequest;
 import backend.globber.diary.controller.dto.DiaryResponse;
 import backend.globber.diary.controller.dto.EmojiResponse;
@@ -132,7 +133,7 @@ public class DiaryServiceImpl implements DiaryService {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new NoCredException("회원 정보를 찾을 수 없습니다."));
 
-        Diary diary = diaryRepository.findWithCityById(diaryId)
+        Diary diary = diaryRepository.findById(diaryId)
                 .orElseThrow(() -> new DiaryNotFoundException("기록을 찾을 수 없습니다."));
 
         if (!diary.getMemberTravelCity().getMemberTravel().getMember().getId().equals(member.getId())) {
@@ -142,6 +143,32 @@ public class DiaryServiceImpl implements DiaryService {
         List<EmojiResponse> emojis = getEmojiResponses(diaryId);
 
         return toDiaryResponse(diary, emojis);
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public DiaryResponse getDiaryDetail(Long diaryId) {
+        Diary diary = diaryRepository.findWithCityById(diaryId)
+                .orElseThrow(() -> new DiaryNotFoundException("기록을 찾을 수 없습니다."));
+
+        List<EmojiResponse> emojis = getEmojiResponses(diaryId);
+
+        return toDiaryResponse(diary, emojis);
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public DiaryListResponse getDiariesByUUID(String uuid) {
+        List<Diary> diaries = diaryRepository.findAllWithRelationsByMemberUuid(uuid);
+
+        List<DiaryResponse> diaryResponses = diaries.stream()
+                .map(diary -> {
+                    List<EmojiResponse> emojis = getEmojiResponses(diary.getId());
+                    return toDiaryResponse(diary, emojis);
+                })
+                .toList();
+
+        return new DiaryListResponse(diaryResponses);
     }
 
     private List<EmojiResponse> getEmojiResponses(Long diaryId) {

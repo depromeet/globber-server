@@ -18,6 +18,15 @@ public interface DiaryRepository extends JpaRepository<Diary, Long> {
     @Query("SELECT d FROM Diary d JOIN FETCH d.memberTravelCity c JOIN FETCH c.city WHERE d.id = :id")
     Optional<Diary> findWithCityById(@Param("id") Long id);
 
+    @Query("""
+                    SELECT DISTINCT d
+                    FROM Diary d
+                    JOIN FETCH d.memberTravelCity mtc
+                    JOIN FETCH mtc.memberTravel mt
+                    JOIN FETCH mt.member m
+                    WHERE m.uuid = :uuid
+            """)
+    List<Diary> findAllWithRelationsByMemberUuid(@Param("uuid") String uuid);
 
     @Query("""
                 select distinct d
