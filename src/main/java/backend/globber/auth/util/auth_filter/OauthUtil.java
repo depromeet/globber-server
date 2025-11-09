@@ -8,6 +8,7 @@ import backend.globber.auth.service.SecurityUserDetailService;
 import backend.globber.auth.service.TokenService;
 import backend.globber.auth.util.CookieProvider;
 import backend.globber.auth.util.JwtTokenProvider;
+import backend.globber.bookmark.service.BookmarkService;
 import backend.globber.exception.spec.CustomAuthException;
 import backend.globber.exception.spec.CustomIOException;
 import jakarta.servlet.http.Cookie;
@@ -46,6 +47,7 @@ public class OauthUtil implements OAuth2UserService<OAuth2UserRequest, OAuth2Use
     private final JwtTokenProvider jwtTokenProvider;
     private final TokenService tokenService;
     private final CookieProvider cookieProvider;
+    private final BookmarkService bookmarkService;
 
     @Value("${oauth2_redirect_uri.success}")
     private String successRedirectUri;
@@ -127,6 +129,34 @@ public class OauthUtil implements OAuth2UserService<OAuth2UserRequest, OAuth2Use
         // 토큰 생성
         String accessToken = jwtTokenProvider.createAccessToken(email, roles);
         response.addHeader("Authorization", accessToken);
+
+        // 자동 북마크 처리 추가
+        try {
+            Cookie[] cookies = Optional.ofNullable(request.getCookies()).orElse(new Cookie[0]);
+            for (Cookie c : cookies) {
+                if ("pendingBookmarkId".equals(c.getName())) {
+                    Long targetMemberId = Long.parseLong(c.getValue());
+
+                    bookmarkService.addBookmark(member.getId(), targetMemberId);
+                    log.info("자동 북마크 완료: {} → {}", member.getId(), targetMemberId);
+
+                    // 쿠키 삭제
+                    ResponseCookie deleteCookie = ResponseCookie.from("pendingBookmarkId", "")
+                            .httpOnly(true)
+                            .secure(true)
+                            .sameSite("Lax")
+                            .path("/")
+                            .domain("globber-dev.store")
+                            .maxAge(0)
+                            .build();
+                    response.addHeader("Set-Cookie", deleteCookie.toString());
+                    break;
+                }
+            }
+        } catch (Exception e) {
+            log.warn("자동 북마크 실패: {}", e.getMessage());
+        }
+
         try {
             // 리다이렉트
             String redirect_uri = Optional.ofNullable(request.getParameter("redirect_uri"))

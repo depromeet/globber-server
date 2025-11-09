@@ -8,9 +8,13 @@ import backend.globber.bookmark.service.constant.BookmarkSortType;
 import backend.globber.common.dto.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -22,6 +26,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.Duration;
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/v1/bookmarks")
 @RequiredArgsConstructor
@@ -31,12 +38,33 @@ public class BookmarkController {
     private final TokenService tokenService;
     private final BookmarkService bookmarkService;
 
+    @Value("${app.oauth.redirect-domain}")
+    private String oauthRedirectDomain;
+
     @PostMapping
-    @Operation(summary = "북마크 추가", description = "특정 사용자를 북마크에 추가합니다.")
+    @Operation(summary = "북마크 추가", description = "특정 사용자를 북마크에 추가합니다. (비회원 자동처리 포함)")
     public ResponseEntity<ApiResponse<Void>> addBookmark(
-        @RequestBody @Valid BookmarkRequest request,
-        @RequestHeader("Authorization") String accessToken
+            @RequestBody @Valid BookmarkRequest request,
+            @RequestHeader(value = "Authorization", required = false) String accessToken,
+            HttpServletResponse response
     ) {
+        // 로그인 여부 판단
+        if (accessToken == null || !accessToken.startsWith("Bearer ")) {
+            // 비회원 → targetMemberId 쿠키에 저장
+            ResponseCookie cookie = ResponseCookie.from("pendingBookmarkId", request.targetMemberId().toString())
+                    .httpOnly(true)
+                    .path("/")
+                    .sameSite("Lax")
+                    .maxAge(Duration.ofHours(1))
+                    .build();
+            response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+
+            // 로그인 페이지로 리다이렉트
+            String redirectUrl = oauthRedirectDomain + "/oauth2/authorization/kakao";
+            response.setHeader("Location", redirectUrl);
+            return ResponseEntity.status(HttpStatus.FOUND).build();
+        }
+
         Long memberId = tokenService.getMemberIdFromAccessToken(accessToken);
         bookmarkService.addBookmark(memberId, request.targetMemberId());
         return ResponseEntity.ok(ApiResponse.success(null));
@@ -45,20 +73,20 @@ public class BookmarkController {
     @GetMapping
     @Operation(summary = "북마크 목록 조회", description = "내가 북마크한 사용자 목록을 조회합니다.")
     public ResponseEntity<ApiResponse<List<BookmarkedFriendResponse>>> getBookmarks(
-        @RequestHeader("Authorization") String accessToken,
-        @RequestParam(defaultValue = "LATEST") BookmarkSortType sort
+            @RequestHeader("Authorization") String accessToken,
+            @RequestParam(defaultValue = "LATEST") BookmarkSortType sort
     ) {
         Long memberId = tokenService.getMemberIdFromAccessToken(accessToken);
         List<BookmarkedFriendResponse> result = bookmarkService.getBookmarkedFriends(memberId,
-            sort);
+                sort);
         return ResponseEntity.ok(ApiResponse.success(result));
     }
 
     @DeleteMapping("/{targetMemberId}")
     @Operation(summary = "북마크 삭제", description = "특정 사용자를 북마크에서 제거합니다.")
     public ResponseEntity<ApiResponse<Void>> removeBookmark(
-        @PathVariable Long targetMemberId,
-        @RequestHeader("Authorization") String accessToken
+            @PathVariable Long targetMemberId,
+            @RequestHeader("Authorization") String accessToken
     ) {
         Long memberId = tokenService.getMemberIdFromAccessToken(accessToken);
         bookmarkService.removeBookmark(memberId, targetMemberId);
