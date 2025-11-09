@@ -7,11 +7,14 @@ import backend.globber.auth.repository.MemberRepository;
 import backend.globber.auth.repository.RefreshTokenRedisRepository;
 import backend.globber.auth.service.TokenService;
 import backend.globber.auth.util.JwtTokenProvider;
+import backend.globber.exception.spec.CustomAuthException;
 import backend.globber.exception.spec.CustomTokenException;
 import backend.globber.exception.spec.UsernameNotFoundException;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 
 @Service
@@ -38,20 +41,20 @@ public class TokenServiceImpl implements TokenService {
     public JwtTokenResponse updateAccessToken(String accessToken, String refreshToken) {
         // 사용자 체크
         Member member = memberRepository.findByEmail(
-            jwtTokenProvider.getEmailForAccessToken(accessToken)).orElseThrow(
-            () -> new UsernameNotFoundException("해당 이메일을 가진 사용자가 존재하지 않습니다.")
+                jwtTokenProvider.getEmailForAccessToken(accessToken)).orElseThrow(
+                () -> new UsernameNotFoundException("해당 이메일을 가진 사용자가 존재하지 않습니다.")
         );
         // 토큰 존재여부 체크
         RefreshToken refreshTokenEntity = refreshTokenRepository.findById(member.getEmail())
-            .orElseThrow(
-                () -> new CustomTokenException("해당 이메일을 가진 사용자의 RefreshToken이 존재하지 않습니다.")
-            );
+                .orElseThrow(
+                        () -> new CustomTokenException("해당 이메일을 가진 사용자의 RefreshToken이 존재하지 않습니다.")
+                );
         // 토큰 유효여부 체크
         jwtTokenProvider.validateToken(refreshToken);
 
         // 토큰 동일여부 체크
         if (!jwtTokenProvider.sameRefreshToken(refreshToken,
-            refreshTokenEntity.getRefreshTokenId())) {
+                refreshTokenEntity.getRefreshTokenId())) {
             throw new CustomTokenException("RefreshToken이 일치하지 않습니다.");
         }
         // 토큰 갱신
@@ -68,8 +71,8 @@ public class TokenServiceImpl implements TokenService {
         }
         // 사용자 체크 및 refreshToken 존재여부 체크
         RefreshToken refreshTokenEntity = refreshTokenRepository.findById(
-            jwtTokenProvider.getEmailForAccessToken(accessToken)).orElseThrow(
-            () -> new CustomTokenException("해당 이메일을 가진 사용자의 RefreshToken이 존재하지 않습니다.")
+                jwtTokenProvider.getEmailForAccessToken(accessToken)).orElseThrow(
+                () -> new CustomTokenException("해당 이메일을 가진 사용자의 RefreshToken이 존재하지 않습니다.")
         );
         // 토큰 삭제
         refreshTokenRepository.delete(refreshTokenEntity);
@@ -83,9 +86,18 @@ public class TokenServiceImpl implements TokenService {
         }
         // 사용자 체크
         Member member = memberRepository.findByEmail(
-            jwtTokenProvider.getEmailForAccessToken(accessToken)).orElseThrow(
-            () -> new UsernameNotFoundException("해당 이메일을 가진 사용자가 존재하지 않습니다.")
+                jwtTokenProvider.getEmailForAccessToken(accessToken)).orElseThrow(
+                () -> new UsernameNotFoundException("해당 이메일을 가진 사용자가 존재하지 않습니다.")
         );
         return member.getId();
+    }
+
+    @Override
+    @Transactional
+    public void deleteMember(Long memberId) {
+        if (!memberRepository.existsById(memberId)) {
+            throw new CustomAuthException("해당 회원을 찾을 수 없습니다.");
+        }
+        memberRepository.deleteById(memberId);
     }
 }

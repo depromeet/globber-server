@@ -3,8 +3,11 @@ package backend.globber.diary.service.impl;
 import backend.globber.auth.domain.Member;
 import backend.globber.auth.repository.MemberRepository;
 import backend.globber.auth.util.JwtTokenProvider;
+import backend.globber.city.controller.dto.CityResponse;
 import backend.globber.city.domain.City;
 import backend.globber.city.repository.CityRepository;
+import backend.globber.diary.controller.dto.CityGroupedDiaryResponse;
+import backend.globber.diary.controller.dto.DiaryListResponse;
 import backend.globber.diary.controller.dto.DiaryRequest;
 import backend.globber.diary.controller.dto.DiaryResponse;
 import backend.globber.diary.controller.dto.EmojiResponse;
@@ -31,6 +34,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toList;
 
@@ -97,7 +102,7 @@ public class DiaryServiceImpl implements DiaryService {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new UsernameNotFoundException("회원 정보를 찾을 수 없습니다."));
 
-        Diary diary = diaryRepository.findById(diaryId)
+        Diary diary = diaryRepository.findWithCityById(diaryId)
                 .orElseThrow(() -> new DiaryNotFoundException("기록을 찾을 수 없습니다."));
 
         if (!diary.getMemberTravelCity().getMemberTravel().getMember().getId().equals(member.getId())) {
@@ -143,6 +148,46 @@ public class DiaryServiceImpl implements DiaryService {
         return toDiaryResponse(diary, emojis);
     }
 
+    @Transactional(readOnly = true)
+    @Override
+    public DiaryResponse getDiaryDetail(Long diaryId) {
+        Diary diary = diaryRepository.findWithCityById(diaryId)
+                .orElseThrow(() -> new DiaryNotFoundException("기록을 찾을 수 없습니다."));
+
+        List<EmojiResponse> emojis = getEmojiResponses(diaryId);
+
+        return toDiaryResponse(diary, emojis);
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public DiaryListResponse getDiariesByUUID(String uuid) {
+        List<Diary> diaries = diaryRepository.findAllWithRelationsByMemberUuid(uuid);
+
+        // Diary → DiaryResponse 변환
+        List<DiaryResponse> diaryResponses = diaries.stream()
+                .map(diary -> {
+                    List<EmojiResponse> emojis = getEmojiResponses(diary.getId());
+                    return toDiaryResponse(diary, emojis);
+                })
+                .toList();
+
+        // cityId 기준으로 그룹핑
+        Map<Long, List<DiaryResponse>> grouped = diaryResponses.stream()
+                .collect(Collectors.groupingBy(d -> d.city().cityId()));
+
+        // cityId 별 CityGroupedDiaryResponse 생성
+        List<CityGroupedDiaryResponse> cityGroups = grouped.entrySet().stream()
+                .map(entry -> new CityGroupedDiaryResponse(
+                        entry.getValue().get(0).city(),  // 같은 cityId면 동일한 CityResponse
+                        entry.getValue()
+                ))
+                .toList();
+
+        return new DiaryListResponse(cityGroups);
+    }
+
+
     private List<EmojiResponse> getEmojiResponses(Long diaryId) {
         return emojiRepository
                 .findAllByDiaryIdOrderByCountDescCreatedAtAsc(diaryId)
@@ -169,7 +214,7 @@ public class DiaryServiceImpl implements DiaryService {
 
         return new DiaryResponse(
                 diary.getId(),
-                diary.getMemberTravelCity().getCity(),
+                CityResponse.toResponse(diary.getMemberTravelCity().getCity()),
                 diary.getText(),
                 diary.getCreatedAt().toString(),
                 diary.getUpdatedAt().toString(),

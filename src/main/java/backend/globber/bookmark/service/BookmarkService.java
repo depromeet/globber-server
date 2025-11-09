@@ -7,12 +7,13 @@ import backend.globber.bookmark.domain.Bookmark;
 import backend.globber.bookmark.repository.BookmarkRepository;
 import backend.globber.bookmark.service.constant.BookmarkSortType;
 import backend.globber.exception.spec.BookmarkException;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -31,14 +32,14 @@ public class BookmarkService {
         }
 
         Member me = memberRepository.findById(memberId)
-            .orElseThrow(() -> new BookmarkException("사용자를 찾을 수 없습니다."));
+                .orElseThrow(() -> new BookmarkException("사용자를 찾을 수 없습니다."));
         Member target = memberRepository.findById(targetMemberId)
-            .orElseThrow(() -> new BookmarkException("북마크 대상 사용자를 찾을 수 없습니다."));
+                .orElseThrow(() -> new BookmarkException("북마크 대상 사용자를 찾을 수 없습니다."));
 
         Bookmark bookmark = Bookmark.builder()
-            .member(me)
-            .targetMember(target)
-            .build();
+                .member(me)
+                .targetMember(target)
+                .build();
 
         try {
             bookmarkRepository.save(bookmark);
@@ -61,26 +62,25 @@ public class BookmarkService {
         List<Bookmark> bookmarks = getBookmarks(memberId, sortType);
 
         return bookmarks.stream()
-            .map(bookmark -> {
-                Member target = bookmark.getTargetMember();
-                return BookmarkedFriendResponse.builder()
-                    .memberId(target.getId())
-                    .nickname(target.getName())
-                    .profileImageUrl(target.getProfileImageUrl(s3BaseUrl))
-                    .bookmarked(true)
-                    .build();
-            })
-            .toList();
+                .map(bookmark -> {
+                    Member target = bookmark.getTargetMember();
+                    return BookmarkedFriendResponse.builder()
+                            .memberId(target.getId())
+                            .uuid(target.getUuid())
+                            .nickname(target.getName())
+                            .profileImageUrl(target.getProfileImageUrl(s3BaseUrl))
+                            .bookmarked(true)
+                            .build();
+                })
+                .toList();
     }
 
     private List<Bookmark> getBookmarks(Long memberId, BookmarkSortType sortType) {
         List<Bookmark> bookmarks;
         switch (sortType) {
-            case NAME ->
-                bookmarks = bookmarkRepository.findAllByMember_IdOrderByTargetMember_NameAsc(
+            case NAME -> bookmarks = bookmarkRepository.findAllByMember_IdOrderByTargetMember_NameAsc(
                     memberId);
-            case LATEST ->
-                bookmarks = bookmarkRepository.findAllByMember_IdOrderByCreatedAtDesc(memberId);
+            case LATEST -> bookmarks = bookmarkRepository.findAllByMember_IdOrderByCreatedAtDesc(memberId);
             default -> throw new BookmarkException("지원하지 않는 정렬 방식입니다.");
         }
         return bookmarks;

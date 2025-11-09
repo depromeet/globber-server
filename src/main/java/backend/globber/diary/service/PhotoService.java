@@ -2,6 +2,7 @@ package backend.globber.diary.service;
 
 import backend.globber.diary.controller.dto.PhotoRequest;
 import backend.globber.diary.controller.dto.PhotoResponse;
+
 import java.util.List;
 
 public interface PhotoService {
@@ -12,7 +13,7 @@ public interface PhotoService {
 
     PhotoResponse getPhotoId(Long photoId);
 
-    PhotoResponse updatePhoto(Long memberId, Long diaryId, PhotoRequest photoRequest);
+    void updatePhoto(Long memberId, Long diaryId, List<PhotoRequest> photoRequests);
 
     void deletePhoto(Long memberId, Long diaryId, Long photoId);
 

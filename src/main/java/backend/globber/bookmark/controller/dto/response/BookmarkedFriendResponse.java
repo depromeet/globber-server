@@ -4,10 +4,11 @@ import lombok.Builder;
 
 @Builder
 public record BookmarkedFriendResponse(
-    Long memberId,
-    String nickname,
-    String profileImageUrl,
-    boolean bookmarked
+        Long memberId,
+        String uuid,
+        String nickname,
+        String profileImageUrl,
+        boolean bookmarked
 ) {
 
 }

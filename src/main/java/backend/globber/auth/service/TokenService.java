@@ -13,4 +13,6 @@ public interface TokenService {
     void logout(String accessToken);
 
     Long getMemberIdFromAccessToken(String refreshToken);
+
+    void deleteMember(Long memberId);
 }
