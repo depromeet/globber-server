@@ -25,6 +25,7 @@ public interface DiaryRepository extends JpaRepository<Diary, Long> {
                     JOIN FETCH mtc.memberTravel mt
                     JOIN FETCH mt.member m
                     WHERE m.uuid = :uuid
+                    ORDER BY d.createdAt DESC
             """)
     List<Diary> findAllWithRelationsByMemberUuid(@Param("uuid") String uuid);
 
