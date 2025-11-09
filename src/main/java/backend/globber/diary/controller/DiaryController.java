@@ -23,6 +23,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/v1/diaries")
 @RequiredArgsConstructor
@@ -84,15 +86,15 @@ public class DiaryController {
 
 
     @PutMapping("/photo/{diary_id}")
-    @Operation(summary = "여행기록 사진 수정", description = "기존 여행기록에서 사진을 수정합니다.")
+    @Operation(summary = "여행기록 사진 다중 수정", description = "기존 여행기록에서 여러 사진을 수정합니다.")
     public ResponseEntity<ApiResponse<DiaryResponse>> updatePhotoToDiary(
             @RequestHeader("Authorization") String accessToken,
             @PathVariable Long diary_id,
-            @RequestBody PhotoRequest photoRequest
+            @RequestBody List<PhotoRequest> photoRequests
     ) {
         Long memberId = commonService.getMemberIdFromToken(accessToken);
         // 사진 수정 로직 실행
-        photoService.updatePhoto(memberId, diary_id, photoRequest);
+        photoService.updatePhoto(memberId, diary_id, photoRequests);
         // 사진 수정된 Diary 정보 반환
         DiaryResponse diary = diaryService.getDiaryDetail(memberId, diary_id);
 
