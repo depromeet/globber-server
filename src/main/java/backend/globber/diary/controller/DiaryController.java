@@ -60,6 +60,7 @@ public class DiaryController {
     ) {
         // 프론트에서 기존 + 수정 데이터 모두 전달됨 → 서비스에서 update 처리만
         Long memberId = commonService.getMemberIdFromToken(accessToken);
+        photoService.updatePhoto(memberId, diary_id, diaryRequest.photos());
 
         DiaryResponse diary = diaryService.updateDiary(memberId, diary_id, diaryRequest);
         return ResponseEntity.ok(ApiResponse.success(diary));
