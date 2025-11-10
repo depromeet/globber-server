@@ -43,9 +43,18 @@ services:
     image: redis:7.2
     ports:
       - "6379:6379"
-    command: [ "redis-server", "--cluster-enabled", "no", "--protected-mode", "no",  "--appendonly", "yes", "--dir", "/data"]
+    command:
+      [
+        "redis-server",
+        "--cluster-enabled", "no",
+        "--protected-mode", "no",
+        "--appendonly", "yes",
+        "--appendfsync", "everysec",
+        "--save", "",
+        "--dir", "/data"
+      ]
     volumes:
-      - ./redis_data:/data
+      - /home/minug0320/redis-data:/data
     restart: always
     networks:
       - prod_network
