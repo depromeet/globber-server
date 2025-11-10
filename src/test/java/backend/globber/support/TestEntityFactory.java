@@ -15,7 +15,7 @@ import java.util.List;
 public class TestEntityFactory {
 
     public static Member createMember(String email, String name) {
-        return Member.of(email, name, "password", AuthProvider.KAKAO, List.of(Role.ROLE_USER));
+        return Member.of(email, name, "password", AuthProvider.KAKAO, List.of(Role.ROLE_USER), "123456");
     }
 
     public static City createCity(String name, String country, String code, double lat, double lng) {

@@ -19,6 +19,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
+import org.testcontainers.shaded.org.apache.commons.lang3.RandomStringUtils;
 
 import java.util.List;
 
@@ -49,7 +50,8 @@ class GlobeServiceIntegrationTest {
                 "테스트유저",
                 null,
                 AuthProvider.KAKAO,
-                List.of(Role.ROLE_USER)
+                List.of(Role.ROLE_USER),
+                RandomStringUtils.randomAlphanumeric(6)
         );
         memberRepository.save(member);
         testUuid = member.getUuid();

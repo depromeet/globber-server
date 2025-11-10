@@ -47,7 +47,8 @@ class ProfileServiceTest {
             "테스트유저",
             "password",
             AuthProvider.KAKAO,
-            List.of(Role.ROLE_USER)
+            List.of(Role.ROLE_USER),
+                "123456"
         );
         ReflectionTestUtils.setField(member, "id", 1L);
     }

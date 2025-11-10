@@ -4,6 +4,7 @@ import backend.globber.auth.domain.Member;
 import backend.globber.auth.domain.constant.AuthProvider;
 import backend.globber.auth.dto.OAuthAttributeDto;
 import backend.globber.auth.repository.MemberRepository;
+import backend.globber.auth.service.MemberService;
 import backend.globber.auth.service.SecurityUserDetailService;
 import backend.globber.auth.service.TokenService;
 import backend.globber.auth.util.CookieProvider;
@@ -48,6 +49,7 @@ public class OauthUtil implements OAuth2UserService<OAuth2UserRequest, OAuth2Use
     private final TokenService tokenService;
     private final CookieProvider cookieProvider;
     private final BookmarkService bookmarkService;
+    private final MemberService memberService;
 
     @Value("${oauth2_redirect_uri.success}")
     private String successRedirectUri;
@@ -89,7 +91,7 @@ public class OauthUtil implements OAuth2UserService<OAuth2UserRequest, OAuth2Use
         Member member = oAuthAttributeDto.toEntity();
         // 이미 가입된 회원인지 확인
         if (!memberRepository.existsByEmail(member.getEmail())) {
-            memberRepository.save(member);
+            memberService.registerOAuthMember(member);
         }
         // member의 Role 을 이용해 authorities를 구성.
         Collection<? extends GrantedAuthority> authorities = userDetailService.loadUserByUsername(
