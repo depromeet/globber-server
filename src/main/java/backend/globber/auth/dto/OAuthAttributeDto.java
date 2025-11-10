@@ -59,6 +59,6 @@ public class OAuthAttributeDto {
         // id + provider로 email을 만들어줌.
         String email = this.attributes.get(this.nameAttributeKey) + "@" + this.provider.toString()
             .toLowerCase();
-        return Member.of(email, name, "", provider, roles);
+        return Member.of(email, name, "", provider, roles, "123456");
     }
 }
