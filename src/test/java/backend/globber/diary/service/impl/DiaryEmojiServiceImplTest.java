@@ -62,7 +62,7 @@ class DiaryEmojiServiceIntegrationTest {
         TransactionStatus tx2 = transactionManager.getTransaction(new DefaultTransactionDefinition());
         try {
             Member member = Member.of("test@globber.com", "테스터", "password",
-                    AuthProvider.KAKAO, List.of(Role.ROLE_USER));
+                    AuthProvider.KAKAO, List.of(Role.ROLE_USER), "123456");
 
             City city = City.builder()
                     .cityName("서울")
