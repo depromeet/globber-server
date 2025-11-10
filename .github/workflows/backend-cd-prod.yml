@@ -14,9 +14,9 @@ jobs:
     steps:
       - name: 백엔드 로그 디렉토리 정리
         run: |
-          sudo chown -R ubuntu:ubuntu /home/ubuntu/actions-runner/_work/globber-server || true
-          sudo chmod -R 777 /home/ubuntu/actions-runner/_work/globber-server || true
-          sudo rm -rf /home/ubuntu/actions-runner/_work/globber-server/globber-server/log || true
+          sudo chown -R minug0320:minug0320 /home/minug0320/actions-runner/_work/globber-server || true
+          sudo chmod -R 777 /home/minug0320/actions-runner/_work/globber-server || true
+          sudo rm -rf /home/minug0320/actions-runner/_work/globber-server/globber-server/log || true
 
       - name: 저장소 체크아웃
         uses: actions/checkout@v4
