@@ -53,7 +53,7 @@ public class Member {
     @Convert(converter = AuthProviderConverter.class)
     @Column(nullable = false)
     private AuthProvider authProvider;
-    @Column(nullable = false, unique = true, updatable = false)
+    @Column(nullable = false, unique = true, updatable = false, length = 6)
     private String uuid;  // 공유 링크 식별자
     private boolean isFirstLogin;
     @Column(length = 500)
@@ -79,9 +79,10 @@ public class Member {
             String name,
             String password,
             AuthProvider authProvider,
-            List<Role> roles
+            List<Role> roles,
+            String uuid
     ) {
-        return new Member(email, name, password, authProvider, roles, UUID.randomUUID().toString());
+        return new Member(email, name, password, authProvider, roles, uuid);
     }
 
     public void changePassword(String password) {
@@ -99,6 +100,8 @@ public class Member {
     public void changeProfileImage(String s3Key) {
         this.profileImageKey = s3Key;
     }
+
+    public void changeUUID(String uuid) { this.uuid = uuid; }
 
     public String getProfileImageUrl(String s3BaseUrl) {
         if (StringUtils.isEmpty(profileImageKey)) {

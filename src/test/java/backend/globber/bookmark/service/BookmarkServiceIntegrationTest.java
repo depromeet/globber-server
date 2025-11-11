@@ -51,7 +51,8 @@ class BookmarkServiceIntegrationTest {
                 "테스트유저",
                 "password",
                 AuthProvider.KAKAO,
-                List.of(Role.ROLE_USER)
+                List.of(Role.ROLE_USER),
+                "123456"
         );
         memberRepository.save(member);
 
@@ -60,7 +61,8 @@ class BookmarkServiceIntegrationTest {
                 "가나다",
                 "password",
                 AuthProvider.KAKAO,
-                List.of(Role.ROLE_USER)
+                List.of(Role.ROLE_USER),
+                "12345f"
         );
         memberRepository.save(targetMember1);
 
@@ -69,7 +71,8 @@ class BookmarkServiceIntegrationTest {
                 "타겟유저2",
                 "password",
                 AuthProvider.KAKAO,
-                List.of(Role.ROLE_USER)
+                List.of(Role.ROLE_USER),
+                "12345d"
         );
         memberRepository.save(targetMember2);
     }
@@ -225,7 +228,8 @@ class BookmarkServiceIntegrationTest {
                 "다른유저",
                 "password",
                 AuthProvider.KAKAO,
-                List.of(Role.ROLE_USER)
+                List.of(Role.ROLE_USER),
+                "123def"
         );
         memberRepository.save(anotherMember);
 
