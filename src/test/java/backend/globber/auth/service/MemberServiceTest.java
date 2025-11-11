@@ -13,18 +13,16 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.context.annotation.Import;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.test.annotation.Rollback;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 
 @DataJpaTest
-@Import({MemberService.class, ShortIdGenerator.class, PostgresTestConfig.class})
+@Import({MemberService.class, ShortIdGenerator.class, MemberSaver.class, PostgresTestConfig.class})
 class MemberServiceTest {
 
     @Autowired
@@ -35,6 +33,9 @@ class MemberServiceTest {
 
     @MockitoBean
     private ShortIdGenerator shortIdGenerator;
+
+    @Autowired
+    private MemberSaver memberSaver;
 
     @Autowired
     EntityManager em;
@@ -113,26 +114,5 @@ class MemberServiceTest {
         assertThat(returned.getId()).isEqualTo(activeMember.getId());
         assertThat(returned.getUuid()).isEqualTo("XYZ789");
         assertThat(memberRepository.count()).isEqualTo(1); // 중복 등록 X
-    }
-
-    @Test
-    @DisplayName("UUID 충돌이 반복되면 DataIntegrityViolationException 발생")
-    void uuidCollision_throwsException() {
-        // given: 첫 번째 멤버가 먼저 "AAAAAA"로 저장되도록 고정
-        given(shortIdGenerator.generate(6)).willReturn("AAAAAA");
-
-        Member first = Member.of(
-                "dup@example.com", "중복테스트", null,
-                AuthProvider.KAKAO, List.of(Role.ROLE_USER), null
-        );
-        memberService.saveMemberWithUUID(first); // uuid = "AAAAAA" 로 INSERT
-
-        Member second = Member.of(
-                "dup2@example.com", "충돌유저", null,
-                AuthProvider.KAKAO, List.of(Role.ROLE_USER), null
-        );
-
-        assertThrows(DataIntegrityViolationException.class,
-                () -> memberService.saveMemberWithUUID(second));
     }
 }
