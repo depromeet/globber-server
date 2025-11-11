@@ -19,6 +19,8 @@ import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.Where;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -33,6 +35,8 @@ import java.util.UUID;
         })
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@SQLDelete(sql = "UPDATE member SET deleted = true WHERE id = ?")
+@Where(clause = "deleted = false")
 public class Member {
 
     @ElementCollection(fetch = FetchType.EAGER)
@@ -54,6 +58,8 @@ public class Member {
     private boolean isFirstLogin;
     @Column(length = 500)
     private String profileImageKey;
+    @Column(nullable = false)
+    private boolean deleted = false;
 
 
     // -- 생성자 메서드 -- //
