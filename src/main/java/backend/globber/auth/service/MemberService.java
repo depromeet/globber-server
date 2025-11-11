@@ -22,6 +22,7 @@ public class MemberService {
     private static final int UUID_LENGTH = 6;
     private static final int MAX_RETRY = 8;
 
+    @Transactional
     public Member registerOAuthMember(Member newMember) {
         Optional<Member> existingOpt = memberRepository.findByEmailIncludingDeleted(newMember.getEmail());
         if (existingOpt.isPresent()) {
