@@ -22,10 +22,10 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.UUID;
 
 
 @Entity
@@ -58,9 +58,13 @@ public class Member {
     private boolean isFirstLogin;
     @Column(length = 500)
     private String profileImageKey;
+
+    // 소프트 딜리트
     @Column(nullable = false)
     private boolean deleted = false;
 
+    // 탈퇴 시각
+    private LocalDateTime deletedAt;
 
     // -- 생성자 메서드 -- //
     private Member(String email, String name, String password, AuthProvider authProvider,
@@ -101,13 +105,21 @@ public class Member {
         this.profileImageKey = s3Key;
     }
 
-    public void changeUUID(String uuid) { this.uuid = uuid; }
+    public void changeUUID(String uuid) {
+        this.uuid = uuid;
+    }
 
     public String getProfileImageUrl(String s3BaseUrl) {
         if (StringUtils.isEmpty(profileImageKey)) {
             return null;
         }
         return s3BaseUrl + "/" + profileImageKey;
+    }
+
+    // 복구 처리
+    public void restore() {
+        this.deleted = false;
+        this.deletedAt = null;
     }
 
     // -- 비지니스 로직 (검증, setter) -- //
