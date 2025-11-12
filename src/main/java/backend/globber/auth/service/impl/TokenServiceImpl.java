@@ -14,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -102,7 +103,7 @@ public class TokenServiceImpl implements TokenService {
         String randomSuffix = UUID.randomUUID().toString();
         String newEmail = "deleted_" + randomSuffix + "@deleted.com";
         member.updateEmail(newEmail);
-
-        memberRepository.deleteById(memberId);
+        member.setDeleted(true);
+        member.setDeletedAt(LocalDateTime.now());
     }
 }

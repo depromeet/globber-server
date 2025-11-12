@@ -120,6 +120,14 @@ public class Member {
         this.email = email;
     }
 
+    public void setDeleted(boolean deleted) {
+        this.deleted = deleted;
+    }
+
+    public void setDeletedAt(LocalDateTime deletedAt) {
+        this.deletedAt = deletedAt;
+    }
+
     // -- 비지니스 로직 (검증, setter) -- //
 
     // -- Equals & Hash -- //
