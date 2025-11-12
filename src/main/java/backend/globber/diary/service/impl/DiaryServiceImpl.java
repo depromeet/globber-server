@@ -221,7 +221,8 @@ public class DiaryServiceImpl implements DiaryService {
                 photos,
                 emojis,
                 diary.getMemberTravelCity().getMemberTravel().getMember().getId(),
-                diary.getMemberTravelCity().getMemberTravel().getMember().getName()
+                diary.getMemberTravelCity().getMemberTravel().getMember().getName(),
+                diary.getMemberTravelCity().getMemberTravel().getMember().getProfileImageKey()
         );
     }
 }

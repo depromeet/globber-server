@@ -13,7 +13,8 @@ public record DiaryResponse(
         List<PhotoResponse> photos, // 첨부된 사진 정보 리스트
         List<EmojiResponse> emojis,
         Long memberId,
-        String nickname
+        String nickname,
+        String profileImageUrl
 ) {
 
 }
