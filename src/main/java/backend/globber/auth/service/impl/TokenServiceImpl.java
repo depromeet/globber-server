@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.UUID;
 
 
 @Service
@@ -95,9 +96,13 @@ public class TokenServiceImpl implements TokenService {
     @Override
     @Transactional
     public void deleteMember(Long memberId) {
-        if (!memberRepository.existsById(memberId)) {
-            throw new CustomAuthException("해당 회원을 찾을 수 없습니다.");
-        }
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new CustomAuthException("해당 회원을 찾을 수 없습니다."));
+
+        String randomSuffix = UUID.randomUUID().toString();
+        String newEmail = "deleted_" + randomSuffix + "@deleted.com";
+        member.updateEmail(newEmail);
+
         memberRepository.deleteById(memberId);
     }
 }

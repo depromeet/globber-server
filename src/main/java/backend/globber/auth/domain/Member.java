@@ -116,10 +116,8 @@ public class Member {
         return s3BaseUrl + "/" + profileImageKey;
     }
 
-    // 복구 처리
-    public void restore() {
-        this.deleted = false;
-        this.deletedAt = null;
+    public void updateEmail(String email) {
+        this.email = email;
     }
 
     // -- 비지니스 로직 (검증, setter) -- //
