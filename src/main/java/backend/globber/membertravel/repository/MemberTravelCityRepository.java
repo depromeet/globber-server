@@ -28,4 +28,28 @@ public interface MemberTravelCityRepository extends JpaRepository<MemberTravelCi
                 where mt.member.id = :memberId
             """)
     List<City> findVisitedCities(@Param("memberId") Long memberId);
+
+    /**
+     * 사용자가 방문한 고유 국가 수 조회
+     */
+    @Query("""
+                select count(distinct c.countryCode)
+                from MemberTravelCity mtc
+                join mtc.city c
+                join mtc.memberTravel mt
+                where mt.member.id = :memberId
+            """)
+    int countDistinctCountries(@Param("memberId") Long memberId);
+
+    /**
+     * 사용자가 방문한 고유 도시 수 조회
+     */
+    @Query("""
+                select count(distinct c.cityId)
+                from MemberTravelCity mtc
+                join mtc.city c
+                join mtc.memberTravel mt
+                where mt.member.id = :memberId
+            """)
+    int countDistinctCities(@Param("memberId") Long memberId);
 }
