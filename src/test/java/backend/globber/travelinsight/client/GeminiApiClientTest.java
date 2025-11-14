@@ -2,12 +2,15 @@ package backend.globber.travelinsight.client;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import backend.globber.diary.domain.constant.PhotoTag;
 import backend.globber.membertravel.controller.dto.TravelCityDto;
 import backend.globber.membertravel.controller.dto.response.MemberTravelAllResponse;
 import backend.globber.membertravel.controller.dto.response.MemberTravelResponse;
 import backend.globber.support.PostgresTestConfig;
 import backend.globber.travelinsight.controller.dto.response.TravelInsightResponse;
+import backend.globber.travelinsight.domain.TravelStatistics;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,7 +38,10 @@ class GeminiApiClientTest {
         MemberTravelAllResponse travels = new MemberTravelAllResponse(1L, List.of(travelResponse));
 
         // when
-        TravelInsightResponse response = geminiApiClient.createTitle(travels);
+        TravelInsightResponse response = geminiApiClient.createTitle(
+            travels,
+            createStatistics(2, 3, 1)
+        );
 
         // then
         assertThat(response).isNotNull();
@@ -56,7 +62,10 @@ class GeminiApiClientTest {
         MemberTravelAllResponse travels = new MemberTravelAllResponse(1L, List.of(travelResponse));
 
         // when
-        TravelInsightResponse response = geminiApiClient.createTitle(travels);
+        TravelInsightResponse response = geminiApiClient.createTitle(
+            travels,
+            createStatistics(3, 3, 1)
+        );
 
         // then
         assertThat(response.title()).isNotBlank();
@@ -77,7 +86,10 @@ class GeminiApiClientTest {
         MemberTravelAllResponse travels = new MemberTravelAllResponse(1L, List.of(travelResponse));
 
         // when
-        TravelInsightResponse response = geminiApiClient.createTitle(travels);
+        TravelInsightResponse response = geminiApiClient.createTitle(
+            travels,
+            createStatistics(4, 4, 4)
+        );
 
         // then
         assertThat(response.title()).isNotBlank();
@@ -97,7 +109,10 @@ class GeminiApiClientTest {
         MemberTravelAllResponse travels = new MemberTravelAllResponse(1L, List.of(travelResponse));
 
         // when
-        TravelInsightResponse response = geminiApiClient.createTitle(travels);
+        TravelInsightResponse response = geminiApiClient.createTitle(
+            travels,
+            createStatistics(1, 3, 1)
+        );
 
         // then
         assertThat(response.title()).isNotBlank();
@@ -127,4 +142,21 @@ class GeminiApiClientTest {
 //        assertThatThrownBy(() -> invalidClient.createTitle(travels))
 //            .isInstanceOf(GeminiException.class);
 //    }
+
+    private TravelStatistics createStatistics(int countryCount, int cityCount, int continentCount) {
+        return TravelStatistics.builder()
+            .countryCount(countryCount)
+            .cityCount(cityCount)
+            .continentCount(continentCount)
+            .photoTagCounts(defaultPhotoTags())
+            .build();
+    }
+
+    private Map<PhotoTag, Long> defaultPhotoTags() {
+        return Map.of(
+            PhotoTag.FOOD, 5L,
+            PhotoTag.SCENERY, 3L,
+            PhotoTag.PEOPLE, 2L
+        );
+    }
 }
