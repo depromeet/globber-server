@@ -66,9 +66,6 @@ public class TravelInsightService {
 
             String resolvedTitle = resolveTitle(memberTravelAllResponse, statistics, level, scope, type);
 
-            // DB에 저장 또는 업데이트
-            TravelInsight savedTravelInsight = travelInsightRepository.findByMemberId(memberId).orElse(null);
-
             if (savedTravelInsight != null) {
                 savedTravelInsight.updateTitle(resolvedTitle);
                 log.info("기존 인사이트 업데이트 - memberId: {}, newTitle: {}", memberId, resolvedTitle);
@@ -80,7 +77,6 @@ public class TravelInsightService {
                 travelInsightRepository.save(insight);
                 log.info("새 인사이트 생성 - memberId: {}, title: {}", memberId, resolvedTitle);
             }
-
             return TravelInsightResponse.of(resolvedTitle);
         } catch (Exception e) {
             log.error("예상치 못한 오류 - memberId: {}, 원인: {}", memberId, e.getMessage(), e);
