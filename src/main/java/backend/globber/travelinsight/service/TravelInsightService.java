@@ -70,13 +70,16 @@ public class TravelInsightService {
 
     private TravelInsightResponse createOrUpdateTravelInsight(Long memberId, TravelInsight savedTravelInsight) {
         try {
-            // 1. 통계 데이터 수집
-            TravelStatistics statistics = collectTravelStatistics(memberId);
-            log.info("여행 통계 수집 완료 - memberId: {}, 국가: {}, 도시: {}, 대륙: {}",
-                    memberId, statistics.getCountryCount(), statistics.getCityCount(), statistics.getContinentCount());
+            // 1. 통계 데이터 및 방문 도시 수집 (한 번의 쿼리로 처리)
+            TravelStatisticsWithCities statsWithCities = collectTravelStatistics(memberId);
+            TravelStatistics statistics = statsWithCities.statistics();
+            List<City> visitedCities = statsWithCities.visitedCities();
 
-            // 2. 방문 국가 코드 리스트 조회
-            List<String> visitedCountryCodes = getVisitedCountryCodes(memberId);
+            log.info("여행 통계 수집 완료 - memberId: {}, 국가: {}, 도시: {}",
+                    memberId, statistics.getCountryCount(), statistics.getCityCount());
+
+            // 2. 방문 국가 코드 리스트 추출
+            List<String> visitedCountryCodes = getVisitedCountryCodes(visitedCities);
 
             // 3. 타이틀 생성
             String title = travelTitleGenerator.generateTitle(statistics, visitedCountryCodes);
@@ -104,35 +107,47 @@ public class TravelInsightService {
 
     /**
      * 사용자의 여행 통계 데이터 수집
+     * 방문한 도시 리스트를 반환하여 재사용 가능하도록 함
      */
-    private TravelStatistics collectTravelStatistics(Long memberId) {
-        // 국가 수, 도시 수 조회
-        int countryCount = memberTravelCityRepository.countDistinctCountries(memberId);
-        int cityCount = memberTravelCityRepository.countDistinctCities(memberId);
+    private TravelStatisticsWithCities collectTravelStatistics(Long memberId) {
+        // 방문한 도시 리스트 조회 (한 번의 쿼리로 모든 정보 획득)
+        List<City> visitedCities = memberTravelCityRepository.findVisitedCities(memberId);
 
-        // 대륙 수는 TravelTitleGenerator에서 계산하므로 여기서는 0으로 설정
-        int continentCount = 0;
+        // 메모리에서 국가 수, 도시 수 계산
+        int countryCount = (int) visitedCities.stream()
+                .map(City::getCountryCode)
+                .distinct()
+                .count();
+
+        int cityCount = visitedCities.size(); // 이미 distinct한 city 리스트
 
         // 사진 태그별 개수 조회
         Map<PhotoTag, Long> photoTagCounts = getPhotoTagCounts(memberId);
 
-        return TravelStatistics.builder()
+        TravelStatistics statistics = TravelStatistics.builder()
                 .countryCount(countryCount)
                 .cityCount(cityCount)
-                .continentCount(continentCount)
+                .continentCount(0) // 대륙 수는 TravelTitleGenerator에서 계산
                 .photoTagCounts(photoTagCounts)
                 .build();
+
+        return new TravelStatisticsWithCities(statistics, visitedCities);
     }
 
     /**
-     * 사용자가 방문한 국가 코드 리스트 조회
+     * 방문한 도시 리스트에서 국가 코드만 추출
      */
-    private List<String> getVisitedCountryCodes(Long memberId) {
-        List<City> visitedCities = memberTravelCityRepository.findVisitedCities(memberId);
+    private List<String> getVisitedCountryCodes(List<City> visitedCities) {
         return visitedCities.stream()
                 .map(City::getCountryCode)
                 .distinct()
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * 통계와 도시 리스트를 함께 담는 내부 DTO
+     */
+    private record TravelStatisticsWithCities(TravelStatistics statistics, List<City> visitedCities) {
     }
 
     /**
