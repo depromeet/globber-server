@@ -19,6 +19,7 @@ class TravelTitleComposerTest {
 
     private static Stream<Arguments> titleCases() {
         return Stream.of(
+            Arguments.of(25, 16, 1, counts(50, 50, 50), "대담한 세계 탐험가"),
             Arguments.of(30, 12, 3, counts(10, 20, 60), "대담한 세계 탐험가"),
             Arguments.of(20, 8, 1, counts(5, 11, 4), "호기심 많은 대륙 인상가"),
             Arguments.of(9, 3, 1, counts(2, 2, 7), "열정적인 로컬 감상가"),
