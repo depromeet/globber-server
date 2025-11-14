@@ -146,9 +146,8 @@ public class OauthUtil implements OAuth2UserService<OAuth2UserRequest, OAuth2Use
                     ResponseCookie deleteCookie = ResponseCookie.from("pendingBookmarkId", "")
                             .httpOnly(true)
                             .secure(true)
-                            .sameSite("Lax")
+                            .sameSite("None")
                             .path("/")
-                            .domain("globber-dev.store")
                             .maxAge(0)
                             .build();
                     response.addHeader("Set-Cookie", deleteCookie.toString());
