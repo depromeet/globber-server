@@ -21,6 +21,8 @@ public class OAuthAttributeDto {
     private String nameAttributeKey;
     private AuthProvider provider;
 
+    private static final String basicNickname = "글로버";
+
     // 내부 생성자
     public OAuthAttributeDto(Map<String, Object> attributes, String name, String email,
                              String nameAttributeKey, AuthProvider provider) {
@@ -58,7 +60,7 @@ public class OAuthAttributeDto {
 
         return OAuthAttributeDto.builder()
                 .attributes(attributes)
-                .name(nickname != null ? nickname : "글로버")
+                .name(nickname != null ? nickname : basicNickname)
                 .email(email)
                 .nameAttributeKey(nameAttributeKey)
                 .provider(AuthProvider.KAKAO)
