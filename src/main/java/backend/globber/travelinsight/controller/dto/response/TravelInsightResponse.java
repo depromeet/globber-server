@@ -7,6 +7,8 @@ public record TravelInsightResponse(
     String title
 ) {
 
+    public static final String DEFAULT_TITLE = "자유로운 여행자";
+
     public static TravelInsightResponse of(String title) {
         return TravelInsightResponse.builder()
             .title(title)
@@ -15,7 +17,7 @@ public record TravelInsightResponse(
 
     public static TravelInsightResponse empty() {
         return TravelInsightResponse.builder()
-            .title("자유로운 여행자")
+            .title(DEFAULT_TITLE)
             .build();
     }
 }
