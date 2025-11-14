@@ -43,7 +43,7 @@ class BookmarkServiceIntegrationTest {
     void setUp() {
         // 테스트 데이터 초기화
         bookmarkRepository.deleteAll();
-        memberRepository.deleteAll();
+        memberRepository.truncateAll();
 
         // 회원 생성
         member = Member.of(

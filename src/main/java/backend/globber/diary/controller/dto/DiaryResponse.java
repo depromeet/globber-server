@@ -11,7 +11,10 @@ public record DiaryResponse(
         String createdAt,    // 생성 날짜
         String updatedAt,    // 수정 날짜
         List<PhotoResponse> photos, // 첨부된 사진 정보 리스트
-        List<EmojiResponse> emojis
+        List<EmojiResponse> emojis,
+        Long memberId,
+        String nickname,
+        String profileImageUrl
 ) {
 
 }

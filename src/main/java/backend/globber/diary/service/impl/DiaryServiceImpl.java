@@ -219,7 +219,10 @@ public class DiaryServiceImpl implements DiaryService {
                 diary.getCreatedAt().toString(),
                 diary.getUpdatedAt().toString(),
                 photos,
-                emojis
+                emojis,
+                diary.getMemberTravelCity().getMemberTravel().getMember().getId(),
+                diary.getMemberTravelCity().getMemberTravel().getMember().getName(),
+                diary.getMemberTravelCity().getMemberTravel().getMember().getProfileImageKey()
         );
     }
 }

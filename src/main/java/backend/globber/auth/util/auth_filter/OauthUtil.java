@@ -89,7 +89,7 @@ public class OauthUtil implements OAuth2UserService<OAuth2UserRequest, OAuth2Use
         OAuthAttributeDto oAuthAttributeDto = OAuthAttributeDto.of(oAuth2User.getAttributes(),
                 userNameAttributeName, provider);
         Member member = oAuthAttributeDto.toEntity();
-        // 이미 가입된 회원인지 확인
+        // 소프트 딜리트 되거나 처음 회원
         if (!memberRepository.existsByEmail(member.getEmail())) {
             memberService.registerOAuthMember(member);
         }

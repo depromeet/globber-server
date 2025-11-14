@@ -19,11 +19,13 @@ import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.Where;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.UUID;
 
 
 @Entity
@@ -33,6 +35,8 @@ import java.util.UUID;
         })
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@SQLDelete(sql = "UPDATE member SET deleted = true WHERE id = ?")
+@Where(clause = "deleted = false")
 public class Member {
 
     @ElementCollection(fetch = FetchType.EAGER)
@@ -41,7 +45,7 @@ public class Member {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    @Column(nullable = false, length = 50)
+    @Column(nullable = false, length = 100)
     private String email;
     @Column(nullable = false, length = 30)
     private String name;
@@ -55,6 +59,12 @@ public class Member {
     @Column(length = 500)
     private String profileImageKey;
 
+    // 소프트 딜리트
+    @Column(nullable = false)
+    private boolean deleted = false;
+
+    // 탈퇴 시각
+    private LocalDateTime deletedAt;
 
     // -- 생성자 메서드 -- //
     private Member(String email, String name, String password, AuthProvider authProvider,
@@ -95,13 +105,27 @@ public class Member {
         this.profileImageKey = s3Key;
     }
 
-    public void changeUUID(String uuid) { this.uuid = uuid; }
+    public void changeUUID(String uuid) {
+        this.uuid = uuid;
+    }
 
     public String getProfileImageUrl(String s3BaseUrl) {
         if (StringUtils.isEmpty(profileImageKey)) {
             return null;
         }
         return s3BaseUrl + "/" + profileImageKey;
+    }
+
+    public void updateEmail(String email) {
+        this.email = email;
+    }
+
+    public void setDeleted(boolean deleted) {
+        this.deleted = deleted;
+    }
+
+    public void setDeletedAt(LocalDateTime deletedAt) {
+        this.deletedAt = deletedAt;
     }
 
     // -- 비지니스 로직 (검증, setter) -- //
