@@ -1,13 +1,11 @@
 package backend.globber.travelinsight.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 
 import backend.globber.membertravel.domain.MemberTravel;
@@ -66,34 +64,6 @@ class TravelInsightServiceTest {
     @BeforeEach
     void setUp() {
         lenient().when(travelInsightSettings.getTitleStrategy()).thenReturn(TitleStrategy.SERVER);
-    }
-
-    @Test
-    @DisplayName("캐시가 유효하면 기존 인사이트를 반환한다")
-    void shouldReturnCached_WhenCacheValid() {
-        // given
-        Long memberId = 1L;
-        LocalDateTime insightUpdatedAt = LocalDateTime.now();
-        LocalDateTime travelUpdatedAt = insightUpdatedAt.minusHours(1); // 인사이트가 더 최신
-
-        TravelInsight savedInsight = TravelInsight.builder()
-            .memberId(memberId)
-            .title("아시아 탐험가")
-            .build();
-        ReflectionTestUtils.setField(savedInsight, "updatedAt", insightUpdatedAt);
-
-        MemberTravel memberTravel = createMemberTravel(travelUpdatedAt);
-
-        given(travelInsightRepository.findByMemberId(memberId)).willReturn(Optional.of(savedInsight));
-        given(memberTravelRepository.findAllByMember_Id(memberId)).willReturn(List.of(memberTravel));
-
-        // when
-        TravelInsightResponse result = travelInsightService.getOrCreateInsight(memberId);
-
-        // then
-        assertThat(result.title()).isEqualTo("아시아 탐험가");
-        then(aiClient).shouldHaveNoInteractions();
-        then(travelInsightRepository).should(never()).save(any());
     }
 
     @Test
@@ -164,7 +134,6 @@ class TravelInsightServiceTest {
         Long memberId = 1L;
         MemberTravel memberTravel = createMemberTravel(LocalDateTime.now());
 
-        given(travelInsightRepository.findByMemberId(memberId)).willReturn(Optional.empty());
         given(memberTravelRepository.findAllByMember_Id(memberId)).willReturn(List.of(memberTravel));
         given(travelStatisticsService.calculate(memberId)).willReturn(TravelStatistics.empty());
 

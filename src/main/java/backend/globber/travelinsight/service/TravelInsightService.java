@@ -15,9 +15,7 @@ import backend.globber.travelinsight.domain.constant.TravelLevel;
 import backend.globber.travelinsight.domain.constant.TravelScope;
 import backend.globber.travelinsight.domain.constant.TravelType;
 import backend.globber.travelinsight.repository.TravelInsightRepository;
-import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -39,42 +37,18 @@ public class TravelInsightService {
 
     @Transactional
     public TravelInsightResponse getOrCreateInsight(Long memberId) {
-        TravelInsight savedTravelInsight = findTravelInsight(memberId);
-
         List<MemberTravel> travels = memberTravelRepository.findAllByMember_Id(memberId);
         if (travels.isEmpty()) {
             return TravelInsightResponse.empty();
         }
 
-        if (savedTravelInsight != null && !isTravelDataChanged(savedTravelInsight, travels)) {
-            log.info("기존 캐시된 인사이트 반환 - memberId: {}", memberId);
-            return TravelInsightResponse.of(savedTravelInsight.getTitle());
-        }
-
-        return createOrUpdateTravelInsight(memberId, travels, savedTravelInsight);
+        return createOrUpdateTravelInsight(memberId, travels);
     }
 
-    private TravelInsight findTravelInsight(Long memberId) {
-        return travelInsightRepository.findByMemberId(memberId)
-            .orElse(null);
-    }
-
-    private boolean isTravelDataChanged(TravelInsight savedInsight, List<MemberTravel> travels) {
-        LocalDateTime insightUpdatedAt = savedInsight.getUpdatedAt();
-
-        LocalDateTime latestTravelUpdate = travels.stream()
-            .map(MemberTravel::getUpdatedAt)
-            .filter(Objects::nonNull)
-            .max(LocalDateTime::compareTo)
-            .orElse(null);
-
-        return latestTravelUpdate == null || latestTravelUpdate.isAfter(insightUpdatedAt);
-    }
-
-    private TravelInsightResponse createOrUpdateTravelInsight(Long memberId, List<MemberTravel> travels, TravelInsight savedTravelInsight) {
+    private TravelInsightResponse createOrUpdateTravelInsight(Long memberId, List<MemberTravel> travels) {
         try {
             MemberTravelAllResponse memberTravelAllResponse = MemberTravelAllResponse.from(memberId, travels);
-            log.info("새로운 인사이트 생성 중 - memberId: {}, 여행 기록 수: {}", memberId, travels.size());
+            log.info("여행 인사이트 생성 중 - memberId: {}, 여행 기록 수: {}", memberId, travels.size());
 
             TravelStatistics statistics = travelStatisticsService.calculate(memberId);
             if (!statistics.hasTravel()) {
@@ -92,6 +66,9 @@ public class TravelInsightService {
 
             String resolvedTitle = resolveTitle(memberTravelAllResponse, statistics, level, scope, type);
 
+            // DB에 저장 또는 업데이트
+            TravelInsight savedTravelInsight = travelInsightRepository.findByMemberId(memberId).orElse(null);
+
             if (savedTravelInsight != null) {
                 savedTravelInsight.updateTitle(resolvedTitle);
                 log.info("기존 인사이트 업데이트 - memberId: {}, newTitle: {}", memberId, resolvedTitle);
@@ -103,6 +80,7 @@ public class TravelInsightService {
                 travelInsightRepository.save(insight);
                 log.info("새 인사이트 생성 - memberId: {}, title: {}", memberId, resolvedTitle);
             }
+
             return TravelInsightResponse.of(resolvedTitle);
         } catch (Exception e) {
             log.error("예상치 못한 오류 - memberId: {}, 원인: {}", memberId, e.getMessage(), e);
