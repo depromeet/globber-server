@@ -3,11 +3,12 @@ package backend.globber.auth.dto;
 import backend.globber.auth.domain.Member;
 import backend.globber.auth.domain.constant.AuthProvider;
 import backend.globber.auth.domain.constant.Role;
-import java.util.List;
-import java.util.Map;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
+
+import java.util.List;
+import java.util.Map;
 
 @Builder
 @Getter
@@ -22,7 +23,7 @@ public class OAuthAttributeDto {
 
     // 내부 생성자
     public OAuthAttributeDto(Map<String, Object> attributes, String name, String email,
-        String nameAttributeKey, AuthProvider provider) {
+                             String nameAttributeKey, AuthProvider provider) {
         this.attributes = attributes;
         this.name = name;
         this.email = email;
@@ -32,7 +33,7 @@ public class OAuthAttributeDto {
 
     // 팩토리 메서드, 외부공개용.
     public static OAuthAttributeDto of(Map<String, Object> attributes, String nameAttributeKey,
-        AuthProvider provider) {
+                                       AuthProvider provider) {
         if (AuthProvider.KAKAO.equals(provider)) {
             return ofKakao(attributes, nameAttributeKey);
         }
@@ -41,24 +42,34 @@ public class OAuthAttributeDto {
 
     // 팩토리 메서드 구현체.
     private static OAuthAttributeDto ofKakao(Map<String, Object> attributes,
-        String nameAttributeKey) {
+                                             String nameAttributeKey) {
         Map<String, Object> properties = (Map<String, Object>) attributes.get("properties");
         Map<String, Object> kakaoAccount = (Map<String, Object>) attributes.get("kakao_account");
 
+        String nickname = null;
+        if (properties != null) {
+            nickname = (String) properties.get("nickname");
+        }
+
+        String email = null;
+        if (kakaoAccount != null) {
+            email = (String) kakaoAccount.get("email");
+        }
+
         return OAuthAttributeDto.builder()
-            .attributes(attributes)
-            .name(properties.get("nickname").toString())
-            .email(kakaoAccount.get("email").toString())
-            .nameAttributeKey(nameAttributeKey)
-            .provider(AuthProvider.KAKAO)
-            .build();
+                .attributes(attributes)
+                .name(nickname != null ? nickname : "글로버")
+                .email(email)
+                .nameAttributeKey(nameAttributeKey)
+                .provider(AuthProvider.KAKAO)
+                .build();
     }
 
     public Member toEntity() {
         List<Role> roles = List.of(Role.ROLE_USER); // 최초 가입시 권한. -> 소셜로그인은 항상 ROLE_USER
         // id + provider로 email을 만들어줌.
         String email = this.attributes.get(this.nameAttributeKey) + "@" + this.provider.toString()
-            .toLowerCase();
+                .toLowerCase();
         return Member.of(email, name, "", provider, roles, "123456");
     }
 }
