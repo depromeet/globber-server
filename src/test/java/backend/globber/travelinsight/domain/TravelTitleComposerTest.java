@@ -45,7 +45,7 @@ class TravelTitleComposerTest {
         );
     }
 
-    @ParameterizedTest(name = "[{0}도시/{1}국가/{2}대륙] => {5}")
+    @ParameterizedTest(name = "[{0}도시/{1}국가/{2}대륙] => {4}")
     @MethodSource("titleCases")
     @DisplayName("여행 타이틀 조합 테스트")
     void shouldComposeExpectedTitle(
