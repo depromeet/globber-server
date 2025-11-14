@@ -134,7 +134,7 @@ public class TravelInsightService {
                 return java.util.Optional.empty();
             }
             String aiTitle = aiResponse.title();
-            if (StringUtils.hasText(aiTitle) && !"자유로운 여행자".equals(aiTitle)) {
+            if (StringUtils.hasText(aiTitle) && !TravelInsightResponse.DEFAULT_TITLE.equals(aiTitle)) {
                 return java.util.Optional.of(aiTitle);
             }
             log.warn("AI 인사이트가 비어있거나 기본값입니다. 서버 조합 타이틀을 사용합니다.");

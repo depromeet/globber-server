@@ -1,9 +1,9 @@
 package backend.globber.travelinsight.client;
 
+import backend.globber.diary.domain.constant.PhotoTag;
 import backend.globber.exception.spec.GeminiException;
 import backend.globber.membertravel.controller.dto.response.MemberTravelAllResponse;
 import backend.globber.membertravel.controller.dto.response.MemberTravelResponse;
-import backend.globber.diary.domain.constant.PhotoTag;
 import backend.globber.travelinsight.controller.dto.response.TravelInsightResponse;
 import backend.globber.travelinsight.domain.TravelStatistics;
 import backend.globber.travelinsight.domain.constant.TravelLevel;
@@ -147,7 +147,7 @@ public class GeminiApiClient implements AiClient {
                     .path("parts")
                     .path(0)
                     .path("text")
-                    .asText("자유로운 여행자")) // default value
+                    .asText(TravelInsightResponse.DEFAULT_TITLE))
                 .build();
         } catch (Exception e) {
             log.error("AI 응답 파싱 실패: {}", e.getMessage(), e);
