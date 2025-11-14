@@ -54,7 +54,8 @@ public class BookmarkController {
             ResponseCookie cookie = ResponseCookie.from("pendingBookmarkId", request.targetMemberId().toString())
                     .httpOnly(true)
                     .path("/")
-                    .sameSite("Lax")
+                    .sameSite("None")
+                    .secure(true)
                     .maxAge(Duration.ofHours(1))
                     .build();
             response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
