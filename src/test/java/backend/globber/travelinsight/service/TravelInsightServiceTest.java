@@ -1,13 +1,11 @@
 package backend.globber.travelinsight.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 
 import backend.globber.membertravel.domain.MemberTravel;
@@ -56,31 +54,6 @@ class TravelInsightServiceTest {
 
     @Mock
     private TravelInsightSettings travelInsightSettings;
-
-    @Spy
-    private TravelTitleComposer travelTitleComposer = new TravelTitleComposer();
-
-    @InjectMocks
-    private TravelInsightService travelInsightService;
-
-    @BeforeEach
-    void setUp() {
-        lenient().when(travelInsightSettings.getTitleStrategy()).thenReturn(TitleStrategy.SERVER);
-    }
-
-    @Test
-    @DisplayName("캐시가 유효하면 기존 인사이트를 반환한다")
-    void shouldReturnCached_WhenCacheValid() {
-        // given
-        Long memberId = 1L;
-        LocalDateTime insightUpdatedAt = LocalDateTime.now();
-        LocalDateTime travelUpdatedAt = insightUpdatedAt.minusHours(1); // 인사이트가 더 최신
-
-        TravelInsight savedInsight = TravelInsight.builder()
-            .memberId(memberId)
-            .title("아시아 탐험가")
-            .build();
-        ReflectionTestUtils.setField(savedInsight, "updatedAt", insightUpdatedAt);
 
     @Spy
     private TravelTitleComposer travelTitleComposer = new TravelTitleComposer();
