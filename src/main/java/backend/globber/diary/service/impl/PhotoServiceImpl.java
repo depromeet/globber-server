@@ -45,6 +45,11 @@ public class PhotoServiceImpl implements PhotoService {
             throw new PhotoCountException("사진은 최대 " + MAX_PHOTOS + "장까지만 업로드할 수 있습니다.");
         }
 
+        // displayOrder 결정: request에 있으면 사용, 없으면 현재 사진 개수 + 1
+        Integer displayOrder = request.displayOrder() != null
+                ? request.displayOrder()
+                : currentCount + 1;
+
         Photo photo = Photo.builder()
                 .photoCode(request.photoCode())
                 .lat(request.lat())
@@ -54,6 +59,7 @@ public class PhotoServiceImpl implements PhotoService {
                 .takenMonth(request.takenMonth())
                 .tag(request.tag())
                 .placeName(request.placeName())
+                .displayOrder(displayOrder)
                 .diary(diary)
                 .build();
 
@@ -107,6 +113,11 @@ public class PhotoServiceImpl implements PhotoService {
                     request.tag(),
                     request.placeName()
             );
+
+            // displayOrder 업데이트 (요청에 포함된 경우에만)
+            if (request.displayOrder() != null) {
+                photo.updateDisplayOrder(request.displayOrder());
+            }
         }
     }
 
@@ -141,7 +152,8 @@ public class PhotoServiceImpl implements PhotoService {
                 photo.getHeight(),
                 photo.getTakenMonth(),
                 photo.getPlaceName(),
-                photo.getTag()
+                photo.getTag(),
+                photo.getDisplayOrder()
         );
     }
 }

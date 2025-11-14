@@ -12,6 +12,7 @@ public record PhotoResponse(
     Long height,
     YearMonth takenMonth,
     String placeName,
-    PhotoTag tag) {
+    PhotoTag tag,
+    Integer displayOrder) { // 사진 노출 순서
 
 }

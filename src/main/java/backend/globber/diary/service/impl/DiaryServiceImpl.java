@@ -87,9 +87,24 @@ public class DiaryServiceImpl implements DiaryService {
                 .build();
         diaryRepository.save(diary);
 
-        // Photo 저장
-        for (PhotoRequest photoRequest : diaryRequest.photos()) {
-            photoService.savePhoto(memberId, diary.getId(), photoRequest);
+        // Photo 저장 (순서 보장)
+        List<PhotoRequest> photosWithOrder = diaryRequest.photos();
+        for (int i = 0; i < photosWithOrder.size(); i++) {
+            PhotoRequest original = photosWithOrder.get(i);
+            // displayOrder가 없으면 순서대로 설정 (1부터 시작)
+            PhotoRequest photoWithOrder = new PhotoRequest(
+                    original.photoId(),
+                    original.photoCode(),
+                    original.lat(),
+                    original.lng(),
+                    original.width(),
+                    original.height(),
+                    original.takenMonth(),
+                    original.tag(),
+                    original.placeName(),
+                    original.displayOrder() != null ? original.displayOrder() : i + 1
+            );
+            photoService.savePhoto(memberId, diary.getId(), photoWithOrder);
         }
 
         // 저장된 Diary + Photo 리스트 변환
@@ -208,7 +223,8 @@ public class DiaryServiceImpl implements DiaryService {
                         photo.getHeight(),
                         photo.getTakenMonth(),
                         photo.getPlaceName(),
-                        photo.getTag()
+                        photo.getTag(),
+                        photo.getDisplayOrder()
                 ))
                 .collect(toList());
 

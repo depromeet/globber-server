@@ -46,7 +46,9 @@ public record PhotoRequest(
 
         PhotoTag tag,        // 태그
 
-        String placeName // 사진이 찍힌 장소 이름 - 사용자 추가시 사용 가능할수도...?
+        String placeName, // 사진이 찍힌 장소 이름 - 사용자 추가시 사용 가능할수도...?
+
+        Integer displayOrder // 사진 노출 순서 (등록 순서 유지용)
 ) {
 
 }

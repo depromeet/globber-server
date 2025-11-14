@@ -51,7 +51,10 @@ public class Photo extends BaseTimeEntity {
 
     // 메타데이터 End
 
-    private PhotoTag tag; // ex. “바다”, “여행”, “음식”
+    private PhotoTag tag; // ex. "바다", "여행", "음식"
+
+    @Column(nullable = false)
+    private Integer displayOrder; // 사진 노출 순서 (등록 순서 유지용)
 
     // FK: Diary (N:1 관계)
     @ManyToOne(fetch = FetchType.LAZY)
@@ -69,6 +72,10 @@ public class Photo extends BaseTimeEntity {
         this.takenMonth = takenMonth;
         this.tag = tag;
         this.placeName = placeName;
+    }
+
+    public void updateDisplayOrder(Integer displayOrder) {
+        this.displayOrder = displayOrder;
     }
 
 }
