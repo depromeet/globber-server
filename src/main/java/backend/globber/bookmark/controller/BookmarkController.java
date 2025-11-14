@@ -62,8 +62,10 @@ public class BookmarkController {
 
             // 로그인 페이지로 리다이렉트
             String redirectUrl = oauthRedirectDomain + "/oauth2/authorization/kakao";
-            response.setHeader("Location", redirectUrl);
-            return ResponseEntity.status(HttpStatus.FOUND).build();
+
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)  // 401
+                    .header("X-Redirect-URL", redirectUrl)
+                    .body(ApiResponse.success(null));
         }
 
         Long memberId = tokenService.getMemberIdFromAccessToken(accessToken);
