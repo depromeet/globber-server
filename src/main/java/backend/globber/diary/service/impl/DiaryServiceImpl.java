@@ -201,7 +201,10 @@ public class DiaryServiceImpl implements DiaryService {
     // Diary -> DiaryResponse 변환
     private DiaryResponse toDiaryResponse(Diary diary, List<EmojiResponse> emojis) {
         List<PhotoResponse> photos = diary.getPhotos().stream()
-                .sorted(Comparator.comparing(Photo::getCreatedAt))
+                .sorted(Comparator.comparing(
+                        Photo::getCreatedAt,
+                        Comparator.nullsLast(Comparator.naturalOrder())
+                ))
                 .map(photo -> new PhotoResponse(
                         photo.getId(),
                         photo.getPhotoCode(),
