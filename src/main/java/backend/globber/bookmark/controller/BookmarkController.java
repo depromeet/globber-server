@@ -13,7 +13,6 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -63,7 +62,7 @@ public class BookmarkController {
             // 로그인 페이지로 리다이렉트
             String redirectUrl = oauthRedirectDomain + "/oauth2/authorization/kakao";
 
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)  // 401
+            return ResponseEntity.ok()  // 401
                     .header("X-Redirect-URL", redirectUrl)
                     .body(ApiResponse.success(null));
         }
