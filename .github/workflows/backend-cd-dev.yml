@@ -46,8 +46,8 @@ jobs:
 
       - name: Docker Compose Pull & Up 실행
         run: |
-          docker compose -f config/docker-compose-dev.yml pull
-          docker compose -f config/docker-compose-dev.yml up -d
+          docker compose -f config/docker-compose-dev.yml pull dev promtail_dev
+          docker compose -f config/docker-compose-dev.yml up -d dev promtail_dev
           echo "docker compose-dev up"
 
       - name: Docker 이미지 정리
