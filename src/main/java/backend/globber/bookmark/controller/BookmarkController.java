@@ -63,6 +63,7 @@ public class BookmarkController {
             String redirectUrl = oauthRedirectDomain + "/oauth2/authorization/kakao";
 
             return ResponseEntity.ok()  // 401
+                    .header("Access-Control-Expose-Headers", "X-Redirect-URL")
                     .header("X-Redirect-URL", redirectUrl)
                     .body(ApiResponse.success(null));
         }
