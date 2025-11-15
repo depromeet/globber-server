@@ -57,6 +57,8 @@ public class OauthUtil implements OAuth2UserService<OAuth2UserRequest, OAuth2Use
     private String failureRedirectUri;
     @Value("${oauth.redirect.allowed}")
     private List<String> allowedRedirectUri;
+    @Value("${app.cookie.domain}")
+    private String cookieDomain;
 
 
     @Override
@@ -136,6 +138,8 @@ public class OauthUtil implements OAuth2UserService<OAuth2UserRequest, OAuth2Use
         try {
             Cookie[] cookies = Optional.ofNullable(request.getCookies()).orElse(new Cookie[0]);
             for (Cookie c : cookies) {
+                log.info("쿠키 확인: {} = {}", c.getName(), c.getValue());
+
                 if ("pendingBookmarkId".equals(c.getName())) {
                     Long targetMemberId = Long.parseLong(c.getValue());
 
@@ -148,6 +152,7 @@ public class OauthUtil implements OAuth2UserService<OAuth2UserRequest, OAuth2Use
                             .secure(true)
                             .sameSite("None")
                             .path("/")
+                            .domain(cookieDomain)
                             .maxAge(0)
                             .build();
                     response.addHeader("Set-Cookie", deleteCookie.toString());
