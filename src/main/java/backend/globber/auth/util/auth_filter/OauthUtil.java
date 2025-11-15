@@ -143,10 +143,13 @@ public class OauthUtil implements OAuth2UserService<OAuth2UserRequest, OAuth2Use
                 if ("pendingBookmarkId".equals(c.getName())) {
                     Long targetMemberId = Long.parseLong(c.getValue());
 
-                    bookmarkService.addBookmark(member.getId(), targetMemberId);
-                    log.info("자동 북마크 완료: {} → {}", member.getId(), targetMemberId);
+                    try {
+                        bookmarkService.addBookmark(member.getId(), targetMemberId);
+                        log.info("자동 북마크 완료: {} → {}", member.getId(), targetMemberId);
+                    } catch (Exception e) {
+                        log.warn("자동 북마크 중복 또는 실패: {}", e.getMessage());
+                    }
 
-                    // 쿠키 삭제
                     ResponseCookie deleteCookie = ResponseCookie.from("pendingBookmarkId", "")
                             .httpOnly(true)
                             .secure(true)
@@ -160,8 +163,9 @@ public class OauthUtil implements OAuth2UserService<OAuth2UserRequest, OAuth2Use
                 }
             }
         } catch (Exception e) {
-            log.warn("자동 북마크 실패: {}", e.getMessage());
+            log.warn("자동 북마크 처리 중 예외 발생: {}", e.getMessage());
         }
+
 
         try {
             // 리다이렉트
