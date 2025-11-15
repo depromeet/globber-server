@@ -57,6 +57,7 @@ dependencies {
     testImplementation 'io.rest-assured:rest-assured:5.5.0'
 
     implementation 'software.amazon.awssdk:s3:2.20.26'
+    implementation 'io.micrometer:micrometer-registry-prometheus'
 }
 
 tasks.named('test') {

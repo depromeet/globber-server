@@ -40,6 +40,10 @@ public class BookmarkController {
     @Value("${app.oauth.redirect-domain}")
     private String oauthRedirectDomain;
 
+    @Value("${app.cookie.domain}")
+    private String cookieDomain;
+
+
     @PostMapping
     @Operation(summary = "북마크 추가", description = "특정 사용자를 북마크에 추가합니다. (비회원 자동처리 포함)")
     public ResponseEntity<ApiResponse<Void>> addBookmark(
@@ -55,6 +59,7 @@ public class BookmarkController {
                     .path("/")
                     .sameSite("None")
                     .secure(true)
+                    .domain(cookieDomain)
                     .maxAge(Duration.ofHours(1))
                     .build();
             response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
