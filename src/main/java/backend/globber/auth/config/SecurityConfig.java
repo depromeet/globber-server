@@ -23,12 +23,7 @@ import org.springframework.security.oauth2.core.http.converter.OAuth2AccessToken
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.client.RestClient;
-import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.CorsConfigurationSource;
-import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.filter.CorsFilter;
-
-import java.util.List;
 
 import static org.springframework.security.config.Customizer.withDefaults;
 
@@ -67,27 +62,6 @@ public class SecurityConfig {
                 new RestClientAuthorizationCodeTokenResponseClient();
         accessTokenResponseClient.setRestClient(restClient);
         return accessTokenResponseClient;
-    }
-
-    @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration config = new CorsConfiguration();
-
-        // 프론트 도메인만 허용
-        config.setAllowedOrigins(List.of("https://globber.world", "http://localhost:3000"));
-        // 쿠키, Authorization 헤더 등 자격 증명 허용
-        config.setAllowCredentials(true);
-
-        // 허용 메서드
-        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        // 허용 헤더
-        config.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-Requested-With"));
-        // preflight 캐시
-        config.setMaxAge(3600L);
-
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", config);
-        return source;
     }
 
     @Bean
