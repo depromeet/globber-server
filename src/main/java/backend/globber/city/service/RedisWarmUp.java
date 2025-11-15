@@ -21,6 +21,7 @@ public class RedisWarmUp {
 
     private static final String RANKING_KEY = "search_ranking";
     private static final String CITY_DATA_KEY = "city:data";
+    private static final int MAX_CITIES = 35;
 
     @EventListener(ApplicationReadyEvent.class)
     public void restoreIfEmpty() {
@@ -37,7 +38,7 @@ public class RedisWarmUp {
                 return;
             }
 
-            log.warn("Redis가 비어 있습니다. Top20 도시 데이터를 DB 및 Redis에 복원합니다.");
+            log.warn("Redis가 비어 있습니다. 도시 데이터를 DB 및 Redis에 복원합니다.");
             int score = CityInfo.values().length;
 
             for (CityInfo info : CityInfo.values()) {
@@ -70,7 +71,7 @@ public class RedisWarmUp {
                 score--;
             }
 
-            log.info("Top20 도시 데이터를 Redis에 성공적으로 복원했습니다. (총 {}건)", CityInfo.values().length);
+            log.info("도시 데이터를 Redis에 성공적으로 복원했습니다. (총 {}건)", CityInfo.values().length);
 
         } catch (Exception e) {
             log.error("Redis 복원 중 오류 발생: {}", e.getMessage(), e);
