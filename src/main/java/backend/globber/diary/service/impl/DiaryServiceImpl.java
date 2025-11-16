@@ -14,6 +14,7 @@ import backend.globber.diary.controller.dto.EmojiResponse;
 import backend.globber.diary.controller.dto.PhotoRequest;
 import backend.globber.diary.controller.dto.PhotoResponse;
 import backend.globber.diary.domain.Diary;
+import backend.globber.diary.domain.Photo;
 import backend.globber.diary.repository.DiaryEmojiRepository;
 import backend.globber.diary.repository.DiaryRepository;
 import backend.globber.diary.repository.PhotoRepository;
@@ -33,6 +34,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -199,6 +201,10 @@ public class DiaryServiceImpl implements DiaryService {
     // Diary -> DiaryResponse 변환
     private DiaryResponse toDiaryResponse(Diary diary, List<EmojiResponse> emojis) {
         List<PhotoResponse> photos = diary.getPhotos().stream()
+                .sorted(Comparator.comparing(
+                        Photo::getCreatedAt,
+                        Comparator.nullsLast(Comparator.naturalOrder())
+                ))
                 .map(photo -> new PhotoResponse(
                         photo.getId(),
                         photo.getPhotoCode(),
