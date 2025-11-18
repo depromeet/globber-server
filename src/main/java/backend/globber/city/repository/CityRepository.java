@@ -46,6 +46,7 @@ public interface CityRepository extends JpaRepository<City, Long> {
             """)
     Optional<City> findByCityUniqueDto(CityUniqueDto cityUniqueDto);
 
+
     /**
      * UPSERT (중복이면 무시)
      */
@@ -75,5 +76,8 @@ public interface CityRepository extends JpaRepository<City, Long> {
                                 @Param("lat") Double lat,
                                 @Param("lng") Double lng);
 
+    @Cacheable(
+            value = "cities", key = "#cityName + '-' + #countryCode"
+    )
     Optional<City> findByCountryCodeAndCityName(String countryCode, String cityName);
 }
