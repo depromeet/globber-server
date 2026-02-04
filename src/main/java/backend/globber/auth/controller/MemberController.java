@@ -5,6 +5,7 @@ import backend.globber.auth.service.TokenService;
 import backend.globber.auth.util.CookieProvider;
 import backend.globber.auth.util.JwtTokenProvider;
 import backend.globber.common.dto.ApiResponse;
+import backend.globber.config.TestAccountProperties;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
@@ -30,6 +31,7 @@ public class MemberController {
     private final CookieProvider cookieProvider;
     private final TokenService tokenService;
     private final JwtTokenProvider jwtTokenProvider;
+    private final TestAccountProperties testAccountProperties;
 
     @PostMapping("/logout")
     @Operation(summary = "로그아웃", description = "로그아웃을 진행합니다.")
@@ -95,11 +97,12 @@ public class MemberController {
 
         log.info("테스트 로그인 요청: {}", email);
 
+        validateTestAccount(email);
+
         String refreshToken = jwtTokenProvider.createRefreshToken();
         tokenService.updateRefreshToken(email, refreshToken);
 
         List<String> roles = List.of("ROLE_USER");
-
         String accessToken = jwtTokenProvider.createAccessToken(email, roles);
 
         ResponseCookie responseCookie = cookieProvider.createRefreshCookie(refreshToken);
@@ -110,6 +113,24 @@ public class MemberController {
             .header(HttpHeaders.SET_COOKIE, responseCookie.toString())
             .header("Authorization", accessToken)
             .body(ApiResponse.success(response));
+    }
+
+    private void validateTestAccount(String email) {
+        if (testAccountProperties.getAccounts() == null
+            || testAccountProperties.getAccounts().isEmpty()) {
+            log.error("설정된 테스트 계정이 없습니다.");
+            throw new IllegalArgumentException("테스트 계정이 설정되지 않았습니다.");
+        }
+
+        boolean isValidTestAccount = testAccountProperties.getAccounts().stream()
+            .anyMatch(account -> account.getEmail().equals(email));
+
+        if (!isValidTestAccount) {
+            log.warn("허용되지 않은 테스트 계정: {}", email);
+            throw new IllegalArgumentException("허용되지 않은 테스트 계정입니다: " + email);
+        }
+
+        log.debug("테스트 계정 검증 성공: {}", email);
     }
 
 }
