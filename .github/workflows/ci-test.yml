@@ -93,8 +93,8 @@ jobs:
             --link postgres_prod:postgres_prod \
             -p 8080:8080 \
             -e SPRING_PROFILES_ACTIVE=prod \
-            -e SPRING_REDIS_HOST=redis_prod \
-            -e SPRING_REDIS_PORT=6379 \
+            -e SPRING_DATA_REDIS_HOST=redis_prod \
+            -e SPRING_DATA_REDIS_PORT=6379 \
             -e SPRING_DATASOURCE_URL=jdbc:postgresql://postgres_prod:5432/globber \
             -e SPRING_DATASOURCE_USERNAME=globber \
             -e SPRING_DATASOURCE_PASSWORD=globber123 \
