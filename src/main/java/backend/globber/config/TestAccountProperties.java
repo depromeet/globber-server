@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.stereotype.Component;
 
 /**
  * application-{profile}.yml의 app.test-accounts 설정을 읽어오는 클래스 - application-local.yml: 로컬 환경 테스트 계정 -
