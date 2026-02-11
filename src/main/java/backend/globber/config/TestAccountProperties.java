@@ -11,6 +11,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * application-{profile}.yml의 app.test-accounts 설정을 읽어오는 클래스 - application-local.yml: 로컬 환경 테스트 계정 -
  * application-dev.yml: 개발 환경 테스트 계정 - application-prod.yml: 설정 없음 (프로덕션에서는 사용 안 함)
  */
+@Component
 @ConfigurationProperties(prefix = "app")
 @Getter
 @Setter
