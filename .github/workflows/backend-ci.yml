@@ -38,7 +38,8 @@ jobs:
 
       - name: 프로젝트 클린 & 테스트 & 빌드
         run: |
-          ./gradlew clean test build
+          ./gradlew clean test build \
+          -Ddocker.api.version=1.44
 
       - name: Docker Hub 로그인
         uses: docker/login-action@v3.3.0
