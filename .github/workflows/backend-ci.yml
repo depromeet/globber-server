@@ -31,7 +31,7 @@ jobs:
         with:
           java-version: '21'
           distribution: 'temurin'
-          cache: gradle
+          # cache: gradle
 
       - name: gradlew 실행 권한 부여
         run: chmod +x gradlew
