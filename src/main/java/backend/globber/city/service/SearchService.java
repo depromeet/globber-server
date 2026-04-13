@@ -30,7 +30,8 @@ public class SearchService {
             return cached;
         }
 
-        List<SearchResponse> candidates = cityRepository.findCandidates(keyword);
+        String countryCode = CountryCodeMapper.toCountryCode(keyword).orElse(null);
+        List<SearchResponse> candidates = cityRepository.findCandidates(keyword, countryCode);
 
         Map<Long, Double> scores = rankingRepository.getScores(
                 candidates.stream().map(SearchResponse::toEntity).toList()
@@ -41,8 +42,8 @@ public class SearchService {
         List<SearchResponse> sorted = candidates.stream()
                 .sorted(
                         Comparator
-                                .comparingInt((SearchResponse c) -> exactMatchRank(c, keyword))
-                                .thenComparingInt(c -> similarityRank(c, keyword, levenshtein))
+                                .comparingInt((SearchResponse c) -> exactMatchRank(c, keyword, countryCode))
+                                .thenComparingInt(c -> similarityRank(c, keyword, countryCode, levenshtein))
                                 .thenComparing(
                                         Comparator.comparingDouble((SearchResponse c) -> popularityRank(c, scores))
                                                 .reversed()
@@ -78,15 +79,22 @@ public class SearchService {
     }
 
 
-    private int exactMatchRank(final SearchResponse c, final String keyword) {
+    private int exactMatchRank(final SearchResponse c, final String keyword, final String countryCode) {
         if (c.cityName().equals(keyword) || c.countryName().equals(keyword)) {
+            return 0;
+        }
+        if (countryCode != null && countryCode.equals(c.countryCode())) {
             return 0;
         }
         return 1;
     }
 
-    private int similarityRank(final SearchResponse c, final String keyword, final LevenshteinDistance levenshtein) {
+    private int similarityRank(final SearchResponse c, final String keyword, final String countryCode,
+                                final LevenshteinDistance levenshtein) {
         if (c.cityName().equals(keyword) || c.countryName().equals(keyword)) {
+            return 0;
+        }
+        if (countryCode != null && countryCode.equals(c.countryCode())) {
             return 0;
         }
         return levenshtein.apply(c.cityName(), keyword);

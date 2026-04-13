@@ -21,6 +21,7 @@ public interface CityRepository extends JpaRepository<City, Long> {
 
     /**
      * pg_bigm 후보군 추출 (상위 300개)
+     * countryCode가 null이 아닌 경우 해당 국가 코드로도 검색합니다.
      */
     @Query(value = """
             SELECT c.city_id   AS cityId,
@@ -32,9 +33,11 @@ public interface CityRepository extends JpaRepository<City, Long> {
             FROM city c
             WHERE c.city_name LIKE '%' || :keyword || '%'
                OR c.country_name LIKE '%' || :keyword || '%'
+               OR (:countryCode IS NOT NULL AND c.country_code = :countryCode)
             LIMIT 300
             """, nativeQuery = true)
-    List<SearchResponse> findCandidates(@Param("keyword") String keyword);
+    List<SearchResponse> findCandidates(@Param("keyword") String keyword,
+                                        @Param("countryCode") String countryCode);
 
     @Cacheable(value = "cities", key = "#cityUniqueDto.cityName + '-' + #cityUniqueDto.countryCode + '-' + T(java.lang.String).format('%.5f', #cityUniqueDto.lat) + '-' + T(java.lang.String).format('%.5f', #cityUniqueDto.lng)")
     @Query(value = """
