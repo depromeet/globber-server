@@ -9,6 +9,7 @@ import backend.globber.auth.domain.constant.Role;
 import backend.globber.auth.repository.MemberRepository;
 import backend.globber.city.domain.City;
 import backend.globber.city.repository.CityRepository;
+import backend.globber.city.service.RedisWarmUp;
 import backend.globber.membertravel.domain.MemberTravel;
 import backend.globber.membertravel.domain.MemberTravelCity;
 import backend.globber.membertravel.repository.MemberTravelCityRepository;
@@ -27,11 +28,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.context.annotation.Import;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Import({PostgresTestConfig.class})
 //@Transactional
 class TravelInsightControllerTest {
+
+    @MockitoBean
+    private RedisWarmUp redisWarmUp;
 
     @LocalServerPort
     private int port;
