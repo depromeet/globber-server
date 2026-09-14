@@ -15,6 +15,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -48,6 +49,12 @@ public class CityController {
     @Operation(summary = "도시 검색", description = "키워드 기반으로 도시/국가를 검색합니다. 유사도 + 인기순 정렬")
     public SearchResult search(@RequestParam final String keyword) {
         return searchService.search(keyword);
+    }
+
+    @GetMapping("/all")
+    @Operation(summary = "전체 도시 조회", description = "등록된 모든 도시를 조회합니다.")
+    public ResponseEntity<ApiResponse<List<CityResponse>>> getAllCities() {
+        return ResponseEntity.ok(ApiResponse.success(cityService.getAllCities()));
     }
 
     @GetMapping("/id")
