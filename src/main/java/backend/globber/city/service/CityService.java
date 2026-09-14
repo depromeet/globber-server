@@ -13,6 +13,7 @@ import backend.globber.exception.spec.CityNotFoundException;
 import backend.globber.exception.spec.UsernameNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -25,6 +26,13 @@ public class CityService {
     private final CityRepository cityRepository;
     private final RankingRepository rankingRepository;
     private final MemberRepository memberRepository;
+
+    public List<CityResponse> getAllCities() {
+        return cityRepository.findAll(Sort.by("countryCode", "cityName", "cityId"))
+            .stream()
+            .map(CityResponse::toResponse)
+            .toList();
+    }
 
     /**
      * 인기 도시 조회
