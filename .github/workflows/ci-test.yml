@@ -5,6 +5,26 @@ on:
     branches: [ "main", "develop" ]
 
 jobs:
+  diagnose-prod:
+    runs-on: [ self-hosted, prod ]
+    steps:
+      - name: 운영 컨테이너 기동 상태 확인
+        run: |
+          docker ps -a --filter name=^/prod$ --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'
+          docker inspect prod --format 'state={{.State.Status}} running={{.State.Running}} restarting={{.State.Restarting}} exitCode={{.State.ExitCode}} error={{.State.Error}} startedAt={{.State.StartedAt}} finishedAt={{.State.FinishedAt}}'
+          echo '--- host/container resources ---'
+          uptime
+          free -m
+          docker stats --no-stream prod
+          echo '--- startup logs (redacted) ---'
+          docker logs --tail 300 prod 2>&1 \
+            | sed -E 's/((password|secret|token|access[-_]?key)[^=:\"]*[=:\"])[^ ,\"]+/\1[REDACTED]/Ig'
+          echo '--- application main thread ---'
+          docker exec prod jcmd 1 Thread.print 2>/dev/null \
+            | awk '/^"main"/,/^$/' || true
+          echo '--- local health ---'
+          curl -sS -i --max-time 20 http://127.0.0.1:8080/actuator/health || true
+
   build:
     runs-on: ubuntu-latest
 
