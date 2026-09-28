@@ -12,9 +12,16 @@ jobs:
         run: |
           docker ps -a --filter name=^/dev$ --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'
           docker inspect dev --format 'state={{.State.Status}} running={{.State.Running}} restarting={{.State.Restarting}} exitCode={{.State.ExitCode}} error={{.State.Error}} startedAt={{.State.StartedAt}} finishedAt={{.State.FinishedAt}}'
+          echo '--- host/container resources ---'
+          uptime
+          free -m
+          docker stats --no-stream dev
           echo '--- startup logs (redacted) ---'
           docker logs --tail 300 dev 2>&1 \
             | sed -E 's/((password|secret|token|access[-_]?key)[^=:\"]*[=:\"])[^ ,\"]+/\1[REDACTED]/Ig'
+          echo '--- application main thread ---'
+          docker exec dev jcmd 1 Thread.print 2>/dev/null \
+            | awk '/^"main"/,/^$/' || true
           echo '--- local health ---'
           curl -sS -i --max-time 10 http://127.0.0.1:8080/actuator/health || true
 
