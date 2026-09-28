@@ -24,6 +24,18 @@ jobs:
             | awk '/^"main"/,/^$/' || true
           echo '--- local health ---'
           curl -sS -i --max-time 20 http://127.0.0.1:8080/actuator/health || true
+          echo '--- local OpenAPI servers and cities ---'
+          curl -sS --max-time 60 http://127.0.0.1:8080/v3/api-docs -o /tmp/globber-openapi.json
+          python3 - <<'PY'
+          import json
+          with open('/tmp/globber-openapi.json') as f:
+              data = json.load(f)
+          print('servers=', data.get('servers'))
+          operation = data.get('paths', {}).get('/api/v1/cities', {}).get('get', {})
+          print('city_get_present=', bool(operation))
+          print('city_get_parameters=', operation.get('parameters'))
+          PY
+          curl -sS -i --max-time 30 'http://127.0.0.1:8080/api/v1/cities?keyword=%EC%84%9C%EC%9A%B8'
 
   build:
     runs-on: ubuntu-latest
