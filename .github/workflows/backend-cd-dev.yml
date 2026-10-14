@@ -29,6 +29,10 @@ jobs:
           username: ${{ secrets.DOCKERHUB_DEPLOY_USERNAME }}
           password: ${{ secrets.DOCKERHUB_DEPLOY_TOKEN }}
 
+      - name: 프록시 사전 검사
+        shell: bash
+        run: bash scripts/refresh-deployment-proxy.sh preflight
+
       - name: 실행 중인 컨테이너 중지 및 삭제
         run: |
           echo "dev 컨테이너 중지 중..."
@@ -49,6 +53,13 @@ jobs:
           docker compose -f config/docker-compose-dev.yml pull dev promtail
           docker compose -f config/docker-compose-dev.yml up -d dev promtail
           echo "docker compose-dev up"
+
+      - name: 백엔드 정상 기동 확인 및 프록시 갱신
+        shell: bash
+        timeout-minutes: 7
+        env:
+          PUBLIC_HEALTH_URL: ${{ vars.DEV_PUBLIC_HEALTH_URL || 'https://globber-dev.store/api/actuator/health' }}
+        run: bash scripts/refresh-deployment-proxy.sh refresh
 
       - name: Docker 이미지 정리
         run: |
