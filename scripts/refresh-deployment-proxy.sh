@@ -37,13 +37,10 @@ wait_for_health() {
   return 1
 }
 
+: "${PUBLIC_HEALTH_URL:?PUBLIC_HEALTH_URL is required}"
 wait_for_health http://localhost:8080/actuator/health 24
 # Graceful reload re-resolves static upstream names after container replacement.
 docker exec "$proxy" nginx -t
 docker exec "$proxy" nginx -s reload
-if [[ -n "${PUBLIC_HEALTH_URL:-}" ]]; then
-  wait_for_health "$PUBLIC_HEALTH_URL" 12
-  echo "Backend and public proxy health checks passed"
-else
-  echo "::warning::PUBLIC_HEALTH_URL is unset; external routing was not verified"
-fi
+wait_for_health "${PUBLIC_HEALTH_URL:?PUBLIC_HEALTH_URL is required}" 12
+echo "Backend and public proxy health checks passed"
