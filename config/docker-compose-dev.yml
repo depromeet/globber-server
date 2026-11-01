@@ -15,6 +15,8 @@ services:
       - ../log:/log
     environment:
       - SPRING_PROFILES_ACTIVE=dev
+      # 만료된 globber-dev.store 대신 dev.globber.world(Vercel 프록시 경유)로 OAuth 관련 주소를 덮어씀
+      - 'SPRING_APPLICATION_JSON={"spring":{"security":{"oauth2":{"client":{"registration":{"kakao":{"redirect-uri":"https://dev.globber.world/login/oauth2/code/kakao"}}}}}},"oauth2_redirect_uri":{"success":"https://dev.globber.world/login/oauth/success","failure":"https://dev.globber.world/login/oauth/failure"},"oauth":{"redirect":{"allowed":"https://dev.globber.world"}},"app":{"oauth":{"redirect-domain":"https://dev.globber.world"}}}'
     depends_on:
       - postgres
       - redis
