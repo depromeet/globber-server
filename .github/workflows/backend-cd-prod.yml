@@ -38,12 +38,8 @@ jobs:
         run: |
           echo "prod 컨테이너 중지 중..."
           docker stop prod && echo "prod 컨테이너 중지 완료" || echo "prod 컨테이너 없음"
-          echo "promtail_prod 컨테이너 중지 중..."
-          docker stop promtail_prod && echo "promtail_prod 컨테이너 중지 완료" || echo "promtail_prod 컨테이너 없음"
           echo "prod 컨테이너 삭제 중..."
           docker rm prod && echo "prod 컨테이너 삭제 완료" || echo "prod 컨테이너 없음"
-          echo "promtail_prod 컨테이너 삭제 중..."
-          docker rm promtail_prod && echo "promtail_prod 컨테이너 삭제 완료" || echo "promtail_prod 컨테이너 없음"
 
       - name: prod 네트워크 생성 확인
         run: |
@@ -51,8 +47,8 @@ jobs:
 
       - name: Docker Compose Pull & Up 실행
         run: |
-          docker compose -f config/docker-compose-prod.yml pull prod promtail
-          docker compose -f config/docker-compose-prod.yml up -d prod promtail
+          docker compose -f config/docker-compose-prod.yml pull prod
+          docker compose -f config/docker-compose-prod.yml up -d --no-deps prod
           echo "docker compose-prod up"
 
       - name: 백엔드 정상 기동 확인 및 프록시 갱신
