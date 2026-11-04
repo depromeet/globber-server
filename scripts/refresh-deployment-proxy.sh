@@ -2,47 +2,24 @@
 set -euo pipefail
 
 mode=${1:?Usage: refresh-deployment-proxy.sh preflight|refresh}
-case "$mode" in
-  preflight|refresh) ;;
-  *) echo "Unknown mode: $mode" >&2; exit 1 ;;
-esac
 
-proxy_kind=${DEPLOYMENT_PROXY:-auto}
-if [[ "$proxy_kind" == auto ]]; then
-  if command -v systemctl >/dev/null && systemctl is-active --quiet nginx; then
-    proxy_kind=host
-  else
-    proxy_kind=npm
-  fi
+# Container names differ between self-hosted runners. Require one unambiguous NPM.
+proxies=()
+while IFS= read -r id; do proxies+=("$id"); done < <(docker ps --format '{{.ID}} {{.Image}}' |
+  awk '$2 ~ /^jc21\/nginx-proxy-manager(:|@|$)/ {print $1}')
+if (( ${#proxies[@]} != 1 )); then
+  echo "Expected exactly one running Nginx Proxy Manager, found ${#proxies[@]}" >&2
+  exit 1
 fi
-case "$proxy_kind" in
-  host) ;;
-  npm)
-    # Container names differ between self-hosted runners.
-    proxies=()
-    while IFS= read -r id; do proxies+=("$id"); done < <(docker ps --format '{{.ID}} {{.Image}}' |
-      awk '$2 ~ /^jc21\/nginx-proxy-manager(:|@|$)/ {print $1}')
-    if (( ${#proxies[@]} != 1 )); then
-      echo "Expected exactly one running Nginx Proxy Manager, found ${#proxies[@]}" >&2
-      exit 1
-    fi
-    proxy=${proxies[0]}
-    ;;
-  *) echo "Unknown DEPLOYMENT_PROXY: $proxy_kind" >&2; exit 1 ;;
-esac
-
-check_proxy() {
-  if [[ "$proxy_kind" == host ]]; then
-    sudo -n /usr/sbin/nginx -t
-  else
-    docker exec "$proxy" nginx -t
-  fi
-}
-
-check_proxy
+proxy=${proxies[0]}
+docker exec "$proxy" nginx -t
 
 if [[ "$mode" == preflight ]]; then
   exit 0
+fi
+if [[ "$mode" != refresh ]]; then
+  echo "Unknown mode: $mode" >&2
+  exit 1
 fi
 
 wait_for_health() {
@@ -63,11 +40,7 @@ wait_for_health() {
 : "${PUBLIC_HEALTH_URL:?PUBLIC_HEALTH_URL is required}"
 wait_for_health http://localhost:8080/actuator/health 24
 # Graceful reload re-resolves static upstream names after container replacement.
-check_proxy
-if [[ "$proxy_kind" == host ]]; then
-  sudo -n /usr/bin/systemctl reload nginx
-else
-  docker exec "$proxy" nginx -s reload
-fi
+docker exec "$proxy" nginx -t
+docker exec "$proxy" nginx -s reload
 wait_for_health "${PUBLIC_HEALTH_URL:?PUBLIC_HEALTH_URL is required}" 12
 echo "Backend and public proxy health checks passed"
