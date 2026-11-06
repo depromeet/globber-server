@@ -82,10 +82,10 @@ public class CityController {
     @PutMapping("/{cityId}")
     @Operation(summary = "도시 수정", description = "기존 도시 정보를 수정합니다.")
     public ResponseEntity<ApiResponse<CityResponse>> updateCity(@PathVariable final Long cityId,
-        @RequestHeader("Authorization") String accessToken,
+        @RequestHeader(value = "Authorization", required = false) String accessToken,
         @Valid @RequestBody final CityRequest cityRequest
     ) {
-        Long memberId = commonService.getMemberIdFromToken(accessToken);
+        Long memberId = commonService.getAdminMemberIdFromToken(accessToken);
         CityResponse cityResponse = cityService.updateCity(memberId, cityId, cityRequest);
         return ResponseEntity.ok(ApiResponse.success(cityResponse));
     }
@@ -93,9 +93,9 @@ public class CityController {
     @DeleteMapping("/{cityId}")
     @Operation(summary = "도시 삭제", description = "기존 도시를 삭제합니다.")
     public ResponseEntity<ApiResponse<CityResponse>> deleteCity(@PathVariable final Long cityId,
-        @RequestHeader("Authorization") String accessToken
+        @RequestHeader(value = "Authorization", required = false) String accessToken
     ) {
-        Long memberId = commonService.getMemberIdFromToken(accessToken);
+        Long memberId = commonService.getAdminMemberIdFromToken(accessToken);
         CityResponse cityResponse = cityService.deleteCity(memberId, cityId);
         return ResponseEntity.ok(ApiResponse.success(cityResponse));
     }
