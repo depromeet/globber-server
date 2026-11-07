@@ -1,17 +1,18 @@
 package backend.globber.city.service;
 
-import backend.globber.city.controller.dto.CityResponse;
 import backend.globber.city.controller.dto.RecommendResponse;
 import backend.globber.city.domain.City;
 import backend.globber.city.repository.CityRepository;
 import backend.globber.city.repository.cache.RankingRepository;
 import backend.globber.support.PostgresTestConfig;
 import backend.globber.support.RedisTestConfig;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.annotation.Transactional;
@@ -38,6 +39,15 @@ class CityServiceIntegrationTest {
 
     @Autowired
     private RankingRepository rankingRepository;
+
+    @Autowired
+    private StringRedisTemplate stringRedisTemplate;
+
+    // Redis 컨테이너는 모든 테스트 컨텍스트가 함께 쓰므로, 다른 테스트가 남긴 인기 도시 랭킹을 지우고 시작한다
+    @BeforeEach
+    void clearRanking() {
+        stringRedisTemplate.delete(List.of("search_ranking", "city:data"));
+    }
 
 
     @Test
@@ -84,15 +94,14 @@ class CityServiceIntegrationTest {
         // then
         assertThat(response.cityResponseList()).hasSize(limit);
 
-        var expectedNames = cities.stream().map(City::getCityName).toList();
-        var expectedCountries = cities.stream().map(City::getCountryName).toList();
-
-        assertThat(response.cityResponseList().stream().map(CityResponse::cityName)).containsExactlyInAnyOrderElementsOf(expectedNames);
-        assertThat(response.cityResponseList().stream().map(CityResponse::countryName)).containsExactlyInAnyOrderElementsOf(expectedCountries);
+        // DB는 다른 테스트와 함께 쓰므로 어떤 도시가 뽑힐지는 단정하지 않고, 응답의 모든 필드가 DB 값과 같은지 확인한다
         assertThat(response.cityResponseList()).allSatisfy(dto -> {
-            assertThat(dto.lat()).isEqualTo(123.12);
-            assertThat(dto.lng()).isEqualTo(456.78);
-            assertThat(dto.countryCode()).isEqualTo("KOR");
+            City saved = cityRepository.findById(dto.cityId()).orElseThrow();
+            assertThat(dto.cityName()).isEqualTo(saved.getCityName());
+            assertThat(dto.countryName()).isEqualTo(saved.getCountryName());
+            assertThat(dto.lat()).isEqualTo(saved.getLat());
+            assertThat(dto.lng()).isEqualTo(saved.getLng());
+            assertThat(dto.countryCode()).isEqualTo(saved.getCountryCode());
         });
     }
 

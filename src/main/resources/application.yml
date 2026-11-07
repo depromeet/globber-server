@@ -3,3 +3,28 @@ spring:
     name: globber
   profiles:
     active: local
+
+management:
+  endpoints:
+    # 프로필 설정이 노출 목록을 덮어써도 health 외 엔드포인트는 비활성화되어 열리지 않게 한다.
+    access:
+      default: none
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      access: read-only
+      show-details: never
+
+---
+spring:
+  config:
+    activate:
+      on-profile: prod
+
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
