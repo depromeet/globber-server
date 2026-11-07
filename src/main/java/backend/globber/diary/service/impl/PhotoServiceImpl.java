@@ -2,6 +2,7 @@ package backend.globber.diary.service.impl;
 
 import static java.util.stream.Collectors.toList;
 
+import backend.globber.common.service.UploadedImageValidator;
 import backend.globber.diary.controller.dto.PhotoRequest;
 import backend.globber.diary.controller.dto.PhotoResponse;
 import backend.globber.diary.domain.Diary;
@@ -25,6 +26,7 @@ public class PhotoServiceImpl implements PhotoService {
     private static final int MAX_PHOTOS = 3;
     private final PhotoRepository photoRepository;
     private final DiaryRepository diaryRepository;
+    private final UploadedImageValidator uploadedImageValidator;
 
     @Transactional
     @Override
@@ -43,6 +45,9 @@ public class PhotoServiceImpl implements PhotoService {
         if (currentCount >= MAX_PHOTOS) {
             throw new PhotoCountException("사진은 최대 " + MAX_PHOTOS + "장까지만 업로드할 수 있습니다.");
         }
+
+        // 업로드된 이미지 형식·크기 검증 (새로 추가되는 사진만 검사)
+        uploadedImageValidator.validate(request.photoCode());
 
         Photo photo = Photo.builder()
             .photoCode(request.photoCode())
