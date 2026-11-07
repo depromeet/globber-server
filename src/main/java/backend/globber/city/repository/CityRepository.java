@@ -1,6 +1,5 @@
 package backend.globber.city.repository;
 
-import backend.globber.city.controller.dto.CityUniqueDto;
 import backend.globber.city.controller.dto.SearchResponse;
 import backend.globber.city.domain.City;
 import org.springframework.cache.annotation.Cacheable;
@@ -39,17 +38,6 @@ public interface CityRepository extends JpaRepository<City, Long> {
     List<SearchResponse> findCandidates(@Param("keyword") String keyword,
                                         @Param("countryCode") String countryCode);
 
-    @Cacheable(value = "cities", key = "#cityUniqueDto.cityName + '-' + #cityUniqueDto.countryCode + '-' + T(java.lang.String).format('%.5f', #cityUniqueDto.lat) + '-' + T(java.lang.String).format('%.5f', #cityUniqueDto.lng)")
-    @Query(value = """
-            SELECT c FROM City c
-            WHERE c.cityName = :#{#cityUniqueDto.cityName}
-              AND c.countryCode = :#{#cityUniqueDto.countryCode}
-              AND c.lat = :#{#cityUniqueDto.lat}
-              AND c.lng = :#{#cityUniqueDto.lng}
-            """)
-    Optional<City> findByCityUniqueDto(CityUniqueDto cityUniqueDto);
-
-
     /**
      * UPSERT (중복이면 무시)
      */
@@ -72,12 +60,6 @@ public interface CityRepository extends JpaRepository<City, Long> {
      * 국가명 + 도시명으로 조회
      */
     Optional<City> findByCountryNameAndCityName(String countryName, String cityName);
-
-    @Query("SELECT c FROM City c WHERE c.cityName = :cityName AND c.countryCode = :countryCode AND c.lat = :lat AND c.lng = :lng")
-    Optional<City> findByUnique(@Param("cityName") String cityName,
-                                @Param("countryCode") String countryCode,
-                                @Param("lat") Double lat,
-                                @Param("lng") Double lng);
 
     @Cacheable(
             value = "cities", key = "#cityName + '-' + #countryCode"
