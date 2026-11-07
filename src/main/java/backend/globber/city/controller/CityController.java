@@ -10,13 +10,16 @@ import backend.globber.city.service.SearchService;
 import backend.globber.common.dto.ApiResponse;
 import backend.globber.common.service.CommonService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
+import java.time.Duration;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.CacheControl;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -39,22 +42,36 @@ public class CityController {
     private final SearchService searchService;
     private final CommonService commonService;
 
+    private static final Duration ALL_CITIES_MAX_AGE = Duration.ofDays(1);
+
     @GetMapping("/favorites")
-    @Operation(summary = "인기 여행지 조회", description = "인기 여행지 목록을 조회합니다.")
-    public ResponseEntity<RecommendResponse> getFavorites(@RequestParam(defaultValue = "20") @Max(500) final int limit) {
-        return ResponseEntity.ok(cityService.getTopCities(limit));
+    @Operation(summary = "인기 여행지 조회", description = "인기 여행지 목록을 조회합니다. 응답은 ApiResponse로 감싸며 data에 cityResponseList를 담습니다.")
+    public ResponseEntity<ApiResponse<RecommendResponse>> getFavorites(@RequestParam(defaultValue = "20") @Max(500) final int limit) {
+        return ResponseEntity.ok(ApiResponse.success(cityService.getTopCities(limit)));
     }
 
     @GetMapping
-    @Operation(summary = "도시 검색", description = "키워드 기반으로 도시/국가를 검색합니다. 유사도 + 인기순 정렬")
-    public SearchResult search(@RequestParam final String keyword) {
-        return searchService.search(keyword);
+    @Operation(summary = "도시 검색", description = """
+        키워드 기반으로 도시/국가를 검색합니다. 유사도 + 인기순으로 정렬하며 최대 20개를 반환합니다.
+        검색어는 앞뒤 공백을 제거해 사용하고, 비어 있거나 누락되면 400을 반환합니다.
+        응답은 ApiResponse로 감싸며 data에 cities를 담습니다.""")
+    public ResponseEntity<ApiResponse<SearchResult>> search(
+        @Parameter(description = "검색어(앞뒤 공백 제거 후 1자 이상)")
+        @RequestParam(required = false) final String keyword
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(searchService.search(keyword)));
     }
 
     @GetMapping("/all")
-    @Operation(summary = "전체 도시 조회", description = "등록된 모든 도시를 조회합니다.")
+    @Operation(summary = "전체 도시 조회", description = """
+        등록된 모든 도시를 조회합니다. 페이지네이션 없이 전체 목록을 반환합니다.
+        Cache-Control(public, max-age=86400)과 ETag를 응답하며, If-None-Match가 현재 ETag와 같으면 본문 없이 304를 반환합니다.""")
     public ResponseEntity<ApiResponse<List<CityResponse>>> getAllCities() {
-        return ResponseEntity.ok(ApiResponse.success(cityService.getAllCities()));
+        List<CityResponse> cities = cityService.getAllCities();
+        return ResponseEntity.ok()
+            .cacheControl(CacheControl.maxAge(ALL_CITIES_MAX_AGE).cachePublic())
+            .eTag(cityService.generateCitiesETag(cities))
+            .body(ApiResponse.success(cities));
     }
 
     @GetMapping("/id")

@@ -181,7 +181,7 @@ class SearchServiceIntegrationTest {
     }
 
     @Test
-    @DisplayName("검색 결과는 최대 100개까지만 반환된다")
+    @DisplayName("검색 결과는 최대 20개까지만 반환된다")
     void testResultLimit() {
         // given
         for (int i = 0; i < 200; i++) {
@@ -200,7 +200,7 @@ class SearchServiceIntegrationTest {
         SearchResult result = searchService.search("테스트");
 
         // then
-        assertThat(result.cities().size()).isLessThanOrEqualTo(100);
+        assertThat(result.cities()).hasSize(20);
     }
 
     @Test
