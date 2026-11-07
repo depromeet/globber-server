@@ -38,7 +38,7 @@ class TravelRecordQueryServiceTest {
         // then
         assertThat(response).isNotNull();
         assertThat(response.totalCountriesCounts()).isEqualTo(1);
-        assertThat(response.totalCitiesCounts()).isEqualTo(1);
+        assertThat(response.totalCitiesCounts()).isEqualTo(2);
         assertThat(response.totalDiariesCounts()).isEqualTo(1);
     }
 }
