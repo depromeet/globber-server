@@ -19,6 +19,7 @@ import backend.globber.diary.controller.dto.PhotoRequest;
 import backend.globber.diary.domain.Diary;
 import backend.globber.diary.domain.Photo;
 import backend.globber.diary.repository.DiaryEmojiRepository;
+import backend.globber.common.service.UploadedImageValidator;
 import backend.globber.diary.repository.DiaryRepository;
 import backend.globber.diary.repository.PhotoRepository;
 import backend.globber.diary.service.PhotoService;
@@ -46,7 +47,8 @@ class OwnershipChecksTest {
     private final DiaryRepository diaryRepository = mock(DiaryRepository.class);
     private final PhotoRepository photoRepository = mock(PhotoRepository.class);
     private final MemberRepository memberRepository = mock(MemberRepository.class);
-    private final PhotoServiceImpl photoService = new PhotoServiceImpl(photoRepository, diaryRepository);
+    private final PhotoServiceImpl photoService = new PhotoServiceImpl(photoRepository, diaryRepository,
+        mock(UploadedImageValidator.class));
     private final DiaryServiceImpl diaryService = new DiaryServiceImpl(diaryRepository, photoRepository,
         memberRepository, mock(CityRepository.class), mock(JwtTokenProvider.class), mock(PhotoService.class),
         mock(MemberTravelCityRepository.class), mock(MemberTravelRepository.class),
