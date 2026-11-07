@@ -47,30 +47,32 @@ public class TravelRecordQueryService {
                             .toList();
 
                     City sample = cities.getFirst();
-                    return getCountryRecordDto(sample, cityDtos);
+                    return getCountryRecordDto(sample, cityDtos, getDiaryCount(cities, cityToDiaries));
                 })
                 .toList();
 
         return TravelRecordWithDiaryResponse.builder()
                 .totalCountriesCounts(getTotalCountries(records))
                 .totalCitiesCounts(getTotalCities(records))
-                .totalDiariesCounts(diaries.size())
+                .totalDiariesCounts(getTotalDiaries(records))
                 .records(records)
                 .build();
     }
 
-    private static CountryRecordDto getCountryRecordDto(City sample, List<CityRecordDto> cityDtos) {
+    private static CountryRecordDto getCountryRecordDto(City sample, List<CityRecordDto> cityDtos, long diaryCount) {
         return CountryRecordDto.builder()
                 .countryName(sample.getCountryName())
                 .countryCode(sample.getCountryCode())
                 .continent(Continent.fromCountryCode(sample.getCountryCode()).name())
-                .diaryCount(getDiaryCount(cityDtos))
+                .diaryCount(diaryCount)
                 .cities(cityDtos)
                 .build();
     }
 
-    private static long getDiaryCount(List<CityRecordDto> cityDtos) {
-        return cityDtos.stream().filter(CityRecordDto::hasDiary).count();
+    private static long getDiaryCount(List<City> cities, Map<Long, List<Diary>> cityToDiaries) {
+        return cities.stream()
+                .mapToLong(city -> cityToDiaries.getOrDefault(city.getCityId(), List.of()).size())
+                .sum();
     }
 
     private static CityRecordDto getCityRecordDto(City city, List<Diary> cityDiaries, List<String> thumbnails) {
@@ -97,15 +99,18 @@ public class TravelRecordQueryService {
     }
 
     private static long getTotalCountries(List<CountryRecordDto> records) {
-        return records.stream()
-                .filter(r -> r.diaryCount() > 0)
-                .count();
+        return records.size();
     }
 
     private static long getTotalCities(List<CountryRecordDto> records) {
         return records.stream()
-                .flatMap(r -> r.cities().stream())
-                .filter(CityRecordDto::hasDiary)
-                .count();
+                .mapToLong(r -> r.cities().size())
+                .sum();
+    }
+
+    private static long getTotalDiaries(List<CountryRecordDto> records) {
+        return records.stream()
+                .mapToLong(CountryRecordDto::diaryCount)
+                .sum();
     }
 }
