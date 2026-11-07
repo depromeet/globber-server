@@ -79,11 +79,11 @@ class ErrorResponseFormatTest {
         // when & then
         RestAssured.given().log().all()
             .when()
-            .get("/api/v1/cities")
+            .get("/api/v1/diaries")
             .then().log().all()
             .statusCode(400)
             .body("status", equalTo("fail"))
-            .body("data", containsString("keyword"));
+            .body("data", containsString("uuid"));
     }
 
     @Test
