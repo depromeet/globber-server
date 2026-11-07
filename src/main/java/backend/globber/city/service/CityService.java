@@ -25,8 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class CityService {
 
-    private static final char ETAG_FIELD_SEPARATOR = '\u001F';
-    private static final char ETAG_RECORD_SEPARATOR = '\u001E';
+    private static final char ETAG_NULL_FIELD = '~';
 
     private final CityRepository cityRepository;
     private final RankingRepository rankingRepository;
@@ -45,14 +44,26 @@ public class CityService {
     public String generateCitiesETag(final List<CityResponse> cities) {
         StringBuilder content = new StringBuilder();
         for (CityResponse city : cities) {
-            content.append(city.cityId()).append(ETAG_FIELD_SEPARATOR)
-                .append(city.cityName()).append(ETAG_FIELD_SEPARATOR)
-                .append(city.countryName()).append(ETAG_FIELD_SEPARATOR)
-                .append(city.lat()).append(ETAG_FIELD_SEPARATOR)
-                .append(city.lng()).append(ETAG_FIELD_SEPARATOR)
-                .append(city.countryCode()).append(ETAG_RECORD_SEPARATOR);
+            appendETagField(content, city.cityId());
+            appendETagField(content, city.cityName());
+            appendETagField(content, city.countryName());
+            appendETagField(content, city.lat());
+            appendETagField(content, city.lng());
+            appendETagField(content, city.countryCode());
         }
         return "\"" + DigestUtils.md5DigestAsHex(content.toString().getBytes(StandardCharsets.UTF_8)) + "\"";
+    }
+
+    /**
+     * 값에 어떤 문자가 있어도 필드 경계가 모호하지 않도록 null은 '~', 그 외는 '길이:값'으로 붙인다.
+     */
+    private void appendETagField(final StringBuilder content, final Object value) {
+        if (value == null) {
+            content.append(ETAG_NULL_FIELD);
+            return;
+        }
+        String text = String.valueOf(value);
+        content.append(text.length()).append(':').append(text);
     }
 
     /**

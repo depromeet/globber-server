@@ -63,4 +63,42 @@ class CityServiceETagTest {
         // then
         assertThat(List.of(added, updated, deleted)).doesNotContain(original).doesNotHaveDuplicates();
     }
+
+    @Test
+    @DisplayName("구분자 문자를 포함해 필드 경계만 옮겨진 목록이면 ETag가 다르다")
+    void generateCitiesETag_separatorInValue() {
+        // given
+        CityResponse cityNameWithSeparator =
+            new CityResponse(1L, "파리\u001F프랑스", "국가", 48.8566, 2.3522, "FRA");
+        CityResponse countryNameWithSeparator =
+            new CityResponse(1L, "파리", "프랑스\u001F국가", 48.8566, 2.3522, "FRA");
+        CityResponse recordSeparatorInCountryCode =
+            new CityResponse(1L, "파리", "프랑스", 48.8566, 2.3522, "FRA\u001E2");
+        CityResponse splitRecords = new CityResponse(2L, "파리", "프랑스", 48.8566, 2.3522, "FRA");
+
+        // when
+        String first = cityService.generateCitiesETag(List.of(cityNameWithSeparator));
+        String second = cityService.generateCitiesETag(List.of(countryNameWithSeparator));
+        String third = cityService.generateCitiesETag(List.of(recordSeparatorInCountryCode));
+        String fourth = cityService.generateCitiesETag(List.of(paris, splitRecords));
+
+        // then
+        assertThat(List.of(first, second, third, fourth)).doesNotHaveDuplicates();
+    }
+
+    @Test
+    @DisplayName("null 필드와 \"null\" 문자열 필드는 서로 다른 ETag를 만든다")
+    void generateCitiesETag_nullAndNullString() {
+        // given
+        CityResponse nullCityName = new CityResponse(1L, null, "프랑스", 48.8566, 2.3522, "FRA");
+        CityResponse nullStringCityName = new CityResponse(1L, "null", "프랑스", 48.8566, 2.3522, "FRA");
+
+        // when
+        String nullETag = cityService.generateCitiesETag(List.of(nullCityName));
+        String nullStringETag = cityService.generateCitiesETag(List.of(nullStringCityName));
+
+        // then
+        assertThat(nullETag).isNotEqualTo(nullStringETag);
+        assertThat(nullETag).matches("^\"[0-9a-f]{32}\"$");
+    }
 }
