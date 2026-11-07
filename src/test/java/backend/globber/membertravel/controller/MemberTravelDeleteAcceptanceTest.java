@@ -165,7 +165,8 @@ class MemberTravelDeleteAcceptanceTest {
                 .delete("/api/v1/member-travels/{cityId}", deleteTarget.getCityId())
                 .then().log().all()
                 .statusCode(404)
-                .body("status", equalTo("fail"));
+                .body("status", equalTo("fail"))
+                .body("data", equalTo(NOT_IN_MY_TRAVEL_MESSAGE));
     }
 
     @Test
@@ -188,6 +189,30 @@ class MemberTravelDeleteAcceptanceTest {
         // then
         assertThat(cache.get(me.getId())).isNull();
         assertThat(getMyCityIds()).containsExactly(remaining.getCityId());
+    }
+
+    @Test
+    @DisplayName("삭제할 도시가 없어 404를 반환하면 여행 기록 캐시는 무효화되지 않는다")
+    void deleteMemberTravel_notFound_keepsMemberTravelsCache() {
+        // given
+        assertThat(getMyCityIds()).containsExactlyInAnyOrder(deleteTarget.getCityId(), remaining.getCityId());
+        Cache cache = memberTravelCacheManager.getCache("memberTravels");
+        assertThat(cache).isNotNull();
+        assertThat(cache.get(me.getId())).isNotNull();
+
+        // when
+        RestAssured.given().log().all()
+                .header("Authorization", accessToken)
+                .when()
+                .delete("/api/v1/member-travels/{cityId}", Long.MAX_VALUE)
+                .then().log().all()
+                .statusCode(404)
+                .body("status", equalTo("fail"))
+                .body("data", equalTo(NOT_IN_MY_TRAVEL_MESSAGE));
+
+        // then
+        assertThat(cache.get(me.getId())).isNotNull();
+        assertThat(memberTravelCityRepository.findByMemberTravel_Id(myTravel.getId())).hasSize(2);
     }
 
     private List<Long> getMyCityIds() {

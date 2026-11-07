@@ -103,13 +103,10 @@ public class MemberTravelService {
     @CacheEvict(value = "memberTravels", key = "#memberId", cacheManager = "memberTravelCacheManager")
     @Transactional
     public void deleteTravelRecord(Long memberId, Long cityId) {
-        MemberTravel memberTravel = memberTravelRepository.findByMember_Id(memberId)
-                .orElseThrow(TravelNotFoundException::new);
+        int deletedCount = memberTravelCityRepository.deleteByMemberIdAndCityId(memberId, cityId);
 
-        if (!memberTravelCityRepository.existsByMemberTravel_IdAndCity_CityId(memberTravel.getId(), cityId)) {
+        if (deletedCount == 0) {
             throw new TravelNotFoundException("내 여행지에 해당 도시가 없습니다.");
         }
-
-        memberTravelCityRepository.deleteByMemberTravel_IdAndCity_CityId(memberTravel.getId(), cityId);
     }
 }
