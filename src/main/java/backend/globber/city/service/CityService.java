@@ -4,17 +4,20 @@ import backend.globber.auth.domain.Member;
 import backend.globber.auth.repository.MemberRepository;
 import backend.globber.city.controller.dto.CityRequest;
 import backend.globber.city.controller.dto.CityResponse;
-import backend.globber.city.controller.dto.CityUniqueDto;
 import backend.globber.city.controller.dto.RecommendResponse;
 import backend.globber.city.domain.City;
 import backend.globber.city.repository.CityRepository;
 import backend.globber.city.repository.cache.RankingRepository;
+import backend.globber.common.dto.ApiResponse;
 import backend.globber.exception.spec.CityNotFoundException;
 import backend.globber.exception.spec.UsernameNotFoundException;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.util.DigestUtils;
 
 import java.util.List;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,12 +29,25 @@ public class CityService {
     private final CityRepository cityRepository;
     private final RankingRepository rankingRepository;
     private final MemberRepository memberRepository;
+    private final ObjectMapper objectMapper;
 
     public List<CityResponse> getAllCities() {
         return cityRepository.findAll(Sort.by("countryCode", "cityName", "cityId"))
             .stream()
             .map(CityResponse::toResponse)
             .toList();
+    }
+
+    /**
+     * 실제 응답 본문을 HTTP 응답과 같은 ObjectMapper로 직렬화한 JSON 전체로 강한 ETag를 만든다.
+     * 응답 본문이 한 바이트라도 바뀌면 값이 바뀐다.
+     */
+    public String generateETag(final ApiResponse<List<CityResponse>> body) {
+        try {
+            return "\"" + DigestUtils.md5DigestAsHex(objectMapper.writeValueAsBytes(body)) + "\"";
+        } catch (JsonProcessingException e) {
+            throw new IllegalStateException("전체 도시 응답의 ETag를 만들지 못했습니다.", e);
+        }
     }
 
     /**
@@ -44,15 +60,6 @@ public class CityService {
 
         }
         return RecommendResponse.toResponse(topCities);
-    }
-
-    public Long getCityIdByUnique(CityUniqueDto cityUniqueDto) {
-        City city = cityRepository.findByUnique(cityUniqueDto.cityName(),
-                                                cityUniqueDto.countryCode(),
-                                                cityUniqueDto.lat(),
-                                                cityUniqueDto.lng())
-            .orElseThrow(() -> new CityNotFoundException("해당 도시를 찾을 수 없습니다."));
-        return city.getCityId();
     }
 
     // 멤버 여부는 그냥 받기만 할게요 일단은
