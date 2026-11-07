@@ -1,5 +1,6 @@
 package backend.globber.auth.util;
 
+import backend.globber.exception.spec.CustomAuthException;
 import backend.globber.exception.spec.CustomTokenException;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
@@ -29,6 +30,14 @@ public class JwtTokenProvider {
 
     public String fromHeader(String header) {
         return header.replace(JwtPrefix, "");
+    }
+
+    // Authorization 헤더가 "Bearer <토큰>" 형식일 때만 토큰을 꺼낸다. 아니면 401
+    public String resolveBearerToken(String header) {
+        if (header == null || !header.startsWith(JwtPrefix) || header.length() == JwtPrefix.length()) {
+            throw new CustomAuthException("로그인이 필요합니다.");
+        }
+        return header.substring(JwtPrefix.length());
     }
 
     public String createAccessToken(String email, List<String> roles) {
@@ -64,15 +73,35 @@ public class JwtTokenProvider {
         return getClaims(token).getSubject();
     }
 
-    // 토큰의 클레임 추출
+    // 토큰의 클레임 추출 (서명·만료 모두 검증)
     public Claims getClaims(String token) {
+        return parseClaims(token, false);
+    }
+
+    // 재발급 전용: 서명은 검증하고 만료만 허용한다
+    public Claims getClaimsAllowingExpired(String token) {
+        return parseClaims(token, true);
+    }
+
+    private Claims parseClaims(String token, boolean allowExpired) {
         if (token.startsWith(JwtPrefix)) {
             token = fromHeader(token);
         }
         try {
             return Jwts.parser().setSigningKey(secretKey).parseClaimsJws(token).getBody();
         } catch (ExpiredJwtException e) {
-            return e.getClaims();
+            if (allowExpired) {
+                return e.getClaims();
+            }
+            throw new CustomTokenException("만료된 JWT 토큰입니다.");
+        } catch (SignatureException e) {
+            throw new CustomTokenException("유효하지 않은 JWT 서명입니다.");
+        } catch (MalformedJwtException e) {
+            throw new CustomTokenException("유효하지 않은 JWT 토큰입니다.");
+        } catch (UnsupportedJwtException e) {
+            throw new CustomTokenException("지원되지 않는 JWT 토큰입니다.");
+        } catch (IllegalArgumentException e) {
+            throw new CustomTokenException("JWT 토큰이 비어있습니다.");
         }
     }
 
@@ -91,28 +120,8 @@ public class JwtTokenProvider {
         return getClaims(a_token).get("role", List.class);
     }
 
-    // Token의 UUID 와 RefreshTokenId 비교
-    public boolean sameRefreshToken(String r_token, String tokenId) {
-        return r_token.equals(tokenId);
-    }
-
     public boolean validateToken(String token) {
-        if (token.startsWith(JwtPrefix)) {
-            token = fromHeader(token);
-        }
-        try {
-            Jwts.parser().setSigningKey(secretKey).parseClaimsJws(token);
-            return true;
-        } catch (SignatureException e) {
-            throw new CustomTokenException("유효하지 않은 JWT 서명입니다.");
-        } catch (MalformedJwtException e) {
-            throw new CustomTokenException("유효하지 않은 JWT 토큰입니다.");
-        } catch (ExpiredJwtException e) {
-            throw new CustomTokenException("만료된 JWT 토큰입니다.");
-        } catch (UnsupportedJwtException e) {
-            throw new CustomTokenException("지원되지 않는 JWT 토큰입니다.");
-        } catch (IllegalArgumentException e) {
-            throw new CustomTokenException("JWT 토큰이 비어있습니다.");
-        }
+        parseClaims(token, false);
+        return true;
     }
 }

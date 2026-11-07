@@ -16,7 +16,8 @@ public class CommonService {
 
     // AccessToken에서 MemberId 추출
     public Long getMemberIdFromToken(String accessToken) {
-        String email = jwtTokenProvider.getEmailForAccessToken(accessToken);
+        // Bearer 형식이 아니면 401, 서명·만료 검증 실패도 401
+        String email = jwtTokenProvider.getEmailForAccessToken(jwtTokenProvider.resolveBearerToken(accessToken));
         Member member = memberRepository.findByEmail(email)
             .orElseThrow(() -> new UsernameNotFoundException("존재하지 않는 멤버입니다."));
         return member.getId();
