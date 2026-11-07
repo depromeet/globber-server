@@ -20,6 +20,7 @@ import java.time.Duration;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.CacheControl;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -68,7 +69,9 @@ public class CityController {
         Cache-Control(public, max-age=86400)과 응답 본문 전체로 계산한 ETag를 응답하며, If-None-Match가 현재 ETag와 같으면 본문 없이 304를 반환합니다.""")
     public ResponseEntity<ApiResponse<List<CityResponse>>> getAllCities() {
         ApiResponse<List<CityResponse>> body = ApiResponse.success(cityService.getAllCities());
+        // ETag 입력(UTF-8 JSON)과 본문 바이트가 같도록 Accept의 charset과 무관하게 UTF-8 JSON으로 고정한다.
         return ResponseEntity.ok()
+            .contentType(MediaType.APPLICATION_JSON)
             .cacheControl(CacheControl.maxAge(ALL_CITIES_MAX_AGE).cachePublic())
             .eTag(cityService.generateETag(body))
             .body(body);

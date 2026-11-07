@@ -196,6 +196,27 @@ class CityControllerTest {
     }
 
     @Test
+    @DisplayName("전체 도시 조회는 UTF-16BE를 요청해도 UTF-8 본문으로 응답해 ETag가 본문 바이트의 md5와 같다")
+    void all_utf16Accept_eTagMatchesBody() {
+        // given
+        cityRepository.save(city(token + "인코딩"));
+        String defaultETag = getAll().header("ETag");
+
+        // when
+        ExtractableResponse<Response> response = RestAssured.given()
+            .header("Accept", "application/json;charset=UTF-16BE")
+            .when()
+            .get(CITIES_URL + "/all")
+            .then()
+            .statusCode(200)
+            .extract();
+
+        // then
+        String expected = "\"" + DigestUtils.md5DigestAsHex(response.asByteArray()) + "\"";
+        assertThat(response.header("ETag")).isEqualTo(expected).isEqualTo(defaultETag);
+    }
+
+    @Test
     @DisplayName("전체 도시 조회에 같은 ETag로 If-None-Match를 보내면 본문 없이 304를 반환한다")
     void all_sameETag_notModified() {
         // given
