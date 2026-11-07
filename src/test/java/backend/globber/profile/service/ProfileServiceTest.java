@@ -3,13 +3,17 @@ package backend.globber.profile.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 import backend.globber.auth.domain.Member;
 import backend.globber.auth.domain.constant.AuthProvider;
 import backend.globber.auth.domain.constant.Role;
 import backend.globber.auth.repository.MemberRepository;
+import backend.globber.common.service.UploadedImageValidator;
+import backend.globber.exception.spec.InvalidUploadFileException;
 import backend.globber.exception.spec.InvalidS3KeyException;
 import backend.globber.exception.spec.UsernameNotFoundException;
 import backend.globber.profile.controller.dto.request.UpdateProfileImageRequest;
@@ -31,6 +35,9 @@ class ProfileServiceTest {
 
     @Mock
     private MemberRepository memberRepository;
+
+    @Mock
+    private UploadedImageValidator uploadedImageValidator;
 
     @InjectMocks
     private ProfileService profileService;
@@ -151,6 +158,27 @@ class ProfileServiceTest {
         assertThat(response.profileImageUrl()).isEqualTo(s3BaseUrl + "/" + s3Key);
         assertThat(member.getProfileImageKey()).isEqualTo(s3Key);
         verify(memberRepository, times(1)).findById(memberId);
+        verify(uploadedImageValidator, times(1)).validate(s3Key);
+    }
+
+    @Test
+    @DisplayName("업로드된 이미지 검증에 실패하면 프로필 이미지가 바뀌지 않는다")
+    void updateImageValidationFail() {
+        // given
+        Long memberId = 1L;
+        String oldS3Key = "profiles/1/old-image.jpg";
+        String newS3Key = "profiles/1/new-image.heic";
+        member.changeProfileImage(oldS3Key);
+        UpdateProfileImageRequest request = new UpdateProfileImageRequest(newS3Key);
+        given(memberRepository.findById(memberId)).willReturn(Optional.of(member));
+        willThrow(new InvalidUploadFileException("지원하지 않는 이미지 형식입니다."))
+            .given(uploadedImageValidator).validate(newS3Key);
+
+        // when & then
+        assertThatThrownBy(() -> profileService.updateProfileImage(memberId, request))
+            .isInstanceOf(InvalidUploadFileException.class)
+            .hasMessage("지원하지 않는 이미지 형식입니다.");
+        assertThat(member.getProfileImageKey()).isEqualTo(oldS3Key);
     }
 
     @Test
@@ -203,6 +231,7 @@ class ProfileServiceTest {
             .isInstanceOf(InvalidS3KeyException.class)
             .hasMessageContaining("유효하지 않은 이미지 경로입니다");
         verify(memberRepository, times(1)).findById(memberId);
+        verifyNoInteractions(uploadedImageValidator);
     }
 
     @Test
