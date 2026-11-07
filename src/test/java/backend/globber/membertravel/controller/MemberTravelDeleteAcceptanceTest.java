@@ -26,19 +26,27 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
+import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ContextConfiguration(initializers = RedisTestConfig.Initializer.class)
-@Import({RedisTestConfig.class, PostgresTestConfig.class})
+@Import({RedisTestConfig.class, PostgresTestConfig.class, MemberTravelDeleteAcceptanceTest.CachingTestConfig.class})
 class MemberTravelDeleteAcceptanceTest {
 
     private static final String NOT_IN_MY_TRAVEL_MESSAGE = "내 여행지에 해당 도시가 없습니다.";
+
+    // 운영 설정에는 @EnableCaching이 없으므로 캐시 무효화를 검증하기 위해 이 테스트 컨텍스트에서만 캐싱을 켠다.
+    @TestConfiguration
+    @EnableCaching
+    static class CachingTestConfig {
+    }
 
     @MockitoBean
     private RedisWarmUp redisWarmUp;
@@ -166,6 +174,8 @@ class MemberTravelDeleteAcceptanceTest {
         // given
         assertThat(getMyCityIds()).containsExactlyInAnyOrder(deleteTarget.getCityId(), remaining.getCityId());
         Cache cache = memberTravelCacheManager.getCache("memberTravels");
+        assertThat(cache).isNotNull();
+        assertThat(cache.get(me.getId())).isNotNull();
 
         // when
         RestAssured.given().log().all()
