@@ -2,6 +2,7 @@ package backend.globber.diary.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.not;
 
@@ -129,6 +130,41 @@ class DiaryControllerTest {
 
         assertThat(photoRows(diaryId)).containsExactly(code("C") + ":0", code("D") + ":1", code("A") + ":2");
         getDetail(diaryId).body("data.photos.photoCode", contains(code("C"), code("D"), code("A")));
+    }
+
+    @Test
+    @DisplayName("빈 사진 목록으로 수정하면 그 기록의 사진만 모두 삭제한다")
+    void updateDiary_emptyPhotos_deletesAll() {
+        // given
+        Map<String, Object> body = diaryBody("사진 없는 본문", List.of());
+
+        // when & then
+        put(diaryId, body)
+            .statusCode(200)
+            .body("data.photos", empty());
+
+        assertThat(photoRows(diaryId)).isEmpty();
+        assertThat(photoRows(otherDiaryId)).containsExactly(code("OTHER") + ":0");
+    }
+
+    @Test
+    @DisplayName("기존 사진을 빼고 같은 photoCode로 새 사진을 추가하면 새 id로 배열 순서대로 저장한다")
+    void updateDiary_replaceWithSamePhotoCode() {
+        // given: 기존 B를 목록에서 빼고, B의 photoCode로 새 사진을 추가한다
+        Map<String, Object> body = diaryBody("교체한 본문", List.of(
+            photoBody(null, code("B"), null),
+            photoBody(photoIds.get("A"), code("A"), null),
+            photoBody(photoIds.get("C"), code("C"), null)));
+
+        // when & then
+        put(diaryId, body)
+            .statusCode(200)
+            .body("data.photos.photoCode", contains(code("B"), code("A"), code("C")));
+
+        assertThat(photoRows(diaryId)).containsExactly(code("B") + ":0", code("A") + ":1", code("C") + ":2");
+        List<Long> newIds = jdbcTemplate.queryForList(
+            "select id from photo where photo_code = ?", Long.class, code("B"));
+        assertThat(newIds).hasSize(1).doesNotContain(photoIds.get("B"));
     }
 
     @Test
