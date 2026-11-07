@@ -1,6 +1,5 @@
 package backend.globber.membertravel.controller;
 
-import backend.globber.city.controller.dto.CityUniqueDto;
 import backend.globber.common.dto.ApiResponse;
 import backend.globber.common.service.CommonService;
 import backend.globber.membertravel.controller.dto.request.CreateMemberTravelRequest;
@@ -9,6 +8,7 @@ import backend.globber.membertravel.controller.dto.response.TravelRecordWithDiar
 import backend.globber.membertravel.service.MemberTravelService;
 import backend.globber.membertravel.service.TravelRecordQueryService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -16,6 +16,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -46,14 +47,15 @@ public class MemberTravelController {
                 .body(ApiResponse.success(rtn));
     }
 
-    @DeleteMapping()
-    @Operation(summary = "멤버 여행 기록 삭제", description = "특정 멤버의 여행 기록을 삭제합니다.")
-    public ResponseEntity<ApiResponse<?>> deleteMemberTravel(
+    @DeleteMapping("/{cityId}")
+    @Operation(summary = "멤버 여행지 삭제",
+            description = "cityId로 내 여행지에서 도시를 삭제합니다. 성공 시 204, 내 여행지에 해당 도시가 없으면 404를 반환합니다.")
+    public ResponseEntity<Void> deleteMemberTravel(
             @RequestHeader("Authorization") String accessToken,
-            @RequestBody final CityUniqueDto city) {
+            @Parameter(description = "삭제할 도시 ID") @PathVariable final Long cityId) {
 
         Long memberId = commonService.getMemberIdFromToken(accessToken);
-        Boolean rtn = memberTravelService.deleteTravelRecord(memberId, city);
+        memberTravelService.deleteTravelRecord(memberId, cityId);
 
         return ResponseEntity.noContent().build();
     }

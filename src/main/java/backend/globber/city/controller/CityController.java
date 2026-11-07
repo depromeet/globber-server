@@ -2,7 +2,6 @@ package backend.globber.city.controller;
 
 import backend.globber.city.controller.dto.CityRequest;
 import backend.globber.city.controller.dto.CityResponse;
-import backend.globber.city.controller.dto.CityUniqueDto;
 import backend.globber.city.controller.dto.RecommendResponse;
 import backend.globber.city.controller.dto.SearchResult;
 import backend.globber.city.service.CityService;
@@ -75,15 +74,6 @@ public class CityController {
             .cacheControl(CacheControl.maxAge(ALL_CITIES_MAX_AGE).cachePublic())
             .eTag(cityService.generateETag(body))
             .body(body);
-    }
-
-    @GetMapping("/id")
-    @Operation(summary = "도시 ID 검색 By 위경도, 나라코드, 도시이름 (CityUniqueDto) ", description = "위경도, 나라코드, 도시이름으로 도시ID를 검색합니다.")
-    public ResponseEntity<ApiResponse<Long>> getCityIdByUnique(
-        @RequestBody final CityUniqueDto cityUniqueDto
-    ) {
-        Long cityId = cityService.getCityIdByUnique(cityUniqueDto);
-        return ResponseEntity.ok(ApiResponse.success(cityId));
     }
 
     // 도시 추가/삭제/수정 프로그램
