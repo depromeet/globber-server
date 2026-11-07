@@ -2,6 +2,7 @@ package backend.globber.profile.service;
 
 import backend.globber.auth.domain.Member;
 import backend.globber.auth.repository.MemberRepository;
+import backend.globber.common.service.UploadedImageValidator;
 import backend.globber.exception.spec.InvalidS3KeyException;
 import backend.globber.exception.spec.UsernameNotFoundException;
 import backend.globber.profile.controller.dto.request.UpdateProfileImageRequest;
@@ -20,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class ProfileService {
 
     private final MemberRepository memberRepository;
+    private final UploadedImageValidator uploadedImageValidator;
 
     @Value("${aws.s3.base-url}")
     private String s3BaseUrl;
@@ -50,6 +52,8 @@ public class ProfileService {
             log.warn("잘못된 s3Key 접근 시도 - memberId: {}, s3Key: {}", memberId, request.s3Key());
             throw new InvalidS3KeyException("유효하지 않은 이미지 경로입니다.");
         }
+
+        uploadedImageValidator.validate(request.s3Key());
 
         member.changeProfileImage(request.s3Key());
 
