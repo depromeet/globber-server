@@ -14,4 +14,6 @@ public interface PhotoRepository extends JpaRepository<Photo, Long> {
 
     List<Photo> findAllByDiaryIdOrderByDisplayOrderAscIdAsc(Long diaryId);
 
+    boolean existsByPhotoCode(String photoCode);
+
 }

@@ -2,6 +2,7 @@ package backend.globber.diary.service.impl;
 
 import static java.util.stream.Collectors.toList;
 
+import backend.globber.common.service.UploadedImageValidator;
 import backend.globber.diary.controller.dto.PhotoRequest;
 import backend.globber.diary.controller.dto.PhotoResponse;
 import backend.globber.diary.domain.Diary;
@@ -26,6 +27,7 @@ public class PhotoServiceImpl implements PhotoService {
 
     private static final int MAX_PHOTOS = 3;
     private final PhotoRepository photoRepository;
+    private final UploadedImageValidator uploadedImageValidator;
 
     @Transactional
     @Override

@@ -21,7 +21,15 @@ import org.springframework.web.filter.OncePerRequestFilter;
 @Slf4j
 public class AuthorizationFilter extends OncePerRequestFilter {
 
+    // 재발급은 만료된 액세스 토큰으로 요청하므로 필터에서 검증하지 않고 서비스에서 서명만 확인한다
+    private static final String REISSUE_PATH = "/reissue";
+
     private final JwtTokenProvider jwtTokenProvider;
+
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        return REISSUE_PATH.equals(request.getServletPath());
+    }
 
     // 필터링을 통해 요청이 들어왔을 때, 해당 요청이 허용되는지 확인하는 메소드
     // 토큰 검사후, @Secured를 위해 Authentication 객체 발행.

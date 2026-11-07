@@ -28,7 +28,10 @@ public class S3Controller {
     @PostMapping("/upload-url")
     @Operation(
         summary = "파일 업로드 Presigned URL 발급",
-        description = "S3에 파일을 업로드하기 위한 Presigned URL을 발급합니다.  prefix에 업로드할 경로를 지정하세요."
+        description = "S3에 이미지를 업로드하기 위한 Presigned URL을 발급합니다. prefix에 업로드할 경로를 지정하세요. "
+            + "contentType은 image/jpeg, image/png, image/webp, image/avif만 허용합니다(그 외 400). "
+            + "PUT 업로드 시 응답의 uploadHeaders를 그대로 요청 헤더로 보내야 합니다. "
+            + "업로드한 이미지는 10MB 이하여야 하며, 기록·프로필에 연결할 때 검사합니다."
     )
     public ResponseEntity<ApiResponse<PresignedUrlResponse>> getUploadUrl(
         @RequestHeader("Authorization") String accessToken,

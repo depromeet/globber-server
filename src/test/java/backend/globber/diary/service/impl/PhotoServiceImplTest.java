@@ -7,7 +7,13 @@ import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willThrow;
+
+import backend.globber.common.service.UploadedImageValidator;
 import backend.globber.diary.controller.dto.PhotoRequest;
+import backend.globber.exception.spec.DuplicatePhotoCodeException;
+import backend.globber.exception.spec.InvalidUploadFileException;
 import backend.globber.diary.domain.Diary;
 import backend.globber.diary.domain.Photo;
 import backend.globber.diary.repository.PhotoRepository;
@@ -29,6 +35,9 @@ class PhotoServiceImplTest {
 
     @Mock
     private PhotoRepository photoRepository;
+
+    @Mock
+    private UploadedImageValidator uploadedImageValidator;
 
     @InjectMocks
     private PhotoServiceImpl photoService;
@@ -120,6 +129,90 @@ class PhotoServiceImplTest {
         InOrder inOrder = inOrder(photoRepository);
         inOrder.verify(photoRepository).flush();
         inOrder.verify(photoRepository).save(any(Photo.class));
+    }
+
+    @Test
+    @DisplayName("새로 추가되는 사진만 업로드 이미지를 검사하고 기존 사진은 검사하지 않는다")
+    void syncPhotos_validatesOnlyNewPhotos() {
+        // given
+        List<PhotoRequest> requests = List.of(request(1L, "code-1"), request(null, "new"));
+
+        // when
+        photoService.syncPhotos(diary, requests);
+
+        // then
+        verify(uploadedImageValidator).validate("new");
+        verify(uploadedImageValidator, never()).validate("code-1");
+    }
+
+    @Test
+    @DisplayName("업로드 이미지 검사에 실패하면 삭제·추가를 하나도 반영하지 않는다")
+    void syncPhotos_validationFailure_changesNothing() {
+        // given
+        List<PhotoRequest> requests = List.of(request(1L, "code-1"), request(null, "new"));
+        willThrow(new InvalidUploadFileException("업로드된 이미지를 찾을 수 없습니다."))
+            .given(uploadedImageValidator).validate("new");
+
+        // when & then
+        assertThatThrownBy(() -> photoService.syncPhotos(diary, requests))
+            .isInstanceOf(InvalidUploadFileException.class);
+        assertThat(diary.getPhotos()).extracting(Photo::getId).containsExactly(1L, 2L, 3L);
+        verify(photoRepository, never()).flush();
+        verify(photoRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("새 사진끼리 photoCode가 같으면 400으로 거절하고 아무것도 바꾸지 않는다")
+    void syncPhotos_duplicateNewPhotoCode() {
+        // given
+        List<PhotoRequest> requests = List.of(request(null, "new"), request(null, "new"));
+
+        // when & then
+        assertThatThrownBy(() -> photoService.syncPhotos(diary, requests))
+            .isInstanceOf(IllegalArgumentException.class);
+        assertThat(diary.getPhotos()).extracting(Photo::getId).containsExactly(1L, 2L, 3L);
+        verify(photoRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("새 사진의 photoCode가 유지하는 기존 사진과 같으면 400으로 거절한다")
+    void syncPhotos_newPhotoCodeEqualsKeptPhoto() {
+        // given
+        List<PhotoRequest> requests = List.of(request(1L, "code-1"), request(null, "code-1"));
+
+        // when & then
+        assertThatThrownBy(() -> photoService.syncPhotos(diary, requests))
+            .isInstanceOf(IllegalArgumentException.class);
+        assertThat(diary.getPhotos()).extracting(Photo::getId).containsExactly(1L, 2L, 3L);
+        verify(photoRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("다른 기록이 이미 쓰는 photoCode면 409로 거절한다")
+    void syncPhotos_photoCodeUsedByOtherDiary() {
+        // given
+        List<PhotoRequest> requests = List.of(request(null, "taken"));
+        given(photoRepository.existsByPhotoCode("taken")).willReturn(true);
+
+        // when & then
+        assertThatThrownBy(() -> photoService.syncPhotos(diary, requests))
+            .isInstanceOf(DuplicatePhotoCodeException.class);
+        assertThat(diary.getPhotos()).extracting(Photo::getId).containsExactly(1L, 2L, 3L);
+        verify(photoRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("삭제되는 기존 사진의 photoCode를 새 사진이 다시 쓰는 것은 허용한다")
+    void syncPhotos_reuseRemovedPhotoCode() {
+        // given: code-2를 지우고 같은 코드로 새 사진 추가
+        List<PhotoRequest> requests = List.of(request(1L, "code-1"), request(null, "code-2"));
+
+        // when
+        photoService.syncPhotos(diary, requests);
+
+        // then
+        verify(photoRepository, never()).existsByPhotoCode("code-2");
+        assertThat(diary.getPhotos()).extracting(Photo::getPhotoCode).containsExactlyInAnyOrder("code-1", "code-2");
     }
 
     private PhotoRequest request(Long photoId, String photoCode) {
