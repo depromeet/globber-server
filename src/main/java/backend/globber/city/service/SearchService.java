@@ -6,6 +6,7 @@ import backend.globber.city.domain.City;
 import backend.globber.city.repository.CityRepository;
 import backend.globber.city.repository.cache.RankingRepository;
 import backend.globber.city.repository.cache.SearchRepository;
+import backend.globber.exception.spec.InvalidSearchKeywordException;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.text.similarity.LevenshteinDistance;
 import org.springframework.stereotype.Service;
@@ -18,16 +19,19 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class SearchService {
 
+    static final int MAX_SEARCH_RESULTS = 20;
+
     private final SearchRepository cacheRepository;
     private final RankingRepository rankingRepository;
     private final CityRepository cityRepository;
 
-    public SearchResult search(final String keyword) {
+    public SearchResult search(final String rawKeyword) {
+        String keyword = normalizeKeyword(rawKeyword);
         String cacheKey = "search:" + keyword;
 
         SearchResult cached = cacheRepository.get(cacheKey);
         if (cached != null) {
-            return cached;
+            return limitResult(cached);
         }
 
         String countryCode = CountryCodeMapper.toCountryCode(keyword).orElse(null);
@@ -49,13 +53,28 @@ public class SearchService {
                                                 .reversed()
                                 )
                 )
-                .limit(100)
+                .limit(MAX_SEARCH_RESULTS)
                 .toList();
 
         SearchResult result = new SearchResult(sorted);
         cacheRepository.set(cacheKey, result, 10);
 
         return result;
+    }
+
+    private String normalizeKeyword(final String keyword) {
+        if (keyword == null || keyword.isBlank()) {
+            throw new InvalidSearchKeywordException("검색어를 입력해 주세요.");
+        }
+        return keyword.strip();
+    }
+
+    // 배포 이전에 저장된 캐시에는 제한보다 많은 결과가 남아 있을 수 있다.
+    private SearchResult limitResult(final SearchResult result) {
+        if (result.cities() == null || result.cities().size() <= MAX_SEARCH_RESULTS) {
+            return result;
+        }
+        return new SearchResult(List.copyOf(result.cities().subList(0, MAX_SEARCH_RESULTS)));
     }
 
     public void recordSelection(final City city) {
