@@ -12,6 +12,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import java.time.YearMonth;
+import java.util.Comparator;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -26,6 +27,11 @@ import org.hibernate.annotations.OnDeleteAction;
 @AllArgsConstructor
 @Builder
 public class Photo extends BaseTimeEntity {
+
+    // 표시 순서(display_order 오름차순, 같으면 id 오름차순)
+    public static final Comparator<Photo> DISPLAY_ORDER = Comparator
+        .comparingInt(Photo::getDisplayOrder)
+        .thenComparing(Photo::getId, Comparator.nullsLast(Comparator.naturalOrder()));
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -53,6 +59,10 @@ public class Photo extends BaseTimeEntity {
 
     private PhotoTag tag; // ex. “바다”, “여행”, “음식”
 
+    // 기록 안에서의 표시 순서 (요청 photos 배열의 인덱스, 0부터)
+    @Column(name = "display_order", nullable = false)
+    private int displayOrder;
+
     // FK: Diary (N:1 관계)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "diary_id", nullable = false,
@@ -69,6 +79,10 @@ public class Photo extends BaseTimeEntity {
         this.takenMonth = takenMonth;
         this.tag = tag;
         this.placeName = placeName;
+    }
+
+    public void changeDisplayOrder(int displayOrder) {
+        this.displayOrder = displayOrder;
     }
 
 }

@@ -1,6 +1,7 @@
 package backend.globber.diary.controller.dto;
 
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -19,6 +20,7 @@ public record DiaryRequest(
         @Valid
         @NotNull(message = "첨부 사진은 필수입니다.")
         @Size(max = 3, message = "첨부 사진은 최대 3장까지 가능합니다.")
+        @Schema(description = "최종 사진 목록(최대 3장). 배열 순서(0부터)가 사진 표시 순서로 저장되며, 첫 번째 사진이 대표 사진입니다.")
         List<PhotoRequest> photos // 첨부된 사진 정보 리스트
 ) {
 
