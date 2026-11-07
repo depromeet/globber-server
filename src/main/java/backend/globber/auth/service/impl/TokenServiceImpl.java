@@ -10,6 +10,7 @@ import backend.globber.auth.util.JwtTokenProvider;
 import backend.globber.exception.spec.CustomAuthException;
 import backend.globber.exception.spec.CustomTokenException;
 import backend.globber.exception.spec.UsernameNotFoundException;
+import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -41,9 +42,11 @@ public class TokenServiceImpl implements TokenService {
     // todo: specify error handler
     @Override
     public JwtTokenResponse updateAccessToken(String accessToken, String refreshToken) {
+        // 재발급은 만료된 액세스 토큰으로 요청하므로 서명만 검증하고 만료는 허용한다
+        Claims accessClaims = jwtTokenProvider.getClaimsAllowingExpired(
+                jwtTokenProvider.resolveBearerToken(accessToken));
         // 사용자 체크
-        Member member = memberRepository.findByEmail(
-                jwtTokenProvider.getEmailForAccessToken(accessToken)).orElseThrow(
+        Member member = memberRepository.findByEmail(accessClaims.getSubject()).orElseThrow(
                 () -> new UsernameNotFoundException("해당 이메일을 가진 사용자가 존재하지 않습니다.")
         );
         // 토큰 존재여부 체크
@@ -55,20 +58,19 @@ public class TokenServiceImpl implements TokenService {
         jwtTokenProvider.validateToken(refreshToken);
 
         // 토큰 동일여부 체크
-        if (!jwtTokenProvider.sameRefreshToken(refreshToken,
-                refreshTokenEntity.getRefreshTokenId())) {
+        if (!refreshTokenEntity.matches(refreshToken)) {
             throw new CustomTokenException("RefreshToken이 일치하지 않습니다.");
         }
         // 토큰 갱신
-        List<String> roles = jwtTokenProvider.getRole(accessToken);
+        List<String> roles = accessClaims.get("role", List.class);
         String newAccessToken = jwtTokenProvider.createAccessToken(member.getEmail(), roles);
         return JwtTokenResponse.toResponse(newAccessToken, refreshToken);
     }
 
     @Override
     public void logout(String accessToken) {
-        // 토큰 유효여부 체크
-        if (!jwtTokenProvider.validateToken(accessToken)) {
+        // Bearer 형식 확인 및 토큰 유효여부 체크
+        if (!jwtTokenProvider.validateToken(jwtTokenProvider.resolveBearerToken(accessToken))) {
             throw new CustomTokenException("토큰이 유효하지 않습니다.");
         }
         // 사용자 체크 및 refreshToken 존재여부 체크
@@ -82,8 +84,8 @@ public class TokenServiceImpl implements TokenService {
 
     @Override
     public Long getMemberIdFromAccessToken(String accessToken) {
-        // 토큰 유효여부 체크
-        if (!jwtTokenProvider.validateToken(accessToken)) {
+        // Bearer 형식 확인 및 토큰 유효여부 체크
+        if (!jwtTokenProvider.validateToken(jwtTokenProvider.resolveBearerToken(accessToken))) {
             throw new CustomTokenException("토큰이 유효하지 않습니다.");
         }
         // 사용자 체크
