@@ -19,6 +19,8 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
@@ -152,6 +154,38 @@ class UploadedImageValidatorTest {
         assertThatThrownBy(() -> validator.validate(S3_KEY))
             .isInstanceOf(InvalidUploadFileException.class)
             .hasMessage("업로드된 이미지를 찾을 수 없습니다.");
+    }
+
+    @Test
+    @ExtendWith(OutputCaptureExtension.class)
+    @DisplayName("S3가 403을 반환하면 권한 장애일 수 있으므로 ERROR 로그를 남긴다")
+    void validateForbiddenLogsError(CapturedOutput output) {
+        // given
+        given(s3Client.headObject(any(HeadObjectRequest.class)))
+            .willThrow(S3Exception.builder().statusCode(403).build());
+
+        // when
+        assertThatThrownBy(() -> validator.validate(S3_KEY))
+            .isInstanceOf(InvalidUploadFileException.class);
+
+        // then
+        assertThat(output.getOut()).containsPattern("ERROR.*S3 HEAD 403.*" + S3_KEY);
+    }
+
+    @Test
+    @ExtendWith(OutputCaptureExtension.class)
+    @DisplayName("S3가 404를 반환하면 ERROR 로그를 남기지 않는다")
+    void validateNotFoundDoesNotLogError(CapturedOutput output) {
+        // given
+        given(s3Client.headObject(any(HeadObjectRequest.class)))
+            .willThrow(S3Exception.builder().statusCode(404).build());
+
+        // when
+        assertThatThrownBy(() -> validator.validate(S3_KEY))
+            .isInstanceOf(InvalidUploadFileException.class);
+
+        // then
+        assertThat(output.getOut()).doesNotContainPattern("ERROR.*S3 HEAD");
     }
 
     @Test

@@ -56,9 +56,15 @@ public class UploadedImageValidator {
         } catch (NoSuchKeyException e) {
             throw notFound(s3Key);
         } catch (S3Exception e) {
-            // ListBucket 권한이 없으면 S3는 객체가 없을 때 404 대신 403을 반환한다.
-            if (e.statusCode() == 404 || e.statusCode() == 403) {
+            if (e.statusCode() == 404) {
                 throw notFound(s3Key);
+            }
+            if (e.statusCode() == 403) {
+                // ListBucket 권한이 없으면 S3는 객체가 없을 때도 403을 반환하므로 사용자에게는 400으로 응답한다.
+                // 다만 IAM·버킷 정책 오류 같은 권한 장애도 같은 403이라, 구분할 수 있도록 ERROR로 남긴다.
+                log.error("S3 HEAD 403 - 객체가 없거나 권한 문제일 수 있음 - s3Key: {}, requestId: {}",
+                    s3Key, e.requestId());
+                throw new InvalidUploadFileException(NOT_FOUND_MESSAGE);
             }
             throw e;
         }
