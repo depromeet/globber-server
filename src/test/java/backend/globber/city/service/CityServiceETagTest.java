@@ -6,13 +6,17 @@ import backend.globber.auth.repository.MemberRepository;
 import backend.globber.city.controller.dto.CityResponse;
 import backend.globber.city.repository.CityRepository;
 import backend.globber.city.repository.cache.RankingRepository;
+import backend.globber.common.dto.ApiResponse;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
+import org.springframework.util.DigestUtils;
 
 @ExtendWith(MockitoExtension.class)
 class CityServiceETagTest {
@@ -26,21 +30,28 @@ class CityServiceETagTest {
     @Mock
     private MemberRepository memberRepository;
 
-    @InjectMocks
+    // Spring Boot가 HTTP 응답 직렬화에 쓰는 ObjectMapper와 같은 기본 설정으로 만든다.
+    private final ObjectMapper objectMapper = Jackson2ObjectMapperBuilder.json().build();
+
     private CityService cityService;
 
     private final CityResponse paris = new CityResponse(1L, "파리", "프랑스", 48.8566, 2.3522, "FRA");
     private final CityResponse tokyo = new CityResponse(2L, "도쿄", "일본", 35.6762, 139.6503, "JPN");
 
+    @BeforeEach
+    void setUp() {
+        cityService = new CityService(cityRepository, rankingRepository, memberRepository, objectMapper);
+    }
+
     @Test
-    @DisplayName("같은 도시 목록이면 따옴표로 감싼 같은 ETag를 만든다")
-    void generateCitiesETag_sameContent() {
+    @DisplayName("같은 응답이면 따옴표로 감싼 같은 ETag를 만든다")
+    void generateETag_sameBody() {
         // given
-        List<CityResponse> cities = List.of(paris, tokyo);
+        ApiResponse<List<CityResponse>> body = ApiResponse.success(List.of(paris, tokyo));
 
         // when
-        String first = cityService.generateCitiesETag(cities);
-        String second = cityService.generateCitiesETag(List.of(paris, tokyo));
+        String first = cityService.generateETag(body);
+        String second = cityService.generateETag(ApiResponse.success(List.of(paris, tokyo)));
 
         // then
         assertThat(first).isEqualTo(second);
@@ -48,57 +59,59 @@ class CityServiceETagTest {
     }
 
     @Test
-    @DisplayName("도시가 추가·수정·삭제되면 ETag가 바뀐다")
-    void generateCitiesETag_changedContent() {
+    @DisplayName("ETag는 응답을 ObjectMapper로 직렬화한 JSON 바이트의 md5다")
+    void generateETag_md5OfSerializedBody() throws Exception {
         // given
-        String original = cityService.generateCitiesETag(List.of(paris, tokyo));
-        CityResponse renamedTokyo = new CityResponse(2L, "도쿄도", "일본", 35.6762, 139.6503, "JPN");
+        ApiResponse<List<CityResponse>> body = ApiResponse.success(List.of(paris, tokyo));
+        String expected = "\"" + DigestUtils.md5DigestAsHex(objectMapper.writeValueAsBytes(body)) + "\"";
+
+        // when
+        String eTag = cityService.generateETag(body);
+
+        // then
+        assertThat(eTag).isEqualTo(expected);
+    }
+
+    @Test
+    @DisplayName("응답의 필드 하나라도 바뀌면 ETag가 바뀐다")
+    void generateETag_changedField() {
+        // given
+        String original = cityService.generateETag(ApiResponse.success(List.of(paris)));
+
+        // when
+        List<String> changed = List.of(
+            cityService.generateETag(ApiResponse.success(List.of(
+                new CityResponse(9L, "파리", "프랑스", 48.8566, 2.3522, "FRA")))),
+            cityService.generateETag(ApiResponse.success(List.of(
+                new CityResponse(1L, "파리시", "프랑스", 48.8566, 2.3522, "FRA")))),
+            cityService.generateETag(ApiResponse.success(List.of(
+                new CityResponse(1L, "파리", "프랑스공화국", 48.8566, 2.3522, "FRA")))),
+            cityService.generateETag(ApiResponse.success(List.of(
+                new CityResponse(1L, "파리", "프랑스", 48.8567, 2.3522, "FRA")))),
+            cityService.generateETag(ApiResponse.success(List.of(
+                new CityResponse(1L, "파리", "프랑스", 48.8566, 2.3523, "FRA")))),
+            cityService.generateETag(ApiResponse.success(List.of(
+                new CityResponse(1L, "파리", "프랑스", 48.8566, 2.3522, "FRX")))),
+            cityService.generateETag(ApiResponse.fail(List.of(paris)))
+        );
+
+        // then
+        assertThat(changed).doesNotContain(original).doesNotHaveDuplicates();
+    }
+
+    @Test
+    @DisplayName("도시가 추가·삭제되거나 순서가 바뀌면 ETag가 바뀐다")
+    void generateETag_changedList() {
+        // given
+        String original = cityService.generateETag(ApiResponse.success(List.of(paris, tokyo)));
         CityResponse seoul = new CityResponse(3L, "서울", "대한민국", 37.5665, 126.9780, "KOR");
 
         // when
-        String added = cityService.generateCitiesETag(List.of(paris, tokyo, seoul));
-        String updated = cityService.generateCitiesETag(List.of(paris, renamedTokyo));
-        String deleted = cityService.generateCitiesETag(List.of(paris));
+        String added = cityService.generateETag(ApiResponse.success(List.of(paris, tokyo, seoul)));
+        String deleted = cityService.generateETag(ApiResponse.success(List.of(paris)));
+        String reordered = cityService.generateETag(ApiResponse.success(List.of(tokyo, paris)));
 
         // then
-        assertThat(List.of(added, updated, deleted)).doesNotContain(original).doesNotHaveDuplicates();
-    }
-
-    @Test
-    @DisplayName("구분자 문자를 포함해 필드 경계만 옮겨진 목록이면 ETag가 다르다")
-    void generateCitiesETag_separatorInValue() {
-        // given
-        CityResponse cityNameWithSeparator =
-            new CityResponse(1L, "파리\u001F프랑스", "국가", 48.8566, 2.3522, "FRA");
-        CityResponse countryNameWithSeparator =
-            new CityResponse(1L, "파리", "프랑스\u001F국가", 48.8566, 2.3522, "FRA");
-        CityResponse recordSeparatorInCountryCode =
-            new CityResponse(1L, "파리", "프랑스", 48.8566, 2.3522, "FRA\u001E2");
-        CityResponse splitRecords = new CityResponse(2L, "파리", "프랑스", 48.8566, 2.3522, "FRA");
-
-        // when
-        String first = cityService.generateCitiesETag(List.of(cityNameWithSeparator));
-        String second = cityService.generateCitiesETag(List.of(countryNameWithSeparator));
-        String third = cityService.generateCitiesETag(List.of(recordSeparatorInCountryCode));
-        String fourth = cityService.generateCitiesETag(List.of(paris, splitRecords));
-
-        // then
-        assertThat(List.of(first, second, third, fourth)).doesNotHaveDuplicates();
-    }
-
-    @Test
-    @DisplayName("null 필드와 \"null\" 문자열 필드는 서로 다른 ETag를 만든다")
-    void generateCitiesETag_nullAndNullString() {
-        // given
-        CityResponse nullCityName = new CityResponse(1L, null, "프랑스", 48.8566, 2.3522, "FRA");
-        CityResponse nullStringCityName = new CityResponse(1L, "null", "프랑스", 48.8566, 2.3522, "FRA");
-
-        // when
-        String nullETag = cityService.generateCitiesETag(List.of(nullCityName));
-        String nullStringETag = cityService.generateCitiesETag(List.of(nullStringCityName));
-
-        // then
-        assertThat(nullETag).isNotEqualTo(nullStringETag);
-        assertThat(nullETag).matches("^\"[0-9a-f]{32}\"$");
+        assertThat(List.of(added, deleted, reordered)).doesNotContain(original).doesNotHaveDuplicates();
     }
 }

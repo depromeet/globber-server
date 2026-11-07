@@ -56,7 +56,7 @@ public class CityController {
         검색어는 앞뒤 공백을 제거해 사용하고, 비어 있거나 누락되면 400을 반환합니다.
         응답은 ApiResponse로 감싸며 data에 cities를 담습니다.""")
     public ResponseEntity<ApiResponse<SearchResult>> search(
-        @Parameter(description = "검색어(앞뒤 공백 제거 후 1자 이상)")
+        @Parameter(description = "검색어(앞뒤 공백 제거 후 1자 이상)", required = true)
         @RequestParam(required = false) final String keyword
     ) {
         return ResponseEntity.ok(ApiResponse.success(searchService.search(keyword)));
@@ -65,13 +65,13 @@ public class CityController {
     @GetMapping("/all")
     @Operation(summary = "전체 도시 조회", description = """
         등록된 모든 도시를 조회합니다. 페이지네이션 없이 전체 목록을 반환합니다.
-        Cache-Control(public, max-age=86400)과 ETag를 응답하며, If-None-Match가 현재 ETag와 같으면 본문 없이 304를 반환합니다.""")
+        Cache-Control(public, max-age=86400)과 응답 본문 전체로 계산한 ETag를 응답하며, If-None-Match가 현재 ETag와 같으면 본문 없이 304를 반환합니다.""")
     public ResponseEntity<ApiResponse<List<CityResponse>>> getAllCities() {
-        List<CityResponse> cities = cityService.getAllCities();
+        ApiResponse<List<CityResponse>> body = ApiResponse.success(cityService.getAllCities());
         return ResponseEntity.ok()
             .cacheControl(CacheControl.maxAge(ALL_CITIES_MAX_AGE).cachePublic())
-            .eTag(cityService.generateCitiesETag(cities))
-            .body(ApiResponse.success(cities));
+            .eTag(cityService.generateETag(body))
+            .body(body);
     }
 
     @GetMapping("/id")

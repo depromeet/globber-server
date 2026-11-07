@@ -9,15 +9,17 @@ import backend.globber.city.controller.dto.RecommendResponse;
 import backend.globber.city.domain.City;
 import backend.globber.city.repository.CityRepository;
 import backend.globber.city.repository.cache.RankingRepository;
+import backend.globber.common.dto.ApiResponse;
 import backend.globber.exception.spec.CityNotFoundException;
 import backend.globber.exception.spec.UsernameNotFoundException;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.util.DigestUtils;
 
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,11 +27,10 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class CityService {
 
-    private static final char ETAG_NULL_FIELD = '~';
-
     private final CityRepository cityRepository;
     private final RankingRepository rankingRepository;
     private final MemberRepository memberRepository;
+    private final ObjectMapper objectMapper;
 
     public List<CityResponse> getAllCities() {
         return cityRepository.findAll(Sort.by("countryCode", "cityName", "cityId"))
@@ -39,31 +40,15 @@ public class CityService {
     }
 
     /**
-     * 전체 도시 목록 내용으로 강한 ETag를 만든다. 도시가 추가·수정·삭제되면 값이 바뀐다.
+     * 실제 응답 본문을 HTTP 응답과 같은 ObjectMapper로 직렬화한 JSON 전체로 강한 ETag를 만든다.
+     * 응답 본문이 한 바이트라도 바뀌면 값이 바뀐다.
      */
-    public String generateCitiesETag(final List<CityResponse> cities) {
-        StringBuilder content = new StringBuilder();
-        for (CityResponse city : cities) {
-            appendETagField(content, city.cityId());
-            appendETagField(content, city.cityName());
-            appendETagField(content, city.countryName());
-            appendETagField(content, city.lat());
-            appendETagField(content, city.lng());
-            appendETagField(content, city.countryCode());
+    public String generateETag(final ApiResponse<List<CityResponse>> body) {
+        try {
+            return "\"" + DigestUtils.md5DigestAsHex(objectMapper.writeValueAsBytes(body)) + "\"";
+        } catch (JsonProcessingException e) {
+            throw new IllegalStateException("전체 도시 응답의 ETag를 만들지 못했습니다.", e);
         }
-        return "\"" + DigestUtils.md5DigestAsHex(content.toString().getBytes(StandardCharsets.UTF_8)) + "\"";
-    }
-
-    /**
-     * 값에 어떤 문자가 있어도 필드 경계가 모호하지 않도록 null은 '~', 그 외는 '길이:값'으로 붙인다.
-     */
-    private void appendETagField(final StringBuilder content, final Object value) {
-        if (value == null) {
-            content.append(ETAG_NULL_FIELD);
-            return;
-        }
-        String text = String.valueOf(value);
-        content.append(text.length()).append(':').append(text);
     }
 
     /**

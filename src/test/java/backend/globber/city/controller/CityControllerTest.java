@@ -32,6 +32,7 @@ import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.util.DigestUtils;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ContextConfiguration(initializers = RedisTestConfig.Initializer.class)
@@ -70,6 +71,19 @@ class CityControllerTest {
             .statusCode(400)
             .body("status", equalTo("fail"))
             .body("data", equalTo("검색어를 입력해 주세요."));
+    }
+
+    @Test
+    @DisplayName("API 문서에서 도시 검색의 keyword 파라미터를 필수로 표시한다")
+    void apiDocs_keywordRequired() {
+        // given
+        // when & then
+        RestAssured.given()
+            .when()
+            .get("/v3/api-docs")
+            .then()
+            .statusCode(200)
+            .body("paths['/api/v1/cities'].get.parameters.find { it.name == 'keyword' }.required", equalTo(true));
     }
 
     @ParameterizedTest
@@ -165,6 +179,20 @@ class CityControllerTest {
             .header("Pragma", nullValue())
             .header("Expires", nullValue())
             .header("ETag", notNullValue());
+    }
+
+    @Test
+    @DisplayName("전체 도시 조회의 ETag는 실제 응답 본문 바이트의 md5다")
+    void all_eTagIsMd5OfResponseBody() {
+        // given
+        cityRepository.save(city(token + "본문"));
+
+        // when
+        ExtractableResponse<Response> response = getAll();
+
+        // then
+        String expected = "\"" + DigestUtils.md5DigestAsHex(response.asByteArray()) + "\"";
+        assertThat(response.header("ETag")).isEqualTo(expected);
     }
 
     @Test
