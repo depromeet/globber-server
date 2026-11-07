@@ -15,13 +15,18 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.util.DigestUtils;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
 public class CityService {
+
+    private static final char ETAG_FIELD_SEPARATOR = '\u001F';
+    private static final char ETAG_RECORD_SEPARATOR = '\u001E';
 
     private final CityRepository cityRepository;
     private final RankingRepository rankingRepository;
@@ -32,6 +37,22 @@ public class CityService {
             .stream()
             .map(CityResponse::toResponse)
             .toList();
+    }
+
+    /**
+     * 전체 도시 목록 내용으로 강한 ETag를 만든다. 도시가 추가·수정·삭제되면 값이 바뀐다.
+     */
+    public String generateCitiesETag(final List<CityResponse> cities) {
+        StringBuilder content = new StringBuilder();
+        for (CityResponse city : cities) {
+            content.append(city.cityId()).append(ETAG_FIELD_SEPARATOR)
+                .append(city.cityName()).append(ETAG_FIELD_SEPARATOR)
+                .append(city.countryName()).append(ETAG_FIELD_SEPARATOR)
+                .append(city.lat()).append(ETAG_FIELD_SEPARATOR)
+                .append(city.lng()).append(ETAG_FIELD_SEPARATOR)
+                .append(city.countryCode()).append(ETAG_RECORD_SEPARATOR);
+        }
+        return "\"" + DigestUtils.md5DigestAsHex(content.toString().getBytes(StandardCharsets.UTF_8)) + "\"";
     }
 
     /**
