@@ -25,7 +25,9 @@ public class RefreshToken {
     }
     // 저장된 값은 해시이므로, 요청으로 받은 원문을 같은 방식으로 해시해 비교한다
     public boolean matches(String rawRefreshToken) {
-        return rawRefreshToken != null && hash(rawRefreshToken).equals(refreshTokenId);
+        return rawRefreshToken != null && MessageDigest.isEqual(
+            hash(rawRefreshToken).getBytes(StandardCharsets.UTF_8),
+            refreshTokenId.getBytes(StandardCharsets.UTF_8));
     }
 
     private static String hash(String raw) {

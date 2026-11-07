@@ -4,6 +4,7 @@ import backend.globber.exception.spec.CustomAuthException;
 import backend.globber.exception.spec.CustomTokenException;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.JwsHeader;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.SignatureAlgorithm;
@@ -90,7 +91,8 @@ public class JwtTokenProvider {
         try {
             return Jwts.parser().setSigningKey(secretKey).parseClaimsJws(token).getBody();
         } catch (ExpiredJwtException e) {
-            if (allowExpired) {
+            // 만료 검사는 서명 없는 토큰 거부보다 먼저 일어나므로, 서명 검증을 통과한 JWS일 때만 claims를 허용한다
+            if (allowExpired && e.getHeader() instanceof JwsHeader) {
                 return e.getClaims();
             }
             throw new CustomTokenException("만료된 JWT 토큰입니다.");

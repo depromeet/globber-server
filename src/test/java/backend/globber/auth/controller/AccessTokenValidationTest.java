@@ -2,6 +2,7 @@ package backend.globber.auth.controller;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import backend.globber.auth.domain.Member;
 import backend.globber.auth.domain.RefreshToken;
@@ -98,6 +99,17 @@ class AccessTokenValidationTest {
 
     private String forgedRawJwt() {
         return rawJwt(FORGED_SECRET, new Date(System.currentTimeMillis() + 600_000));
+    }
+
+    // 서명 없는(alg=none) 만료 토큰. 역할을 관리자로 조작한 경우
+    private String unsignedExpiredRawJwt() {
+        Date expiration = new Date(System.currentTimeMillis() - 60_000);
+        return Jwts.builder()
+            .setSubject(member.getEmail())
+            .claim("role", List.of(Role.ROLE_ADMIN.name()))
+            .setIssuedAt(new Date(expiration.getTime() - 60_000))
+            .setExpiration(expiration)
+            .compact();
     }
 
     private void assertUnauthorized(String authorization, String path) {
@@ -284,6 +296,43 @@ class AccessTokenValidationTest {
                 .then().log().all()
                 .statusCode(401)
                 .body("status", equalTo("fail"));
+        }
+
+        @Test
+        @DisplayName("서명이 없는 만료 액세스 토큰으로는 재발급할 수 없다")
+        void unsignedExpiredAccessToken_unauthorized() {
+            // given
+            String refreshToken = saveRefreshToken();
+
+            // when & then
+            RestAssured.given().log().all()
+                .header("Authorization", BEARER + unsignedExpiredRawJwt())
+                .cookie("RefreshToken", refreshToken)
+                .when()
+                .post("/reissue")
+                .then().log().all()
+                .statusCode(401)
+                .body("status", equalTo("fail"));
+        }
+
+        @Test
+        @DisplayName("저장된 토큰과 다른 리프레시 토큰으로는 재발급할 수 없다")
+        void differentRefreshToken_unauthorized() {
+            // given
+            String storedRefreshToken = saveRefreshToken();
+            String differentRefreshToken = jwtTokenProvider.createRefreshToken();
+            assertThat(differentRefreshToken).isNotEqualTo(storedRefreshToken);
+
+            // when & then
+            RestAssured.given().log().all()
+                .header("Authorization", BEARER + expiredRawJwt())
+                .cookie("RefreshToken", differentRefreshToken)
+                .when()
+                .post("/reissue")
+                .then().log().all()
+                .statusCode(401)
+                .body("status", equalTo("fail"))
+                .body("data", equalTo("RefreshToken이 일치하지 않습니다."));
         }
 
         @Test
