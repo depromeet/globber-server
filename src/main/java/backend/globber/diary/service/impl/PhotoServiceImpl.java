@@ -9,6 +9,7 @@ import backend.globber.diary.domain.Diary;
 import backend.globber.diary.domain.Photo;
 import backend.globber.diary.repository.PhotoRepository;
 import backend.globber.diary.service.PhotoService;
+import backend.globber.exception.spec.DuplicatePhotoCodeException;
 import backend.globber.exception.spec.PhotoCountException;
 import backend.globber.exception.spec.PhotoNotFoundException;
 import java.util.HashSet;
@@ -48,6 +49,9 @@ public class PhotoServiceImpl implements PhotoService {
             }
             keepIds.add(request.photoId());
         }
+
+        // 변경을 시작하기 전에 새 사진을 모두 검사한다 (실패하면 아무것도 바뀌지 않는다)
+        validateNewPhotos(requests, existingPhotos, keepIds);
 
         // 목록에 없는 기존 사진 삭제 (photoCode unique 충돌을 피하려고 새 사진 insert 전에 반영)
         if (diary.getPhotos().removeIf(photo -> !keepIds.contains(photo.getId()))) {
@@ -105,6 +109,38 @@ public class PhotoServiceImpl implements PhotoService {
                     "같은 사진이 중복으로 요청되었습니다. (photoId=" + request.photoId() + ")");
             }
         }
+    }
+
+    /**
+     * 새로 추가되는 사진(photoId 없음)만 검사한다. 기존 사진은 요청의 photoCode를 쓰지 않으므로 검사하지 않는다.
+     * - 새 사진끼리, 또는 유지하는 기존 사진과 photoCode가 같으면 400
+     * - 다른 기록이 이미 쓰는 photoCode면 409 (이 기록에서 지워지는 사진의 코드는 다시 써도 된다)
+     * - 업로드된 이미지의 형식·크기 검사(S3 HEAD)
+     */
+    private void validateNewPhotos(List<PhotoRequest> requests, Map<Long, Photo> existingPhotos, Set<Long> keepIds) {
+        Set<String> keptCodes = new HashSet<>();
+        Set<String> ownCodes = new HashSet<>();
+        existingPhotos.forEach((id, photo) -> {
+            ownCodes.add(photo.getPhotoCode());
+            if (keepIds.contains(id)) {
+                keptCodes.add(photo.getPhotoCode());
+            }
+        });
+
+        Set<String> newCodes = new HashSet<>();
+        for (PhotoRequest request : requests) {
+            if (request.photoId() != null) {
+                continue;
+            }
+            String code = request.photoCode();
+            if (!newCodes.add(code) || keptCodes.contains(code)) {
+                throw new IllegalArgumentException("같은 사진이 중복으로 요청되었습니다. (photoCode=" + code + ")");
+            }
+            if (!ownCodes.contains(code) && photoRepository.existsByPhotoCode(code)) {
+                throw new DuplicatePhotoCodeException();
+            }
+        }
+        newCodes.forEach(uploadedImageValidator::validate);
     }
 
     private void createPhoto(Diary diary, PhotoRequest request, int displayOrder) {

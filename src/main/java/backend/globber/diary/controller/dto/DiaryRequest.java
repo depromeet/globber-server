@@ -11,6 +11,7 @@ import java.util.List;
 
 public record DiaryRequest(
 
+        @Schema(description = "도시 ID. 기록 생성 시에만 사용하고, 수정 시에는 무시합니다(도시는 바뀌지 않음).")
         @NotNull(message = "cityId는 필수입니다.")
         Long cityId,         // 도시 선택 ID -> 그냥 도시 아이디
 

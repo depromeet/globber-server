@@ -4,7 +4,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.anyOf;
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 
 import backend.globber.auth.domain.Member;
 import backend.globber.auth.domain.constant.AuthProvider;
@@ -35,6 +39,9 @@ import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
+import backend.globber.common.service.UploadedImageValidator;
+import backend.globber.diary.repository.PhotoRepository;
 import org.springframework.transaction.support.TransactionTemplate;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -45,6 +52,13 @@ class DiaryControllerTest {
 
     @MockitoBean
     private RedisWarmUp redisWarmUp;
+
+    // 테스트용 photoCode는 S3에 없으므로 업로드 이미지 검사(S3 HEAD)는 대체한다
+    @MockitoBean
+    private UploadedImageValidator uploadedImageValidator;
+
+    @MockitoSpyBean
+    private PhotoRepository photoRepository;
 
     @LocalServerPort
     private int port;
@@ -217,16 +231,85 @@ class DiaryControllerTest {
     }
 
     @Test
-    @DisplayName("삭제를 반영한 뒤 새 사진 저장이 실패하면 전체를 롤백한다")
-    void updateDiary_failureAfterDelete_rollsBack() {
-        // given: B·C 삭제 후, 다른 기록이 쓰는 photoCode로 새 사진을 추가해 저장 중에 실패시킨다
+    @DisplayName("다른 기록이 쓰는 photoCode로 새 사진을 추가하면 409를 반환하고 아무것도 바꾸지 않는다")
+    void updateDiary_photoCodeUsedByOtherDiary_conflict() {
+        // given
         Map<String, Object> body = diaryBody("바뀌면 안 되는 본문", List.of(
             photoBody(photoIds.get("A"), code("A"), "바뀌면 안 되는 장소"),
             photoBody(null, code("OTHER"), null)));
 
         // when & then
-        put(diaryId, body).statusCode(not(200));
+        put(diaryId, body).statusCode(409);
         assertUnchanged();
+    }
+
+    @Test
+    @DisplayName("삭제를 반영한 뒤 새 사진 저장이 실패하면 전체를 롤백한다")
+    void updateDiary_failureAfterDelete_rollsBack() {
+        // given: B·C 삭제가 flush된 뒤 새 사진 저장에서 실패시킨다
+        doThrow(new IllegalStateException("저장 실패")).when(photoRepository).save(any(Photo.class));
+        Map<String, Object> body = diaryBody("바뀌면 안 되는 본문", List.of(
+            photoBody(photoIds.get("A"), code("A"), "바뀌면 안 되는 장소"),
+            photoBody(null, code("D"), null)));
+
+        // when & then
+        put(diaryId, body).statusCode(500);
+        assertUnchanged();
+    }
+
+    @Test
+    @DisplayName("수정 요청에 다른 cityId가 있어도 기록의 도시는 바뀌지 않는다")
+    void updateDiary_differentCityId_keepsCity() {
+        // given
+        Long otherCityId = transactionTemplate.execute(status -> {
+            City other = TestEntityFactory.createCity("다른도시" + prefix, "일본", "JPN", 35.6, 139.7);
+            em.persist(other);
+            return other.getCityId();
+        });
+        Map<String, Object> body = diaryBody("바뀐 본문", List.of(
+            photoBody(photoIds.get("A"), code("A"), null),
+            photoBody(photoIds.get("B"), code("B"), null),
+            photoBody(photoIds.get("C"), code("C"), null)));
+        body.put("cityId", otherCityId);
+
+        // when & then
+        put(diaryId, body).statusCode(200).body("data.city.cityId", equalTo(cityId.intValue()));
+        Long savedMtc = jdbcTemplate.queryForObject(
+            "select member_travel_city_id from diary where id = ?", Long.class, diaryId);
+        assertThat(savedMtc).isEqualTo(memberTravelCityId);
+    }
+
+    @Test
+    @DisplayName("listViews 대표 사진은 도시의 가장 최근 기록의 첫 번째 사진이고, 순서를 바꾸면 따라 바뀐다")
+    void listViews_thumbnailFollowsLatestDiaryFirstPhoto() {
+        // given: 나중에 만든 기록(OTHER)이 아니라 먼저 만든 기록(A,B,C)을 더 최근 기록으로 만들고, 다른 기록은 과거로 돌린다
+        jdbcTemplate.update("update diary set created_at = now() + interval '1 day' where id = ?", diaryId);
+        jdbcTemplate.update("update diary set created_at = now() - interval '1 day' where id = ?", otherDiaryId);
+        listViewsFirstThumbnail(code("A"));
+
+        // given: 반대로 다른 기록(OTHER)을 가장 최근 기록으로 만든다
+        jdbcTemplate.update("update diary set created_at = now() + interval '2 day' where id = ?", otherDiaryId);
+        listViewsFirstThumbnail(code("OTHER"));
+
+        // given: 다시 A,B,C 기록을 가장 최근으로 만들고 사진 순서를 C,A,B로 바꾼다
+        jdbcTemplate.update("update diary set created_at = now() + interval '3 day' where id = ?", diaryId);
+        put(diaryId, diaryBody(ORIGINAL_TEXT, List.of(
+            photoBody(photoIds.get("C"), code("C"), null),
+            photoBody(photoIds.get("A"), code("A"), null),
+            photoBody(photoIds.get("B"), code("B"), null)))).statusCode(200);
+
+        // when & then
+        listViewsFirstThumbnail(code("C"));
+    }
+
+    private void listViewsFirstThumbnail(String expectedPhotoCode) {
+        RestAssured.given()
+            .header("Authorization", accessToken)
+            .when()
+            .get("/api/v1/member-travels/listViews")
+            .then()
+            .statusCode(200)
+            .body("data.records[0].cities[0].thumbnailUrls[0]", equalTo(expectedPhotoCode));
     }
 
     @Test
@@ -267,14 +350,14 @@ class DiaryControllerTest {
         RestAssured.given().contentType(ContentType.JSON).header("Authorization", accessToken)
             .body(photoBody(null, code("D"), null))
             .when().post("/api/v1/diaries/photo/{diaryId}", diaryId)
-            .then().statusCode(not(200));
+            .then().statusCode(anyOf(is(404), is(405)));
         RestAssured.given().contentType(ContentType.JSON).header("Authorization", accessToken)
             .body(List.of(photoBody(photoIds.get("A"), code("A"), "바뀌면 안 되는 장소")))
             .when().put("/api/v1/diaries/photo/{diaryId}", diaryId)
-            .then().statusCode(not(200));
+            .then().statusCode(anyOf(is(404), is(405)));
         RestAssured.given().header("Authorization", accessToken)
             .when().delete("/api/v1/diaries/photo/{diaryId}/{photoId}", diaryId, photoIds.get("B"))
-            .then().statusCode(not(200));
+            .then().statusCode(anyOf(is(404), is(405)));
 
         assertUnchanged();
     }

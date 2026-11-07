@@ -52,7 +52,9 @@ public class DiaryController {
             description = "본문과 최종 사진 목록(최대 3장)을 한 번에 반영합니다. "
                     + "photoId가 있는 사진은 유지하고 메타데이터를 수정하며, photoId가 없는 사진은 새로 추가합니다. "
                     + "목록에 없는 기존 사진은 삭제됩니다. photos 배열 순서가 사진 표시 순서입니다. "
-                    + "다른 기록의 photoId가 포함되면 404를 반환하고 아무것도 변경하지 않습니다.")
+                    + "다른 기록의 photoId가 포함되면 404를 반환하고 아무것도 변경하지 않습니다. "
+                    + "새 사진끼리 또는 유지하는 사진과 photoCode가 같으면 400, 다른 기록이 쓰는 photoCode면 409입니다. "
+                    + "요청의 cityId는 무시하며, 수정으로 기록의 도시는 바뀌지 않습니다.")
     public ResponseEntity<ApiResponse<DiaryResponse>> updateDiary(
             @RequestHeader("Authorization") String accessToken,
             @PathVariable Long diary_id,
