@@ -15,6 +15,7 @@ import backend.globber.diary.controller.dto.PhotoRequest;
 import backend.globber.diary.controller.dto.PhotoResponse;
 import backend.globber.diary.domain.Diary;
 import backend.globber.diary.domain.Photo;
+import backend.globber.diary.repository.DiaryEmojiReactionRepository;
 import backend.globber.diary.repository.DiaryEmojiRepository;
 import backend.globber.diary.repository.DiaryRepository;
 import backend.globber.diary.repository.PhotoRepository;
@@ -36,6 +37,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -56,6 +59,7 @@ public class DiaryServiceImpl implements DiaryService {
     private final MemberTravelRepository memberTravelRepository;
 
     private final DiaryEmojiRepository emojiRepository;
+    private final DiaryEmojiReactionRepository emojiReactionRepository;
 
     @Transactional
     @Override
@@ -112,7 +116,7 @@ public class DiaryServiceImpl implements DiaryService {
         }
 
         diary.changeText(diaryRequest.text());
-        List<EmojiResponse> emojis = getEmojiResponses(diaryId);
+        List<EmojiResponse> emojis = getEmojiResponses(diaryId, memberId);
         return toDiaryResponse(diary, emojis);
     }
 
@@ -145,31 +149,35 @@ public class DiaryServiceImpl implements DiaryService {
             throw new NoCredException("본인의 기록만 조회할 수 있습니다.");
         }
 
-        List<EmojiResponse> emojis = getEmojiResponses(diaryId);
+        List<EmojiResponse> emojis = getEmojiResponses(diaryId, memberId);
 
         return toDiaryResponse(diary, emojis);
     }
 
     @Transactional(readOnly = true)
     @Override
-    public DiaryResponse getDiaryDetail(Long diaryId) {
+    public DiaryResponse getPublicDiaryDetail(Long diaryId, Long viewerId) {
         Diary diary = diaryRepository.findWithCityById(diaryId)
                 .orElseThrow(() -> new DiaryNotFoundException("기록을 찾을 수 없습니다."));
 
-        List<EmojiResponse> emojis = getEmojiResponses(diaryId);
+        List<EmojiResponse> emojis = getEmojiResponses(diaryId, viewerId);
 
         return toDiaryResponse(diary, emojis);
     }
 
     @Transactional(readOnly = true)
     @Override
-    public DiaryListResponse getDiariesByUUID(String uuid) {
+    public DiaryListResponse getDiariesByUUID(String uuid, Long viewerId) {
         List<Diary> diaries = diaryRepository.findAllWithRelationsByMemberUuid(uuid);
+
+        // 조회한 회원이 누른 이모지를 기록별로 한 번에 읽어 둔다 (기록마다 다시 조회하지 않도록)
+        Map<Long, Set<String>> pressedByDiary = pressedCodes(viewerId, diaries);
 
         // Diary → DiaryResponse 변환
         List<DiaryResponse> diaryResponses = diaries.stream()
                 .map(diary -> {
-                    List<EmojiResponse> emojis = getEmojiResponses(diary.getId());
+                    List<EmojiResponse> emojis = getEmojiResponses(diary.getId(),
+                            pressedByDiary.getOrDefault(diary.getId(), Set.of()));
                     return toDiaryResponse(diary, emojis);
                 })
                 .toList();
@@ -190,15 +198,32 @@ public class DiaryServiceImpl implements DiaryService {
     }
 
 
-    private List<EmojiResponse> getEmojiResponses(Long diaryId) {
+    private List<EmojiResponse> getEmojiResponses(Long diaryId, Long viewerId) {
+        Set<String> pressed = viewerId == null
+                ? Set.of()
+                : new HashSet<>(emojiReactionRepository.findCodes(diaryId, viewerId));
+        return getEmojiResponses(diaryId, pressed);
+    }
+
+    private List<EmojiResponse> getEmojiResponses(Long diaryId, Set<String> pressedCodes) {
         return emojiRepository
                 .findAllByDiaryIdOrderByCountDescCreatedAtAsc(diaryId)
                 .stream()
-                .map(EmojiResponse::from)
+                .map(emoji -> EmojiResponse.from(emoji, pressedCodes.contains(emoji.getCode())))
                 .toList();
     }
 
-    // Diary -> DiaryResponse 변환
+    private Map<Long, Set<String>> pressedCodes(Long viewerId, List<Diary> diaries) {
+        if (viewerId == null || diaries.isEmpty()) {
+            return Map.of();
+        }
+        List<Long> diaryIds = diaries.stream().map(Diary::getId).toList();
+        return emojiReactionRepository.findPressedCodes(viewerId, diaryIds).stream()
+                .collect(Collectors.groupingBy(
+                        DiaryEmojiReactionRepository.PressedCode::getDiaryId,
+                        Collectors.mapping(DiaryEmojiReactionRepository.PressedCode::getCode, Collectors.toSet())));
+    }
+
     private DiaryResponse toDiaryResponse(Diary diary, List<EmojiResponse> emojis) {
         List<PhotoResponse> photos = diary.getPhotos().stream()
                 .sorted(Comparator.comparing(
