@@ -406,6 +406,35 @@ class DiaryControllerTest {
     }
 
     @Test
+    @DisplayName("새 사진의 width·height가 1 미만이면 생성·수정 모두 400을 반환하고 아무것도 바꾸지 않는다")
+    void newPhotoZeroSize_rejected() {
+        // given
+        Map<String, Object> zeroPhoto = photoBody(null, code("ZERO"), null);
+        zeroPhoto.put("width", 0);
+        zeroPhoto.put("height", 0);
+
+        // when & then: 수정
+        put(diaryId, diaryBody("바뀌면 안 되는 본문", List.of(
+            photoBody(photoIds.get("A"), code("A"), null), zeroPhoto)))
+            .statusCode(400)
+            .body("status", equalTo("fail"));
+        assertUnchanged();
+
+        // when & then: 생성
+        RestAssured.given()
+            .contentType(ContentType.JSON)
+            .header("Authorization", accessToken)
+            .body(diaryBody("새 기록", List.of(zeroPhoto)))
+            .when()
+            .post("/api/v1/diaries")
+            .then()
+            .statusCode(400);
+        Integer diaryCount = jdbcTemplate.queryForObject(
+            "select count(*) from diary where member_travel_city_id = ?", Integer.class, memberTravelCityId);
+        assertThat(diaryCount).isEqualTo(2);
+    }
+
+    @Test
     @DisplayName("삭제한 사진 개별 API는 더 이상 동작하지 않는다")
     void removedPhotoApis_notAvailable() {
         RestAssured.given().contentType(ContentType.JSON).header("Authorization", accessToken)
