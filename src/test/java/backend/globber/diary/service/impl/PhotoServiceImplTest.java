@@ -14,6 +14,7 @@ import static org.mockito.BDDMockito.willThrow;
 import backend.globber.common.service.UploadedImageValidator;
 import org.springframework.test.util.ReflectionTestUtils;
 import backend.globber.exception.spec.InvalidS3KeyException;
+import backend.globber.exception.spec.InvalidPhotoSizeException;
 import backend.globber.common.service.S3ObjectDeleter;
 import backend.globber.diary.controller.dto.PhotoRequest;
 import backend.globber.exception.spec.DuplicatePhotoCodeException;
@@ -286,11 +287,63 @@ class PhotoServiceImplTest {
         verify(s3ObjectDeleter).deleteAfterCommit(List.of(owned("code-2"), owned("code-3")));
     }
 
+    @Test
+    @DisplayName("새 사진의 width·height가 없거나 1 미만이면 400으로 거절하고 아무것도 바꾸지 않는다")
+    void syncPhotos_newPhotoInvalidSize_rejected() {
+        // given
+        List<List<PhotoRequest>> invalids = List.of(
+            List.of(request(1L, owned("code-1")), sized(null, owned("new"), 0L, 100L)),
+            List.of(request(1L, owned("code-1")), sized(null, owned("new"), 100L, 0L)),
+            List.of(request(1L, owned("code-1")), sized(null, owned("new"), null, 100L)),
+            List.of(request(1L, owned("code-1")), sized(null, owned("new"), 100L, null)));
+
+        // when & then
+        for (List<PhotoRequest> requests : invalids) {
+            assertThatThrownBy(() -> photoService.syncPhotos(MEMBER_ID, diary, requests))
+                .isInstanceOf(InvalidPhotoSizeException.class);
+        }
+        assertThat(diary.getPhotos()).extracting(Photo::getId).containsExactly(1L, 2L, 3L);
+        verify(photoRepository, never()).flush();
+        verify(photoRepository, never()).save(any());
+        verify(uploadedImageValidator, never()).validate(any());
+    }
+
+    @Test
+    @DisplayName("기존 사진에 1 미만 크기가 오면 거절하지 않고 저장된 크기를 그대로 둔다")
+    void syncPhotos_existingPhotoInvalidSize_keepsStoredSize() {
+        // given: 1번은 정상 크기로, 2번은 예전에 0으로 저장된 사진
+        Photo normal = diary.getPhotos().get(0);
+        ReflectionTestUtils.setField(normal, "width", 50L);
+        ReflectionTestUtils.setField(normal, "height", 60L);
+        Photo legacyZero = diary.getPhotos().get(1);
+        ReflectionTestUtils.setField(legacyZero, "width", 0L);
+        ReflectionTestUtils.setField(legacyZero, "height", 0L);
+        List<PhotoRequest> requests = List.of(
+            sized(1L, owned("code-1"), 0L, null),
+            sized(2L, owned("code-2"), 0L, 0L),
+            sized(3L, owned("code-3"), 300L, 400L));
+
+        // when
+        photoService.syncPhotos(MEMBER_ID, diary, requests);
+
+        // then
+        assertThat(normal.getWidth()).isEqualTo(50L);
+        assertThat(normal.getHeight()).isEqualTo(60L);
+        assertThat(legacyZero.getWidth()).isZero();
+        Photo third = diary.getPhotos().get(2);
+        assertThat(third.getWidth()).isEqualTo(300L);
+        assertThat(third.getHeight()).isEqualTo(400L);
+    }
+
     private static String owned(String name) {
         return "travels/" + MEMBER_ID + "/" + name + ".jpg";
     }
 
     private PhotoRequest request(Long photoId, String photoCode) {
         return new PhotoRequest(photoId, photoCode, null, null, 100L, 100L, null, null, null);
+    }
+
+    private PhotoRequest sized(Long photoId, String photoCode, Long width, Long height) {
+        return new PhotoRequest(photoId, photoCode, null, null, width, height, null, null, null);
     }
 }

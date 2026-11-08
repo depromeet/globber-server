@@ -3,6 +3,7 @@ package backend.globber.diary.service.impl;
 import static java.util.stream.Collectors.toList;
 
 import backend.globber.common.service.UploadedImageValidator;
+import backend.globber.exception.spec.InvalidPhotoSizeException;
 import backend.globber.exception.spec.InvalidS3KeyException;
 import backend.globber.common.service.S3ObjectDeleter;
 import backend.globber.diary.controller.dto.PhotoRequest;
@@ -80,11 +81,13 @@ public class PhotoServiceImpl implements PhotoService {
                 continue;
             }
             Photo photo = existingPhotos.get(request.photoId());
+            // 기존 사진은 1 미만 크기가 와도 거절하지 않고 저장된 크기를 그대로 둔다(예전 0 크기 데이터의 수정 저장을 막지 않기 위해)
+            boolean validSize = isValidSize(request.width()) && isValidSize(request.height());
             photo.updateMetadata(
                 request.lat(),
                 request.lng(),
-                request.width(),
-                request.height(),
+                validSize ? request.width() : photo.getWidth(),
+                validSize ? request.height() : photo.getHeight(),
                 request.takenMonth(),
                 request.tag(),
                 request.placeName()
@@ -128,6 +131,7 @@ public class PhotoServiceImpl implements PhotoService {
 
     /**
      * 새로 추가되는 사진(photoId 없음)만 검사한다. 기존 사진은 요청의 photoCode를 쓰지 않으므로 검사하지 않는다.
+     * - width·height가 없거나 1 미만이면 400
      * - photoCode가 본인 경로(travels/{memberId}/)가 아니거나 확장자가 허용 목록에 없으면 400
      * - 새 사진끼리, 또는 유지하는 기존 사진과 photoCode가 같으면 400
      * - 다른 기록이 이미 쓰는 photoCode면 409 (이 기록에서 지워지는 사진의 코드는 다시 써도 된다)
@@ -149,6 +153,9 @@ public class PhotoServiceImpl implements PhotoService {
             if (request.photoId() != null) {
                 continue;
             }
+            if (!isValidSize(request.width()) || !isValidSize(request.height())) {
+                throw new InvalidPhotoSizeException();
+            }
             String code = request.photoCode();
             validateOwnedPath(memberId, code);
             if (!newCodes.add(code) || keptCodes.contains(code)) {
@@ -160,6 +167,10 @@ public class PhotoServiceImpl implements PhotoService {
         }
         newCodes.forEach(uploadedImageValidator::validate);
         return newCodes;
+    }
+
+    private static boolean isValidSize(Long size) {
+        return size != null && size >= 1;
     }
 
     private void validateOwnedPath(Long memberId, String photoCode) {
