@@ -1,20 +1,23 @@
 package backend.globber.diary.controller;
 
 import backend.globber.common.dto.ApiResponse;
+import backend.globber.common.service.CommonService;
+import backend.globber.diary.controller.dto.EmojiRequest;
 import backend.globber.diary.controller.dto.EmojiResponse;
 import backend.globber.diary.service.DiaryEmojiService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/diaries/{diaryId}/emojis")
@@ -23,41 +26,50 @@ import java.util.List;
 public class DiaryEmojiController {
 
     private final DiaryEmojiService emojiService;
+    private final CommonService commonService;
 
     @Operation(
             summary = "이모지 등록",
-            description = "특정 다이어리에 새로운 이모지를 등록합니다. 이미 존재하는 이모지는 중복 등록할 수 없으며, 등록 시 count 값은 0으로 초기화됩니다."
+            description = "기록에 이모지를 등록하고, 등록한 사람이 누른 것으로 처리합니다(count 1). "
+                    + "이미 있는 code면 오류 없이 누른 상태가 되고, 이미 눌렀으면 변화가 없습니다. "
+                    + "glyph는 code로 서버가 만듭니다. 로그인이 필요합니다."
     )
     @PostMapping("/register")
     public ResponseEntity<ApiResponse<EmojiResponse>> registerEmoji(
             @PathVariable Long diaryId,
-            @RequestParam String code,
-            @RequestParam String glyph
+            @RequestHeader("Authorization") String accessToken,
+            @Valid @RequestBody EmojiRequest request
     ) {
-        EmojiResponse emojiResponse = emojiService.registerEmoji(diaryId, code, glyph);
-        return ResponseEntity.ok(ApiResponse.success(emojiResponse));
+        Long memberId = commonService.getMemberIdFromToken(accessToken);
+        return ResponseEntity.ok(ApiResponse.success(emojiService.registerEmoji(memberId, diaryId, request.code())));
     }
 
     @Operation(
-            summary = "이모지 리액션 증가",
-            description = "이미 등록된 이모지의 리액션(누르기)을 수행하여 count 값을 1 증가시킵니다."
+            summary = "이모지 누르기(토글)",
+            description = "누르지 않은 이모지면 count를 1 올리고, 이미 누른 이모지면 취소하고 1 내립니다. "
+                    + "한 사람은 이모지마다 한 번만 반응할 수 있습니다. 로그인이 필요합니다."
     )
     @PostMapping("/press")
-    public ResponseEntity<ApiResponse<Void>> pressEmoji(
+    public ResponseEntity<ApiResponse<EmojiResponse>> pressEmoji(
             @PathVariable Long diaryId,
-            @RequestParam String code
+            @RequestHeader("Authorization") String accessToken,
+            @Valid @RequestBody EmojiRequest request
     ) {
-        emojiService.pressEmoji(diaryId, code);
-        return ResponseEntity.ok(ApiResponse.success());
+        Long memberId = commonService.getMemberIdFromToken(accessToken);
+        return ResponseEntity.ok(ApiResponse.success(emojiService.pressEmoji(memberId, diaryId, request.code())));
     }
 
     @Operation(
             summary = "이모지 목록 조회",
-            description = "특정 다이어리에 등록된 모든 이모지와 각 카운트를 조회합니다. count 내림차순, 등록 순서 오름차순으로 정렬되어 반환됩니다."
+            description = "기록에 등록된 이모지와 count를 조회합니다. count 내림차순, 등록 순서 오름차순입니다. "
+                    + "로그인한 경우 Authorization을 보내면 pressedByMe에 내가 눌렀는지가 표시되고, 비로그인이면 false입니다."
     )
     @GetMapping
-    public ResponseEntity<ApiResponse<List<EmojiResponse>>> getEmojis(@PathVariable Long diaryId) {
-        List<EmojiResponse> emojis = emojiService.getEmojis(diaryId);
-        return ResponseEntity.ok(ApiResponse.success(emojis));
+    public ResponseEntity<ApiResponse<List<EmojiResponse>>> getEmojis(
+            @PathVariable Long diaryId,
+            @RequestHeader(value = "Authorization", required = false) String accessToken
+    ) {
+        Long viewerId = accessToken == null ? null : commonService.getMemberIdFromToken(accessToken);
+        return ResponseEntity.ok(ApiResponse.success(emojiService.getEmojis(viewerId, diaryId)));
     }
 }
