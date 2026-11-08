@@ -9,7 +9,7 @@ import java.util.List;
 public interface PhotoService {
 
     // 기록의 사진을 요청 목록(최종 상태)과 일치시킨다. 배열 인덱스가 표시 순서가 된다.
-    void syncPhotos(Diary diary, List<PhotoRequest> photoRequests);
+    void syncPhotos(Long memberId, Diary diary, List<PhotoRequest> photoRequests);
 
     List<PhotoResponse> getAllPhoto(Long diaryId);
 

@@ -46,7 +46,7 @@ class S3ServiceSignedHeadersTest {
     @DisplayName("Content-Type과 Cache-Control이 서명 헤더에 포함되고 uploadHeaders와 값이 같다")
     void cacheControlIsSigned() {
         // given
-        PresignedUrlRequest request = new PresignedUrlRequest(S3UploadType.PROFILE, null, "image.jpg", "image/jpeg");
+        PresignedUrlRequest request = new PresignedUrlRequest(S3UploadType.PROFILE, "image.jpg", "image/jpeg");
 
         // when
         PresignedUrlResponse response = s3Service.generatePresignedUrl(1L, request);

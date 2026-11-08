@@ -40,7 +40,6 @@ class S3ServiceTest {
         Long memberId = 123L;
         PresignedUrlRequest request = new PresignedUrlRequest(
             S3UploadType.PROFILE,
-            null,
             "test.jpg",
             "image/jpeg"
         );

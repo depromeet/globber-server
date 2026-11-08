@@ -45,7 +45,6 @@ public class S3Service {
 
     public PresignedUrlResponse generatePresignedUrl(Long memberId, PresignedUrlRequest request) {
         final S3UploadType uploadType = request.uploadType();
-        final Long resourceId = request.resourceId();
         final String fileName = request.fileName();
         final String contentType = request.contentType();
 
@@ -53,7 +52,7 @@ public class S3Service {
             throw new InvalidUploadFileException("지원하지 않는 이미지 형식입니다. (image/jpeg, image/png, image/webp, image/avif만 가능)");
         }
 
-        String prefix = uploadType.generatePrefix(memberId, resourceId);
+        String prefix = uploadType.generatePrefix(memberId);
 
         String s3Key = generateUniqueKey(prefix, fileName);
 

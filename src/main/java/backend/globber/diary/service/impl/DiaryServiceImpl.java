@@ -11,6 +11,7 @@ import backend.globber.diary.controller.dto.DiaryListResponse;
 import backend.globber.diary.controller.dto.DiaryRequest;
 import backend.globber.diary.controller.dto.DiaryResponse;
 import backend.globber.diary.controller.dto.EmojiResponse;
+import backend.globber.common.service.S3ObjectDeleter;
 import backend.globber.diary.controller.dto.PhotoResponse;
 import backend.globber.diary.domain.Diary;
 import backend.globber.diary.domain.Photo;
@@ -52,6 +53,7 @@ public class DiaryServiceImpl implements DiaryService {
     private final MemberTravelRepository memberTravelRepository;
 
     private final DiaryEmojiRepository emojiRepository;
+    private final S3ObjectDeleter s3ObjectDeleter;
 
     @Transactional
     @Override
@@ -81,7 +83,7 @@ public class DiaryServiceImpl implements DiaryService {
         diaryRepository.save(diary);
 
         // Photo 저장 (배열 순서 = 표시 순서)
-        photoService.syncPhotos(diary, diaryRequest.photos());
+        photoService.syncPhotos(memberId, diary, diaryRequest.photos());
 
         // 저장된 Diary + Photo 리스트 변환
         return toDiaryResponse(diaryRepository.findById(diary.getId()).get(), Collections.emptyList());
@@ -102,7 +104,7 @@ public class DiaryServiceImpl implements DiaryService {
 
         // 본문과 최종 사진 목록을 같은 트랜잭션에서 반영
         diary.changeText(diaryRequest.text());
-        photoService.syncPhotos(diary, diaryRequest.photos());
+        photoService.syncPhotos(memberId, diary, diaryRequest.photos());
         List<EmojiResponse> emojis = getEmojiResponses(diaryId);
         return toDiaryResponse(diary, emojis);
     }
@@ -120,7 +122,10 @@ public class DiaryServiceImpl implements DiaryService {
             throw new NoCredException("본인의 기록만 삭제할 수 있습니다.");
         }
 
+        List<String> photoCodes = diary.getPhotos().stream().map(Photo::getPhotoCode).toList();
         diaryRepository.delete(diary);
+        // 기록이 지워진 뒤(커밋 후) 사진 S3 객체를 지운다
+        s3ObjectDeleter.deleteAfterCommit(photoCodes);
     }
 
     @Transactional(readOnly = true)

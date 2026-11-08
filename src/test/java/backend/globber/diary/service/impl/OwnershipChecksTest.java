@@ -19,6 +19,7 @@ import backend.globber.diary.controller.dto.PhotoRequest;
 import backend.globber.diary.domain.Diary;
 import backend.globber.diary.domain.Photo;
 import backend.globber.diary.repository.DiaryEmojiRepository;
+import backend.globber.common.service.S3ObjectDeleter;
 import backend.globber.common.service.UploadedImageValidator;
 import backend.globber.diary.repository.DiaryRepository;
 import backend.globber.diary.repository.PhotoRepository;
@@ -48,12 +49,12 @@ class OwnershipChecksTest {
     private final PhotoRepository photoRepository = mock(PhotoRepository.class);
     private final MemberRepository memberRepository = mock(MemberRepository.class);
     private final PhotoServiceImpl photoService = new PhotoServiceImpl(photoRepository,
-        mock(UploadedImageValidator.class));
+        mock(UploadedImageValidator.class), mock(S3ObjectDeleter.class));
     private final PhotoService photoServiceMock = mock(PhotoService.class);
     private final DiaryServiceImpl diaryService = new DiaryServiceImpl(diaryRepository, photoRepository,
         memberRepository, mock(CityRepository.class), mock(JwtTokenProvider.class), photoServiceMock,
         mock(MemberTravelCityRepository.class), mock(MemberTravelRepository.class),
-        mock(DiaryEmojiRepository.class));
+        mock(DiaryEmojiRepository.class), mock(S3ObjectDeleter.class));
 
     private Member member(long id) {
         Member member = mock(Member.class);
@@ -131,7 +132,7 @@ class OwnershipChecksTest {
         // when & then
         assertThatThrownBy(() -> diaryService.updateDiary(OTHER_ID, DIARY_ID, request))
             .isInstanceOf(NoCredException.class);
-        verify(photoServiceMock, never()).syncPhotos(any(), any());
+        verify(photoServiceMock, never()).syncPhotos(any(), any(), any());
     }
 
     @Test
@@ -142,7 +143,7 @@ class OwnershipChecksTest {
         PhotoRequest otherDiaryPhoto = new PhotoRequest(PHOTO_ID, "other", null, null, 1L, 1L, null, null, null);
 
         // when & then
-        assertThatThrownBy(() -> photoService.syncPhotos(diary, List.of(otherDiaryPhoto)))
+        assertThatThrownBy(() -> photoService.syncPhotos(OWNER_ID, diary, List.of(otherDiaryPhoto)))
             .isInstanceOf(PhotoNotFoundException.class);
         verify(photoRepository, never()).save(any());
         verify(photoRepository, never()).delete(any());

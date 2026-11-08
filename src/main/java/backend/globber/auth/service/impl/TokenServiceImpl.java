@@ -8,6 +8,8 @@ import backend.globber.auth.repository.RefreshTokenRedisRepository;
 import backend.globber.auth.service.TokenService;
 import backend.globber.auth.util.AccessTokenBlacklist;
 import backend.globber.auth.util.JwtTokenProvider;
+import backend.globber.diary.repository.PhotoRepository;
+import backend.globber.common.service.S3ObjectDeleter;
 import backend.globber.exception.spec.CustomAuthException;
 import backend.globber.exception.spec.CustomTokenException;
 import backend.globber.exception.spec.UsernameNotFoundException;
@@ -17,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -28,6 +31,8 @@ public class TokenServiceImpl implements TokenService {
     private final MemberRepository memberRepository;
     private final JwtTokenProvider jwtTokenProvider;
     private final RefreshTokenRedisRepository refreshTokenRepository;
+    private final PhotoRepository photoRepository;
+    private final S3ObjectDeleter s3ObjectDeleter;
     private final AccessTokenBlacklist accessTokenBlacklist;
 
     // todo: specify error handler
@@ -99,6 +104,13 @@ public class TokenServiceImpl implements TokenService {
     public void deleteMember(Long memberId) {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new CustomAuthException("해당 회원을 찾을 수 없습니다."));
+
+        // 탈퇴한 회원의 기록 사진과 프로필 이미지는 커밋 뒤 S3에서 지운다
+        List<String> objectKeys = new ArrayList<>(photoRepository.findPhotoCodesByMemberId(memberId));
+        if (member.getProfileImageKey() != null) {
+            objectKeys.add(member.getProfileImageKey());
+        }
+        s3ObjectDeleter.deleteAfterCommit(objectKeys);
 
         String randomSuffix = UUID.randomUUID().toString();
         String newEmail = "deleted_" + randomSuffix + "@deleted.com";
