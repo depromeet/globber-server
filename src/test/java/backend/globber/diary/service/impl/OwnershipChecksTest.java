@@ -48,10 +48,11 @@ class OwnershipChecksTest {
     private final DiaryRepository diaryRepository = mock(DiaryRepository.class);
     private final PhotoRepository photoRepository = mock(PhotoRepository.class);
     private final MemberRepository memberRepository = mock(MemberRepository.class);
-    private final PhotoServiceImpl photoService = new PhotoServiceImpl(photoRepository, diaryRepository,
+    private final PhotoServiceImpl photoService = new PhotoServiceImpl(photoRepository,
         mock(UploadedImageValidator.class));
+    private final PhotoService photoServiceMock = mock(PhotoService.class);
     private final DiaryServiceImpl diaryService = new DiaryServiceImpl(diaryRepository, photoRepository,
-        memberRepository, mock(CityRepository.class), mock(JwtTokenProvider.class), mock(PhotoService.class),
+        memberRepository, mock(CityRepository.class), mock(JwtTokenProvider.class), photoServiceMock,
         mock(MemberTravelCityRepository.class), mock(MemberTravelRepository.class),
         mock(DiaryEmojiRepository.class), mock(DiaryEmojiReactionRepository.class));
 
@@ -120,67 +121,31 @@ class OwnershipChecksTest {
     }
 
     @Test
-    @DisplayName("다른 회원의 기록에는 사진을 추가할 수 없다")
-    void savePhoto_otherMember_throws() {
+    @DisplayName("다른 회원의 기록은 사진 목록도 바꿀 수 없다")
+    void updateDiary_otherMember_doesNotTouchPhotos() {
         // given
-        when(diaryRepository.findMemberIdById(DIARY_ID)).thenReturn(OWNER_ID);
+        diaryOwnedBy(member(OWNER_ID), city(12L));
+        member(OTHER_ID);
+        PhotoRequest newPhoto = new PhotoRequest(null, "new", null, null, 1L, 1L, null, null, null);
+        DiaryRequest request = new DiaryRequest(12L, "changed", List.of(newPhoto));
 
         // when & then
-        assertThatThrownBy(() -> photoService.savePhoto(OTHER_ID, DIARY_ID, null))
-            .isInstanceOf(DiaryNotFoundException.class);
+        assertThatThrownBy(() -> diaryService.updateDiary(OTHER_ID, DIARY_ID, request))
+            .isInstanceOf(NoCredException.class);
+        verify(photoServiceMock, never()).syncPhotos(any(), any());
+    }
+
+    @Test
+    @DisplayName("본인 기록이어도 다른 기록의 사진은 수정·삭제할 수 없다")
+    void syncPhotos_photoFromAnotherDiary_throws() {
+        // given
+        Diary diary = Diary.builder().id(DIARY_ID).build();
+        PhotoRequest otherDiaryPhoto = new PhotoRequest(PHOTO_ID, "other", null, null, 1L, 1L, null, null, null);
+
+        // when & then
+        assertThatThrownBy(() -> photoService.syncPhotos(diary, List.of(otherDiaryPhoto)))
+            .isInstanceOf(PhotoNotFoundException.class);
         verify(photoRepository, never()).save(any());
-    }
-
-    @Test
-    @DisplayName("다른 회원의 기록 사진은 수정할 수 없다")
-    void updatePhoto_otherMember_throws() {
-        // given
-        when(diaryRepository.findMemberIdById(DIARY_ID)).thenReturn(OWNER_ID);
-
-        // when & then
-        assertThatThrownBy(() -> photoService.updatePhoto(OTHER_ID, DIARY_ID, List.of()))
-            .isInstanceOf(DiaryNotFoundException.class);
-    }
-
-    @Test
-    @DisplayName("다른 회원의 기록 사진은 삭제할 수 없다")
-    void deletePhoto_otherMember_throws() {
-        // given
-        when(diaryRepository.findMemberIdById(DIARY_ID)).thenReturn(OWNER_ID);
-
-        // when & then
-        assertThatThrownBy(() -> photoService.deletePhoto(OTHER_ID, DIARY_ID, PHOTO_ID))
-            .isInstanceOf(DiaryNotFoundException.class);
-        verify(photoRepository, never()).delete(any());
-    }
-
-    @Test
-    @DisplayName("본인 기록이어도 다른 기록의 사진은 수정할 수 없다")
-    void updatePhoto_photoFromAnotherDiary_throws() {
-        // given
-        when(diaryRepository.findMemberIdById(DIARY_ID)).thenReturn(OWNER_ID);
-        when(diaryRepository.findById(DIARY_ID)).thenReturn(Optional.of(Diary.builder().id(DIARY_ID).build()));
-        Photo otherPhoto = Photo.builder().id(PHOTO_ID).photoCode("other").build();
-        when(photoRepository.findById(PHOTO_ID)).thenReturn(Optional.of(otherPhoto));
-        PhotoRequest request = new PhotoRequest(PHOTO_ID, "other", null, null, 1L, 1L, null, null, null);
-
-        // when & then
-        assertThatThrownBy(() -> photoService.updatePhoto(OWNER_ID, DIARY_ID, List.of(request)))
-            .isInstanceOf(PhotoNotFoundException.class);
-    }
-
-    @Test
-    @DisplayName("본인 기록이어도 다른 기록의 사진은 삭제할 수 없다")
-    void deletePhoto_photoFromAnotherDiary_throws() {
-        // given
-        when(diaryRepository.findMemberIdById(DIARY_ID)).thenReturn(OWNER_ID);
-        when(diaryRepository.findById(DIARY_ID)).thenReturn(Optional.of(Diary.builder().id(DIARY_ID).build()));
-        Photo otherPhoto = Photo.builder().id(PHOTO_ID).photoCode("other").build();
-        when(photoRepository.findById(PHOTO_ID)).thenReturn(Optional.of(otherPhoto));
-
-        // when & then
-        assertThatThrownBy(() -> photoService.deletePhoto(OWNER_ID, DIARY_ID, PHOTO_ID))
-            .isInstanceOf(PhotoNotFoundException.class);
         verify(photoRepository, never()).delete(any());
     }
 }

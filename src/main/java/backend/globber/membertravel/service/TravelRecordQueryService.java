@@ -86,7 +86,7 @@ public class TravelRecordQueryService {
 
     private static List<String> getThumbnails(List<Diary> cityDiaries) {
         return cityDiaries.stream()
-                .flatMap(diary -> diary.getPhotos().stream())
+                .flatMap(diary -> diary.getPhotos().stream().sorted(Photo.DISPLAY_ORDER))
                 .map(Photo::getPhotoCode)
                 .distinct()
                 .limit(MAX_THUMBNAILS)

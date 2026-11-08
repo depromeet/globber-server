@@ -6,6 +6,7 @@ import backend.globber.auth.dto.response.JwtTokenResponse;
 import backend.globber.auth.repository.MemberRepository;
 import backend.globber.auth.repository.RefreshTokenRedisRepository;
 import backend.globber.auth.service.TokenService;
+import backend.globber.auth.util.AccessTokenBlacklist;
 import backend.globber.auth.util.JwtTokenProvider;
 import backend.globber.exception.spec.CustomAuthException;
 import backend.globber.exception.spec.CustomTokenException;
@@ -27,6 +28,7 @@ public class TokenServiceImpl implements TokenService {
     private final MemberRepository memberRepository;
     private final JwtTokenProvider jwtTokenProvider;
     private final RefreshTokenRedisRepository refreshTokenRepository;
+    private final AccessTokenBlacklist accessTokenBlacklist;
 
     // todo: specify error handler
     @Override
@@ -69,17 +71,13 @@ public class TokenServiceImpl implements TokenService {
 
     @Override
     public void logout(String accessToken) {
-        // Bearer 형식 확인 및 토큰 유효여부 체크
-        if (!jwtTokenProvider.validateToken(jwtTokenProvider.resolveBearerToken(accessToken))) {
-            throw new CustomTokenException("토큰이 유효하지 않습니다.");
-        }
-        // 사용자 체크 및 refreshToken 존재여부 체크
-        RefreshToken refreshTokenEntity = refreshTokenRepository.findById(
-                jwtTokenProvider.getEmailForAccessToken(accessToken)).orElseThrow(
-                () -> new CustomTokenException("해당 이메일을 가진 사용자의 RefreshToken이 존재하지 않습니다.")
-        );
-        // 토큰 삭제
-        refreshTokenRepository.delete(refreshTokenEntity);
+        // Bearer 형식 확인 및 토큰 유효여부 체크 (이미 로그아웃한 토큰이면 여기서 401)
+        String rawToken = jwtTokenProvider.resolveBearerToken(accessToken);
+        Claims claims = jwtTokenProvider.getClaims(rawToken);
+        // RefreshToken이 없어도 로그아웃은 성공으로 처리한다
+        refreshTokenRepository.findById(claims.getSubject()).ifPresent(refreshTokenRepository::delete);
+        // 남은 만료 시간 동안 같은 액세스 토큰을 쓰지 못하게 한다
+        accessTokenBlacklist.add(rawToken, claims.getExpiration());
     }
 
     @Override

@@ -1,7 +1,6 @@
 package backend.globber.auth.util.auth_filter;
 
-import backend.globber.auth.config.oauth.CustomOAuth2AuthorizationRequestResolver;
-import backend.globber.auth.config.oauth.HttpCookieOAuth2AuthorizationRequestRepository;
+import backend.globber.auth.config.oauth.RedirectUriPolicy;
 import backend.globber.auth.domain.Member;
 import backend.globber.auth.domain.constant.AuthProvider;
 import backend.globber.auth.dto.OAuthAttributeDto;
@@ -28,7 +27,6 @@ import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserServ
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserService;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
-import org.springframework.security.oauth2.core.endpoint.OAuth2AuthorizationRequest;
 import org.springframework.security.oauth2.core.user.DefaultOAuth2User;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
@@ -36,7 +34,6 @@ import org.springframework.stereotype.Service;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
-import java.util.Optional;
 
 @Slf4j
 @Service
@@ -50,15 +47,10 @@ public class OauthUtil implements OAuth2UserService<OAuth2UserRequest, OAuth2Use
     private final CookieProvider cookieProvider;
     private final BookmarkService bookmarkService;
     private final MemberService memberService;
-
-    @Value("${oauth2_redirect_uri.success}")
-    private String successRedirectUri;
+    private final RedirectUriPolicy redirectUriPolicy;
 
     @Value("${oauth2_redirect_uri.failure}")
     private String failureRedirectUri;
-
-    @Value("${oauth.redirect.allowed}")
-    private List<String> allowedRedirectUri;
 
 
     @Override
@@ -126,22 +118,8 @@ public class OauthUtil implements OAuth2UserService<OAuth2UserRequest, OAuth2Use
         response.addHeader("Authorization", accessToken);
 
         try {
-            HttpCookieOAuth2AuthorizationRequestRepository repository =
-                    new HttpCookieOAuth2AuthorizationRequestRepository();
-
-            OAuth2AuthorizationRequest authRequest =
-                    repository.removeAuthorizationRequest(request, response);
-
-            String redirectUriFromCookie = null;
-
-            if (authRequest != null) {
-                Object v = authRequest.getAttributes()
-                        .get(CustomOAuth2AuthorizationRequestResolver.REDIRECT_URI_ATTR);
-                if (v != null) redirectUriFromCookie = v.toString();
-            }
-
-            String redirectUri = Optional.ofNullable(redirectUriFromCookie)
-                    .orElse(allowedRedirectUri.getFirst());
+            // 콜백에서 꺼낸 인가 요청의 redirect_uri가 허용 출처일 때만 쓰고, 아니면 기본 콜백 주소로 보낸다
+            String redirectUri = redirectUriPolicy.resolveFromCallback(request);
 
             response.sendRedirect(
                     redirectUri

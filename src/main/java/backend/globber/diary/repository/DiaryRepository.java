@@ -36,6 +36,8 @@ public interface DiaryRepository extends JpaRepository<Diary, Long> {
                 join fetch mtc.city c
                 left join fetch d.photos p
                 where mtc.memberTravel.member.id = :memberId
+                order by d.createdAt desc, d.id desc
             """)
+    // 도시별 대표 사진(listViews 썸네일)이 가장 최근 기록의 첫 사진이 되도록 최신 기록 순으로 돌려준다
     List<Diary> findAllWithPhotoByMemberId(@Param("memberId") Long memberId);
 }

@@ -14,6 +14,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 
@@ -22,6 +23,10 @@ import org.springframework.context.annotation.Configuration;
 public class JwtTokenProvider {
 
     private final String JwtPrefix = "Bearer ";
+
+    // 테스트에서 new JwtTokenProvider()로 직접 만드는 경우가 있어 선택적으로 주입한다 (없으면 블랙리스트 검사를 건너뜀)
+    @Autowired(required = false)
+    private AccessTokenBlacklist accessTokenBlacklist;
     @Value("${jwt.secret}")
     private String secretKey;
     @Value("${jwt.access_expiration}")
@@ -88,6 +93,15 @@ public class JwtTokenProvider {
         if (token.startsWith(JwtPrefix)) {
             token = fromHeader(token);
         }
+        Claims claims = verify(token, allowExpired);
+        // 로그아웃·탈퇴한 토큰은 서명과 만료가 유효해도 거부한다 (필터, 회원 조회, 재발급 등 모든 검증 경로 공통)
+        if (accessTokenBlacklist != null && accessTokenBlacklist.contains(token)) {
+            throw new CustomTokenException("로그아웃된 토큰입니다.");
+        }
+        return claims;
+    }
+
+    private Claims verify(String token, boolean allowExpired) {
         try {
             return Jwts.parser().setSigningKey(secretKey).parseClaimsJws(token).getBody();
         } catch (ExpiredJwtException e) {
