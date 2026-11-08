@@ -1,8 +1,13 @@
 package backend.globber.auth.controller;
 
+import backend.globber.auth.dto.request.LoginCodeRequest;
 import backend.globber.auth.dto.response.JwtTokenResponse;
 import backend.globber.auth.service.TokenService;
 import backend.globber.auth.util.CookieProvider;
+import backend.globber.auth.util.LoginCodeStore;
+import backend.globber.auth.util.LoginCodeStore.LoginResult;
+import backend.globber.exception.spec.CustomAuthException;
+import jakarta.validation.Valid;
 import backend.globber.common.dto.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -12,8 +17,8 @@ import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -24,6 +29,7 @@ public class MemberController {
 
     private final CookieProvider cookieProvider;
     private final TokenService tokenService;
+    private final LoginCodeStore loginCodeStore;
 
     @PostMapping("/logout")
     @Operation(summary = "로그아웃", description = "로그아웃을 진행합니다.")
@@ -56,12 +62,14 @@ public class MemberController {
             .body(ApiResponse.success(jwtTokenResponse));
     }
 
-    @GetMapping("/id")
-    @Operation(summary = "멤버아이디 리턴", description = "[테스트용] 토큰을 기반으로 멤버아이디를 리턴받습니다.")
-    public ResponseEntity<ApiResponse<Long>> getMemberId(
-        @RequestHeader("Authorization") String accessToken) {
-        Long memberId = tokenService.getMemberIdFromAccessToken(accessToken);
-        return ResponseEntity.ok(ApiResponse.success(memberId));
+    @PostMapping("/auth/token")
+    @Operation(summary = "로그인 결과 받기", description = "로그인 성공 리다이렉트로 받은 일회용 code를 교환해 "
+        + "accessToken(\"Bearer \" 접두어 포함), memberId, uuid, firstLogin을 받습니다. "
+        + "code는 60초 동안 한 번만 쓸 수 있고, 잘못되었거나 만료되었거나 이미 쓴 code면 401입니다.")
+    public ResponseEntity<ApiResponse<LoginResult>> exchangeLoginCode(@Valid @RequestBody LoginCodeRequest request) {
+        LoginResult result = loginCodeStore.consume(request.code())
+            .orElseThrow(() -> new CustomAuthException("유효하지 않거나 만료된 로그인 코드입니다."));
+        return ResponseEntity.ok(ApiResponse.success(result));
     }
 
     @DeleteMapping("/withdraw")

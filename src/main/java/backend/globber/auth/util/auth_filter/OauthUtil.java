@@ -1,6 +1,8 @@
 package backend.globber.auth.util.auth_filter;
 
 import backend.globber.auth.config.oauth.RedirectUriPolicy;
+import backend.globber.auth.util.LoginCodeStore;
+import backend.globber.auth.util.LoginCodeStore.LoginResult;
 import backend.globber.auth.domain.Member;
 import backend.globber.auth.domain.constant.AuthProvider;
 import backend.globber.auth.dto.OAuthAttributeDto;
@@ -18,6 +20,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
@@ -48,6 +51,7 @@ public class OauthUtil implements OAuth2UserService<OAuth2UserRequest, OAuth2Use
     private final BookmarkService bookmarkService;
     private final MemberService memberService;
     private final RedirectUriPolicy redirectUriPolicy;
+    private final LoginCodeStore loginCodeStore;
 
     @Value("${oauth2_redirect_uri.failure}")
     private String failureRedirectUri;
@@ -107,27 +111,24 @@ public class OauthUtil implements OAuth2UserService<OAuth2UserRequest, OAuth2Use
         String refreshToken = jwtTokenProvider.createRefreshToken();
         tokenService.updateRefreshToken(email, refreshToken);
 
+        // Cookie 객체로 바꾸면 Secure·SameSite가 빠지므로 Set-Cookie 헤더로 그대로 내려준다
         ResponseCookie responseCookie = cookieProvider.createRefreshCookie(refreshToken);
-        response.addCookie(cookieProvider.of(responseCookie));
+        response.addHeader(HttpHeaders.SET_COOKIE, responseCookie.toString());
 
         List<String> roles = authentication.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
                 .toList();
 
         String accessToken = jwtTokenProvider.createAccessToken(email, roles);
-        response.addHeader("Authorization", accessToken);
 
         try {
             // 콜백에서 꺼낸 인가 요청의 redirect_uri가 허용 출처일 때만 쓰고, 아니면 기본 콜백 주소로 보낸다
             String redirectUri = redirectUriPolicy.resolveFromCallback(request);
 
-            response.sendRedirect(
-                    redirectUri
-                            + (redirectUri.contains("?") ? "&" : "?")
-                            + "accessToken=" + accessToken
-                            + "&uuid=" + member.getUuid()
-                            + "&firstLogin=" + member.isFirstLogin()
-            );
+            // 토큰은 URL에 싣지 않고, 프론트가 POST /auth/token으로 교환할 일회용 code만 붙인다
+            String code = loginCodeStore.issue(
+                    new LoginResult(accessToken, member.getId(), member.getUuid(), member.isFirstLogin()));
+            response.sendRedirect(redirectUri + (redirectUri.contains("?") ? "&" : "?") + "code=" + code);
 
         } catch (IOException e) {
             throw new CustomAuthException();
