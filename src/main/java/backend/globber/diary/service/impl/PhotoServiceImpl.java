@@ -3,6 +3,8 @@ package backend.globber.diary.service.impl;
 import static java.util.stream.Collectors.toList;
 
 import backend.globber.common.service.UploadedImageValidator;
+import backend.globber.exception.spec.InvalidS3KeyException;
+import backend.globber.common.service.S3ObjectDeleter;
 import backend.globber.diary.controller.dto.PhotoRequest;
 import backend.globber.diary.controller.dto.PhotoResponse;
 import backend.globber.diary.domain.Diary;
@@ -14,6 +16,7 @@ import backend.globber.exception.spec.PhotoCountException;
 import backend.globber.exception.spec.PhotoNotFoundException;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
@@ -27,12 +30,14 @@ import org.springframework.transaction.annotation.Transactional;
 public class PhotoServiceImpl implements PhotoService {
 
     private static final int MAX_PHOTOS = 3;
+    private static final Set<String> ALLOWED_EXTENSIONS = Set.of("jpg", "jpeg", "png", "webp", "avif");
     private final PhotoRepository photoRepository;
     private final UploadedImageValidator uploadedImageValidator;
+    private final S3ObjectDeleter s3ObjectDeleter;
 
     @Transactional
     @Override
-    public void syncPhotos(Diary diary, List<PhotoRequest> requests) {
+    public void syncPhotos(Long memberId, Diary diary, List<PhotoRequest> requests) {
         validateRequests(requests);
 
         Map<Long, Photo> existingPhotos = diary.getPhotos().stream()
@@ -51,11 +56,21 @@ public class PhotoServiceImpl implements PhotoService {
         }
 
         // 변경을 시작하기 전에 새 사진을 모두 검사한다 (실패하면 아무것도 바뀌지 않는다)
-        validateNewPhotos(requests, existingPhotos, keepIds);
+        Set<String> newCodes = validateNewPhotos(memberId, requests, existingPhotos, keepIds);
+
+        // 목록에서 빠진 사진의 S3 객체는 커밋 뒤 지운다. 같은 키를 새 사진이 다시 쓰면 지우지 않는다
+        List<String> removedCodes = diary.getPhotos().stream()
+            .filter(photo -> !keepIds.contains(photo.getId()))
+            .map(Photo::getPhotoCode)
+            .filter(code -> !newCodes.contains(code))
+            .toList();
 
         // 목록에 없는 기존 사진 삭제 (photoCode unique 충돌을 피하려고 새 사진 insert 전에 반영)
         if (diary.getPhotos().removeIf(photo -> !keepIds.contains(photo.getId()))) {
             photoRepository.flush();
+        }
+        if (!removedCodes.isEmpty()) {
+            s3ObjectDeleter.deleteAfterCommit(removedCodes);
         }
 
         for (int order = 0; order < requests.size(); order++) {
@@ -113,11 +128,13 @@ public class PhotoServiceImpl implements PhotoService {
 
     /**
      * 새로 추가되는 사진(photoId 없음)만 검사한다. 기존 사진은 요청의 photoCode를 쓰지 않으므로 검사하지 않는다.
+     * - photoCode가 본인 경로(travels/{memberId}/)가 아니거나 확장자가 허용 목록에 없으면 400
      * - 새 사진끼리, 또는 유지하는 기존 사진과 photoCode가 같으면 400
      * - 다른 기록이 이미 쓰는 photoCode면 409 (이 기록에서 지워지는 사진의 코드는 다시 써도 된다)
      * - 업로드된 이미지의 형식·크기 검사(S3 HEAD)
      */
-    private void validateNewPhotos(List<PhotoRequest> requests, Map<Long, Photo> existingPhotos, Set<Long> keepIds) {
+    private Set<String> validateNewPhotos(Long memberId, List<PhotoRequest> requests, Map<Long, Photo> existingPhotos,
+                                          Set<Long> keepIds) {
         Set<String> keptCodes = new HashSet<>();
         Set<String> ownCodes = new HashSet<>();
         existingPhotos.forEach((id, photo) -> {
@@ -133,6 +150,7 @@ public class PhotoServiceImpl implements PhotoService {
                 continue;
             }
             String code = request.photoCode();
+            validateOwnedPath(memberId, code);
             if (!newCodes.add(code) || keptCodes.contains(code)) {
                 throw new IllegalArgumentException("같은 사진이 중복으로 요청되었습니다. (photoCode=" + code + ")");
             }
@@ -141,6 +159,18 @@ public class PhotoServiceImpl implements PhotoService {
             }
         }
         newCodes.forEach(uploadedImageValidator::validate);
+        return newCodes;
+    }
+
+    private void validateOwnedPath(Long memberId, String photoCode) {
+        String ownPrefix = "travels/" + memberId + "/";
+        int dot = photoCode == null ? -1 : photoCode.lastIndexOf('.');
+        boolean owned = photoCode != null && photoCode.startsWith(ownPrefix) && photoCode.length() > ownPrefix.length();
+        boolean allowedExtension = dot > ownPrefix.length() - 1
+            && ALLOWED_EXTENSIONS.contains(photoCode.substring(dot + 1).toLowerCase(Locale.ROOT));
+        if (!owned || !allowedExtension) {
+            throw new InvalidS3KeyException("유효하지 않은 사진 경로입니다.");
+        }
     }
 
     private void createPhoto(Diary diary, PhotoRequest request, int displayOrder) {

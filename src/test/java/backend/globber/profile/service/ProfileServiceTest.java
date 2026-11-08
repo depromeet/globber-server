@@ -12,6 +12,7 @@ import backend.globber.auth.domain.Member;
 import backend.globber.auth.domain.constant.AuthProvider;
 import backend.globber.auth.domain.constant.Role;
 import backend.globber.auth.repository.MemberRepository;
+import backend.globber.common.service.S3ObjectDeleter;
 import backend.globber.common.service.UploadedImageValidator;
 import backend.globber.exception.spec.InvalidUploadFileException;
 import backend.globber.exception.spec.InvalidS3KeyException;
@@ -38,6 +39,9 @@ class ProfileServiceTest {
 
     @Mock
     private UploadedImageValidator uploadedImageValidator;
+
+    @Mock
+    private S3ObjectDeleter s3ObjectDeleter;
 
     @InjectMocks
     private ProfileService profileService;

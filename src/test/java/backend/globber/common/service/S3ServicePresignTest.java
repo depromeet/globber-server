@@ -46,7 +46,7 @@ class S3ServicePresignTest {
     }
 
     private PresignedUrlRequest request(String contentType) {
-        return new PresignedUrlRequest(S3UploadType.PROFILE, null, "image.jpg", contentType);
+        return new PresignedUrlRequest(S3UploadType.PROFILE, "image.jpg", contentType);
     }
 
     @ParameterizedTest

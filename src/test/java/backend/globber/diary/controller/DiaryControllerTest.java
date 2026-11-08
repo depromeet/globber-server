@@ -9,6 +9,8 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.atLeast;
+import static org.mockito.Mockito.verify;
 
 import backend.globber.auth.domain.Member;
 import backend.globber.auth.domain.constant.AuthProvider;
@@ -39,6 +41,10 @@ import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.mockito.ArgumentCaptor;
+import software.amazon.awssdk.services.s3.model.S3Exception;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
+import software.amazon.awssdk.services.s3.S3Client;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import backend.globber.common.service.UploadedImageValidator;
 import backend.globber.diary.repository.PhotoRepository;
@@ -56,6 +62,10 @@ class DiaryControllerTest {
     // 테스트용 photoCode는 S3에 없으므로 업로드 이미지 검사(S3 HEAD)는 대체한다
     @MockitoBean
     private UploadedImageValidator uploadedImageValidator;
+
+    // S3 객체 삭제 호출을 확인하고, 실제 S3에는 요청하지 않도록 대체한다
+    @MockitoBean
+    private S3Client s3Client;
 
     @MockitoSpyBean
     private PhotoRepository photoRepository;
@@ -76,6 +86,7 @@ class DiaryControllerTest {
     private JwtTokenProvider jwtTokenProvider;
 
     private String prefix;
+    private Long memberId;
     private String accessToken;
     private Long cityId;
     private Long memberTravelCityId;
@@ -98,6 +109,7 @@ class DiaryControllerTest {
             MemberTravel memberTravel = TestEntityFactory.createMemberTravel(member);
             MemberTravelCity mtc = TestEntityFactory.createMemberTravelCity(memberTravel, city);
             em.persist(member);
+            memberId = member.getId();
             em.persist(city);
             em.persist(memberTravel);
             em.persist(mtc);
@@ -144,6 +156,51 @@ class DiaryControllerTest {
 
         assertThat(photoRows(diaryId)).containsExactly(code("C") + ":0", code("D") + ":1", code("A") + ":2");
         getDetail(diaryId).body("data.photos.photoCode", contains(code("C"), code("D"), code("A")));
+        // 빠진 B의 S3 객체만 커밋 뒤 삭제한다
+        assertThat(deletedKeys()).containsExactly(code("B"));
+    }
+
+    @Test
+    @DisplayName("새 사진이 다른 회원 경로면 400을 반환하고 아무것도 바꾸지 않는다")
+    void updateDiary_otherMembersPhotoPath_rejected() {
+        // given
+        Map<String, Object> body = diaryBody("바뀌면 안 되는 본문", List.of(
+            photoBody(photoIds.get("A"), code("A"), "바뀌면 안 되는 장소"),
+            photoBody(null, "travels/" + (memberId + 1) + "/stolen.jpg", null)));
+
+        // when & then
+        put(diaryId, body).statusCode(400);
+        assertUnchanged();
+        assertThat(deletedKeys()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("기록을 삭제하면 그 기록의 사진 S3 객체만 커밋 뒤 삭제한다")
+    void deleteDiary_deletesItsS3Objects() {
+        // when
+        RestAssured.given().header("Authorization", accessToken)
+            .when().delete("/api/v1/diaries/{diaryId}", diaryId)
+            .then().statusCode(200);
+
+        // then
+        assertThat(deletedKeys()).containsExactlyInAnyOrder(code("A"), code("B"), code("C"));
+    }
+
+    @Test
+    @DisplayName("S3 삭제가 실패해도 요청은 성공하고 DB 변경은 유지된다")
+    void s3DeleteFailure_requestStillSucceeds() {
+        // given
+        doThrow(S3Exception.builder().statusCode(500).build()).when(s3Client).deleteObject(any(DeleteObjectRequest.class));
+
+        // when & then
+        put(diaryId, diaryBody(ORIGINAL_TEXT, List.of(photoBody(photoIds.get("A"), code("A"), null)))).statusCode(200);
+        assertThat(photoRows(diaryId)).containsExactly(code("A") + ":0");
+    }
+
+    private List<String> deletedKeys() {
+        ArgumentCaptor<DeleteObjectRequest> captor = ArgumentCaptor.forClass(DeleteObjectRequest.class);
+        verify(s3Client, atLeast(0)).deleteObject(captor.capture());
+        return captor.getAllValues().stream().map(DeleteObjectRequest::key).toList();
     }
 
     @Test
@@ -179,6 +236,8 @@ class DiaryControllerTest {
         List<Long> newIds = jdbcTemplate.queryForList(
             "select id from photo where photo_code = ?", Long.class, code("B"));
         assertThat(newIds).hasSize(1).doesNotContain(photoIds.get("B"));
+        // 같은 키를 새 사진이 다시 쓰므로 S3 객체는 지우지 않는다
+        assertThat(deletedKeys()).doesNotContain(code("B"));
     }
 
     @Test
@@ -255,6 +314,8 @@ class DiaryControllerTest {
         // when & then
         put(diaryId, body).statusCode(500);
         assertUnchanged();
+        // 롤백되면 S3 객체도 지우지 않는다
+        assertThat(deletedKeys()).isEmpty();
     }
 
     @Test
@@ -430,7 +491,8 @@ class DiaryControllerTest {
             .build();
     }
 
+    // 새 사진은 본인 경로(travels/{memberId}/)와 허용 확장자여야 한다
     private String code(String name) {
-        return prefix + "/" + name;
+        return "travels/" + memberId + "/" + prefix + "-" + name + ".jpg";
     }
 }

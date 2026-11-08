@@ -3,6 +3,8 @@ package backend.globber.profile.service;
 import backend.globber.auth.domain.Member;
 import backend.globber.auth.repository.MemberRepository;
 import backend.globber.common.service.UploadedImageValidator;
+import java.util.List;
+import backend.globber.common.service.S3ObjectDeleter;
 import backend.globber.exception.spec.InvalidS3KeyException;
 import backend.globber.exception.spec.UsernameNotFoundException;
 import backend.globber.profile.controller.dto.request.UpdateProfileImageRequest;
@@ -22,6 +24,7 @@ public class ProfileService {
 
     private final MemberRepository memberRepository;
     private final UploadedImageValidator uploadedImageValidator;
+    private final S3ObjectDeleter s3ObjectDeleter;
 
     @Value("${aws.s3.base-url}")
     private String s3BaseUrl;
@@ -55,7 +58,12 @@ public class ProfileService {
 
         uploadedImageValidator.validate(request.s3Key());
 
+        String previousKey = member.getProfileImageKey();
         member.changeProfileImage(request.s3Key());
+        // 이전 프로필 이미지는 커밋 뒤 S3에서 지운다
+        if (previousKey != null && !previousKey.equals(request.s3Key())) {
+            s3ObjectDeleter.deleteAfterCommit(List.of(previousKey));
+        }
 
         return ProfileResponse.from(member, s3BaseUrl);
     }
