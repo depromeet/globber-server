@@ -19,6 +19,7 @@ import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 
 import java.util.List;
+import java.util.stream.Stream;
 
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
@@ -87,8 +88,9 @@ class TravelInsightControllerTest {
         );
     }
 
+    // 다른 테스트 컨텍스트가 같은 DB에 도시를 미리 넣어 두었을 수 있으므로 있으면 재사용한다
     private @NotNull List<City> getCities() {
-        return cityRepository.saveAll(List.of(
+        return Stream.of(
                 City.builder()
                         .cityName("교토")
                         .countryName("일본")
@@ -110,7 +112,9 @@ class TravelInsightControllerTest {
                         .lat(13.7563)
                         .lng(100.5018)
                         .build()
-        ));
+        ).map(city -> cityRepository.findByCountryNameAndCityName(city.getCountryName(), city.getCityName())
+                .orElseGet(() -> cityRepository.save(city))
+        ).toList();
     }
 
     @Test
