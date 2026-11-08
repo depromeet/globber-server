@@ -14,8 +14,10 @@ import java.time.YearMonth;
 
 public record PhotoRequest(
 
-        Long photoId, // 사진 ID - 수정시에만 필요
+        @Schema(description = "기존 사진 ID. 있으면 기존 사진을 유지하고 메타데이터를 수정하며, 없으면 새 사진으로 추가합니다.")
+        Long photoId, // 있으면 기존 사진 유지·수정, 없으면 새 사진 추가
 
+        @Schema(description = "S3에 업로드된 key. 새 사진(photoId 없음)에만 사용하고, photoId가 있으면 무시합니다(기존 사진의 key는 바뀌지 않음).")
         @NotBlank(message = "S3 Key는 필수입니다.")
         String photoCode,  // S3에 업로드된 key
 

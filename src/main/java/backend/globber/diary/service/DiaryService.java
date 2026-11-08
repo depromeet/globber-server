@@ -14,7 +14,8 @@ public interface DiaryService {
 
     DiaryResponse getDiaryDetail(Long memberId, Long diaryId);
 
-    DiaryResponse getDiaryDetail(Long diaryId);
+    // viewerId: 조회한 회원(비로그인이면 null). 이모지의 pressedByMe 계산에 쓴다
+    DiaryResponse getPublicDiaryDetail(Long diaryId, Long viewerId);
 
-    DiaryListResponse getDiariesByUUID(String UUID);
+    DiaryListResponse getDiariesByUUID(String UUID, Long viewerId);
 }

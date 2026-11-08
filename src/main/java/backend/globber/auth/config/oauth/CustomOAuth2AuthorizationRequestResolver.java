@@ -18,15 +18,18 @@ public class CustomOAuth2AuthorizationRequestResolver implements OAuth2Authoriza
     public static final String REDIRECT_URI_ATTR = "redirect_uri";
 
     private final OAuth2AuthorizationRequestResolver delegate;
+    private final RedirectUriPolicy redirectUriPolicy;
 
     public CustomOAuth2AuthorizationRequestResolver(
             ClientRegistrationRepository clientRegistrationRepository,
-            String authorizationRequestBaseUri
+            String authorizationRequestBaseUri,
+            RedirectUriPolicy redirectUriPolicy
     ) {
         this.delegate = new DefaultOAuth2AuthorizationRequestResolver(
                 clientRegistrationRepository,
                 authorizationRequestBaseUri
         );
+        this.redirectUriPolicy = redirectUriPolicy;
     }
 
     @Override
@@ -49,6 +52,9 @@ public class CustomOAuth2AuthorizationRequestResolver implements OAuth2Authoriza
                 .orElse(null);
 
         if (redirectUri == null || redirectUri.isBlank()) return authRequest;
+
+        // 허용되지 않은 출처는 저장하지 않는다. 성공 처리 시 기본 콜백 주소로 이동한다.
+        if (!redirectUriPolicy.isAllowed(redirectUri)) return authRequest;
 
         Map<String, Object> attrs = new HashMap<>(authRequest.getAttributes());
         attrs.put(REDIRECT_URI_ATTR, redirectUri);

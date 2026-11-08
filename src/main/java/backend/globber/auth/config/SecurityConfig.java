@@ -1,7 +1,8 @@
 package backend.globber.auth.config;
 
 import backend.globber.auth.config.oauth.CustomOAuth2AuthorizationRequestResolver;
-import backend.globber.auth.config.oauth.HttpCookieOAuth2AuthorizationRequestRepository;
+import backend.globber.auth.config.oauth.RedirectUriPolicy;
+import backend.globber.auth.config.oauth.RedisOAuth2AuthorizationRequestRepository;
 import backend.globber.auth.util.JwtTokenProvider;
 import backend.globber.auth.util.auth_filter.AuthorizationFilter;
 import backend.globber.auth.util.auth_filter.OauthUtil;
@@ -10,6 +11,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.converter.FormHttpMessageConverter;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -71,17 +73,22 @@ public class SecurityConfig {
     }
 
     @Bean
-    public AuthorizationRequestRepository<OAuth2AuthorizationRequest> cookieAuthorizationRequestRepository() {
-        return new HttpCookieOAuth2AuthorizationRequestRepository();
+    public AuthorizationRequestRepository<OAuth2AuthorizationRequest> authorizationRequestRepository(
+            StringRedisTemplate stringRedisTemplate,
+            ObjectMapper objectMapper
+    ) {
+        return new RedisOAuth2AuthorizationRequestRepository(stringRedisTemplate, objectMapper);
     }
 
     @Bean
     public CustomOAuth2AuthorizationRequestResolver customOAuth2AuthorizationRequestResolver(
-            ClientRegistrationRepository clientRegistrationRepository
+            ClientRegistrationRepository clientRegistrationRepository,
+            RedirectUriPolicy redirectUriPolicy
     ) {
         return new CustomOAuth2AuthorizationRequestResolver(
                 clientRegistrationRepository,
-                "/oauth2/authorization"
+                "/oauth2/authorization",
+                redirectUriPolicy
         );
     }
 

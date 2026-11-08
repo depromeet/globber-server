@@ -9,12 +9,14 @@ import backend.globber.config.S3Config;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.Map;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.HeadObjectResponse;
 
 @SpringBootTest(classes = {
     S3Service.class,
@@ -38,7 +40,6 @@ class S3ServiceTest {
         Long memberId = 123L;
         PresignedUrlRequest request = new PresignedUrlRequest(
             S3UploadType.PROFILE,
-            null,
             "test.jpg",
             "image/jpeg"
         );
@@ -48,21 +49,21 @@ class S3ServiceTest {
 
         // 실제 파일 업로드
         byte[] testImageData = createTestImageBytes();
-        uploadToPresignedUrl(response.presignedUrl(), testImageData, "image/jpeg");
+        uploadToPresignedUrl(response.presignedUrl(), testImageData, response.uploadHeaders());
 
         // then - S3에 파일이 실제로 존재하는지 확인
-        boolean exists = s3Client.headObject(builder -> builder
-                .bucket(bucketName)
-                .key(response.s3Key()))
-            .sdkHttpResponse()
-            .isSuccessful();
-
-        assertThat(exists).isTrue();
+        HeadObjectResponse head = s3Client.headObject(builder -> builder
+            .bucket(bucketName)
+            .key(response.s3Key()));
 
         // 삭제
         s3Client.deleteObject(builder -> builder
             .bucket(bucketName)
             .key(response.s3Key()));
+
+        assertThat(head.sdkHttpResponse().isSuccessful()).isTrue();
+        assertThat(head.contentType()).isEqualTo("image/jpeg");
+        assertThat(head.cacheControl()).isEqualTo("public, max-age=31536000, immutable");
     }
 
     private byte[] createTestImageBytes() {
@@ -73,12 +74,12 @@ class S3ServiceTest {
         };
     }
 
-    private void uploadToPresignedUrl(String presignedUrl, byte[] data, String contentType)
+    private void uploadToPresignedUrl(String presignedUrl, byte[] data, Map<String, String> uploadHeaders)
         throws Exception {
         HttpURLConnection connection = (HttpURLConnection) new URL(presignedUrl).openConnection();
         connection.setDoOutput(true);
         connection.setRequestMethod("PUT");
-        connection.setRequestProperty("Content-Type", contentType);
+        uploadHeaders.forEach(connection::setRequestProperty);
 
         try (OutputStream os = connection.getOutputStream()) {
             os.write(data);

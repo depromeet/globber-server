@@ -3,6 +3,7 @@ package backend.globber.membertravel.repository;
 import backend.globber.city.domain.City;
 import backend.globber.membertravel.domain.MemberTravelCity;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -13,8 +14,6 @@ import java.util.Optional;
 @Repository
 public interface MemberTravelCityRepository extends JpaRepository<MemberTravelCity, Long> {
     List<MemberTravelCity> findByMemberTravel_Id(Long memberTravelId);
-
-    void deleteByMemberTravel_IdAndCity_CityId(Long memberTravelId, Long cityId);
 
     boolean existsByMemberTravel_IdAndCity_CityId(Long memberTravelId, Long cityId);
 
@@ -28,4 +27,16 @@ public interface MemberTravelCityRepository extends JpaRepository<MemberTravelCi
                 where mt.member.id = :memberId
             """)
     List<City> findVisitedCities(@Param("memberId") Long memberId);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("""
+                delete from MemberTravelCity mtc
+                where mtc.city.cityId = :cityId
+                  and mtc.memberTravel.id in (
+                      select mt.id
+                      from MemberTravel mt
+                      where mt.member.id = :memberId
+                  )
+            """)
+    int deleteByMemberIdAndCityId(@Param("memberId") Long memberId, @Param("cityId") Long cityId);
 }

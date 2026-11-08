@@ -2,10 +2,8 @@ package backend.globber.membertravel.service;
 
 import backend.globber.auth.domain.Member;
 import backend.globber.auth.repository.MemberRepository;
-import backend.globber.city.controller.dto.CityUniqueDto;
 import backend.globber.city.domain.City;
 import backend.globber.city.repository.CityRepository;
-import backend.globber.exception.spec.CityNotFoundException;
 import backend.globber.exception.spec.TravelNotFoundException;
 import backend.globber.exception.spec.UsernameNotFoundException;
 import backend.globber.membertravel.controller.dto.request.CreateMemberTravelRequest;
@@ -104,15 +102,11 @@ public class MemberTravelService {
 
     @CacheEvict(value = "memberTravels", key = "#memberId", cacheManager = "memberTravelCacheManager")
     @Transactional
-    public Boolean deleteTravelRecord(Long memberId, CityUniqueDto cityDto) {
-        MemberTravel memberTravel = memberTravelRepository.findByMember_Id(memberId)
-                .orElseThrow(TravelNotFoundException::new);
+    public void deleteTravelRecord(Long memberId, Long cityId) {
+        int deletedCount = memberTravelCityRepository.deleteByMemberIdAndCityId(memberId, cityId);
 
-        City city = cityRepository.findByCityUniqueDto(cityDto)
-                .orElseThrow(CityNotFoundException::new);
-
-        memberTravelCityRepository.deleteByMemberTravel_IdAndCity_CityId(memberTravel.getId(),
-                city.getCityId());
-        return true;
+        if (deletedCount == 0) {
+            throw new TravelNotFoundException("내 여행지에 해당 도시가 없습니다.");
+        }
     }
 }

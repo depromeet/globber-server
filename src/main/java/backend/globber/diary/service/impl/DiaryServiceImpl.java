@@ -11,10 +11,11 @@ import backend.globber.diary.controller.dto.DiaryListResponse;
 import backend.globber.diary.controller.dto.DiaryRequest;
 import backend.globber.diary.controller.dto.DiaryResponse;
 import backend.globber.diary.controller.dto.EmojiResponse;
-import backend.globber.diary.controller.dto.PhotoRequest;
+import backend.globber.common.service.S3ObjectDeleter;
 import backend.globber.diary.controller.dto.PhotoResponse;
 import backend.globber.diary.domain.Diary;
 import backend.globber.diary.domain.Photo;
+import backend.globber.diary.repository.DiaryEmojiReactionRepository;
 import backend.globber.diary.repository.DiaryEmojiRepository;
 import backend.globber.diary.repository.DiaryRepository;
 import backend.globber.diary.repository.PhotoRepository;
@@ -23,7 +24,6 @@ import backend.globber.diary.service.PhotoService;
 import backend.globber.exception.spec.CityNotFoundException;
 import backend.globber.exception.spec.DiaryNotFoundException;
 import backend.globber.exception.spec.NoCredException;
-import backend.globber.exception.spec.PhotoCountException;
 import backend.globber.exception.spec.UsernameNotFoundException;
 import backend.globber.membertravel.domain.MemberTravel;
 import backend.globber.membertravel.domain.MemberTravelCity;
@@ -34,8 +34,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -45,7 +46,6 @@ import static java.util.stream.Collectors.toList;
 @RequiredArgsConstructor
 public class DiaryServiceImpl implements DiaryService {
 
-    private static final int MAX_PHOTOS = 3; // 한 게시물당 최대 3장
     private final DiaryRepository diaryRepository;
     private final PhotoRepository photoRepository;
     private final MemberRepository memberRepository;
@@ -56,6 +56,8 @@ public class DiaryServiceImpl implements DiaryService {
     private final MemberTravelRepository memberTravelRepository;
 
     private final DiaryEmojiRepository emojiRepository;
+    private final DiaryEmojiReactionRepository emojiReactionRepository;
+    private final S3ObjectDeleter s3ObjectDeleter;
 
     @Transactional
     @Override
@@ -77,11 +79,6 @@ public class DiaryServiceImpl implements DiaryService {
                 .findByMemberTravel_IdAndCity_CityId(memberTravel.getId(), city.getCityId())
                 .orElseThrow(() -> new CityNotFoundException("해당 여행지를 선택한 사용자만 기록을 작성할 수 있습니다."));
 
-        // 사진 개수 검증
-        if (diaryRequest.photos().size() > MAX_PHOTOS) {
-            throw new PhotoCountException("사진은 최대 " + MAX_PHOTOS + "장까지만 업로드할 수 있습니다.");
-        }
-
         // Diary 생성
         Diary diary = Diary.builder()
                 .memberTravelCity(MemberTraveledCity)
@@ -89,10 +86,8 @@ public class DiaryServiceImpl implements DiaryService {
                 .build();
         diaryRepository.save(diary);
 
-        // Photo 저장
-        for (PhotoRequest photoRequest : diaryRequest.photos()) {
-            photoService.savePhoto(memberId, diary.getId(), photoRequest);
-        }
+        // Photo 저장 (배열 순서 = 표시 순서)
+        photoService.syncPhotos(memberId, diary, diaryRequest.photos());
 
         // 저장된 Diary + Photo 리스트 변환
         return toDiaryResponse(diaryRepository.findById(diary.getId()).get(), Collections.emptyList());
@@ -111,8 +106,10 @@ public class DiaryServiceImpl implements DiaryService {
             throw new NoCredException("본인의 기록만 수정할 수 있습니다.");
         }
 
+        // 본문과 최종 사진 목록을 같은 트랜잭션에서 반영
         diary.changeText(diaryRequest.text());
-        List<EmojiResponse> emojis = getEmojiResponses(diaryId);
+        photoService.syncPhotos(memberId, diary, diaryRequest.photos());
+        List<EmojiResponse> emojis = getEmojiResponses(diaryId, memberId);
         return toDiaryResponse(diary, emojis);
     }
 
@@ -129,7 +126,10 @@ public class DiaryServiceImpl implements DiaryService {
             throw new NoCredException("본인의 기록만 삭제할 수 있습니다.");
         }
 
+        List<String> photoCodes = diary.getPhotos().stream().map(Photo::getPhotoCode).toList();
         diaryRepository.delete(diary);
+        // 기록이 지워진 뒤(커밋 후) 사진 S3 객체를 지운다
+        s3ObjectDeleter.deleteAfterCommit(photoCodes);
     }
 
     @Transactional(readOnly = true)
@@ -145,31 +145,35 @@ public class DiaryServiceImpl implements DiaryService {
             throw new NoCredException("본인의 기록만 조회할 수 있습니다.");
         }
 
-        List<EmojiResponse> emojis = getEmojiResponses(diaryId);
+        List<EmojiResponse> emojis = getEmojiResponses(diaryId, memberId);
 
         return toDiaryResponse(diary, emojis);
     }
 
     @Transactional(readOnly = true)
     @Override
-    public DiaryResponse getDiaryDetail(Long diaryId) {
+    public DiaryResponse getPublicDiaryDetail(Long diaryId, Long viewerId) {
         Diary diary = diaryRepository.findWithCityById(diaryId)
                 .orElseThrow(() -> new DiaryNotFoundException("기록을 찾을 수 없습니다."));
 
-        List<EmojiResponse> emojis = getEmojiResponses(diaryId);
+        List<EmojiResponse> emojis = getEmojiResponses(diaryId, viewerId);
 
         return toDiaryResponse(diary, emojis);
     }
 
     @Transactional(readOnly = true)
     @Override
-    public DiaryListResponse getDiariesByUUID(String uuid) {
+    public DiaryListResponse getDiariesByUUID(String uuid, Long viewerId) {
         List<Diary> diaries = diaryRepository.findAllWithRelationsByMemberUuid(uuid);
+
+        // 조회한 회원이 누른 이모지를 기록별로 한 번에 읽어 둔다 (기록마다 다시 조회하지 않도록)
+        Map<Long, Set<String>> pressedByDiary = pressedCodes(viewerId, diaries);
 
         // Diary → DiaryResponse 변환
         List<DiaryResponse> diaryResponses = diaries.stream()
                 .map(diary -> {
-                    List<EmojiResponse> emojis = getEmojiResponses(diary.getId());
+                    List<EmojiResponse> emojis = getEmojiResponses(diary.getId(),
+                            pressedByDiary.getOrDefault(diary.getId(), Set.of()));
                     return toDiaryResponse(diary, emojis);
                 })
                 .toList();
@@ -190,21 +194,35 @@ public class DiaryServiceImpl implements DiaryService {
     }
 
 
-    private List<EmojiResponse> getEmojiResponses(Long diaryId) {
+    private List<EmojiResponse> getEmojiResponses(Long diaryId, Long viewerId) {
+        Set<String> pressed = viewerId == null
+                ? Set.of()
+                : new HashSet<>(emojiReactionRepository.findCodes(diaryId, viewerId));
+        return getEmojiResponses(diaryId, pressed);
+    }
+
+    private List<EmojiResponse> getEmojiResponses(Long diaryId, Set<String> pressedCodes) {
         return emojiRepository
                 .findAllByDiaryIdOrderByCountDescCreatedAtAsc(diaryId)
                 .stream()
-                .map(EmojiResponse::from)
+                .map(emoji -> EmojiResponse.from(emoji, pressedCodes.contains(emoji.getCode())))
                 .toList();
     }
 
-    // Diary -> DiaryResponse 변환
+    private Map<Long, Set<String>> pressedCodes(Long viewerId, List<Diary> diaries) {
+        if (viewerId == null || diaries.isEmpty()) {
+            return Map.of();
+        }
+        List<Long> diaryIds = diaries.stream().map(Diary::getId).toList();
+        return emojiReactionRepository.findPressedCodes(viewerId, diaryIds).stream()
+                .collect(Collectors.groupingBy(
+                        DiaryEmojiReactionRepository.PressedCode::getDiaryId,
+                        Collectors.mapping(DiaryEmojiReactionRepository.PressedCode::getCode, Collectors.toSet())));
+    }
+
     private DiaryResponse toDiaryResponse(Diary diary, List<EmojiResponse> emojis) {
         List<PhotoResponse> photos = diary.getPhotos().stream()
-                .sorted(Comparator.comparing(
-                        Photo::getCreatedAt,
-                        Comparator.nullsLast(Comparator.naturalOrder())
-                ))
+                .sorted(Photo.DISPLAY_ORDER)
                 .map(photo -> new PhotoResponse(
                         photo.getId(),
                         photo.getPhotoCode(),
