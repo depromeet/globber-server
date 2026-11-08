@@ -79,21 +79,30 @@ public class DiaryController {
     }
 
     @GetMapping("/{diary_id}")
-    @Operation(summary = "여행기록 상세 조회", description = "특정 여행기록의 상세 정보를 조회합니다.")
+    @Operation(summary = "여행기록 상세 조회", description = "특정 여행기록의 상세 정보를 조회합니다. "
+            + "로그인한 경우 Authorization을 보내면 이모지의 pressedByMe에 내가 눌렀는지가 표시됩니다(비로그인이면 false).")
     public ResponseEntity<ApiResponse<DiaryResponse>> getDiaryDetail(
-            @PathVariable Long diary_id
+            @PathVariable Long diary_id,
+            @RequestHeader(value = "Authorization", required = false) String accessToken
     ) {
-        DiaryResponse response = diaryService.getDiaryDetail(diary_id);
+        DiaryResponse response = diaryService.getPublicDiaryDetail(diary_id, viewerId(accessToken));
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     @GetMapping
-    @Operation(summary = "여행기록들 UUID로 조회", description = "특정 UUID의 여행기록을 모두 조회합니다.")
+    @Operation(summary = "여행기록들 UUID로 조회", description = "특정 UUID의 여행기록을 모두 조회합니다. "
+            + "로그인한 경우 Authorization을 보내면 이모지의 pressedByMe에 내가 눌렀는지가 표시됩니다(비로그인이면 false).")
     public ResponseEntity<ApiResponse<DiaryListResponse>> getDiariesByUUID(
-            @RequestParam String uuid
+            @RequestParam String uuid,
+            @RequestHeader(value = "Authorization", required = false) String accessToken
     ) {
-        DiaryListResponse response = diaryService.getDiariesByUUID(uuid);
+        DiaryListResponse response = diaryService.getDiariesByUUID(uuid, viewerId(accessToken));
         return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    // 공개 조회 API라 토큰은 선택이다. 보낸 경우에는 검증해서 회원을 찾는다
+    private Long viewerId(String accessToken) {
+        return accessToken == null ? null : commonService.getMemberIdFromToken(accessToken);
     }
 }
 

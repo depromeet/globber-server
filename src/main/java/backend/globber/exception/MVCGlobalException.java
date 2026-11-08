@@ -8,6 +8,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingRequestHeaderException;
@@ -90,6 +91,12 @@ class MVCGlobalException {
     public ResponseEntity<ApiResponse<String>> methodNotSupportedHandler(HttpRequestMethodNotSupportedException e) {
         return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED)
             .body(ApiResponse.fail("지원하지 않는 요청 방식입니다."));
+    }
+
+    @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
+    public ResponseEntity<ApiResponse<String>> mediaTypeNotSupportedHandler(HttpMediaTypeNotSupportedException e) {
+        return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
+            .body(ApiResponse.fail("지원하지 않는 Content-Type입니다."));
     }
 
     @ExceptionHandler({NoResourceFoundException.class, NoHandlerFoundException.class})

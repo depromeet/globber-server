@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.core.MethodParameter;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.bind.MissingRequestHeaderException;
 
 class MVCGlobalExceptionTest {
@@ -51,6 +52,20 @@ class MVCGlobalExceptionTest {
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
         assertThat(response.getBody().data()).isEqualTo("로그인이 필요합니다.");
+    }
+
+    @Test
+    @DisplayName("지원하지 않는 Content-Type이면 415와 ApiResponse 형식을 반환한다")
+    void unsupportedMediaType_415() {
+        // given
+        HttpMediaTypeNotSupportedException e = new HttpMediaTypeNotSupportedException("not supported");
+
+        // when
+        ResponseEntity<ApiResponse<String>> response = handler.mediaTypeNotSupportedHandler(e);
+
+        // then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNSUPPORTED_MEDIA_TYPE);
+        assertThat(response.getBody().status()).isEqualTo("fail");
     }
 
     @Test
