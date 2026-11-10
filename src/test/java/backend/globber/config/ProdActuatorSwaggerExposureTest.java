@@ -32,28 +32,25 @@ class ProdActuatorSwaggerExposureTest {
     private MockMvc mockMvc;
 
     @Test
-    @DisplayName("운영 프로필에서는 API 명세(/v3/api-docs)를 노출하지 않는다")
-    void apiDocsIsNotExposed() throws Exception {
+    @DisplayName("운영 프로필에서도 API 명세(/v3/api-docs)를 제공한다. 접근 제한은 Nginx Basic Auth가 맡는다")
+    void apiDocsIsExposed() throws Exception {
         // given
-        String path = "/v3/api-docs";
+        String path = "/v3/api-docs/swagger-config";
 
         // when & then
         mockMvc.perform(get(path))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isOk());
     }
 
     @Test
-    @DisplayName("운영 프로필에서는 Swagger UI를 노출하지 않는다")
-    void swaggerUiIsNotExposed() throws Exception {
+    @DisplayName("운영 프로필에서도 Swagger UI를 제공한다")
+    void swaggerUiIsExposed() throws Exception {
         // given
         String indexPath = "/swagger-ui/index.html";
-        String redirectPath = "/swagger-ui.html";
 
         // when & then
         mockMvc.perform(get(indexPath))
-                .andExpect(status().isNotFound());
-        mockMvc.perform(get(redirectPath))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isOk());
     }
 
     @Test
