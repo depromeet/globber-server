@@ -40,6 +40,9 @@ jobs:
           fi
       - uses: actions/checkout@v4
         with:
+          # API bind-mounted logs in the runner root may be owned by container root.
+          # A separate checkout avoids cleaning/deleting that live log directory.
+          path: thumbnail-batch
           submodules: recursive
           token: ${{ secrets.SECRETS_SUBMODULE_ACCESS_TOKEN }}
       - uses: actions/setup-java@v4
@@ -47,6 +50,7 @@ jobs:
           distribution: temurin
           java-version: '21'
       - name: 배치 빌드
+        working-directory: thumbnail-batch
         run: |
           bash gradlew bootJar
           docker build -f Dockerfile.thumbnail-batch -t globber-thumbnail-batch:${GITHUB_SHA} .
