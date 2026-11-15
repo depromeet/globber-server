@@ -15,6 +15,10 @@ proxy=${proxies[0]}
 docker exec "$proxy" nginx -t
 
 if [[ "$mode" == preflight ]]; then
+  # workflow_run executes the default branch's workflow, but checks out develop.
+  # Keep the schema prerequisite in the checked-out preflight script as well,
+  # so the first DEV rollout is protected before workflow changes reach main.
+  bash "$(dirname "$0")/prepare-thumbnail-schema.sh" dev
   exit 0
 fi
 if [[ "$mode" != refresh ]]; then
