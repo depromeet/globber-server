@@ -59,9 +59,11 @@ jobs:
 
       - name: 백엔드 정상 기동 확인 및 프록시 갱신
         shell: bash
-        timeout-minutes: 7
+        # 개발 서버(Oracle Always Free Micro)는 CPU가 작아서 기동에 수 분이 걸릴 수 있음
+        timeout-minutes: 15
         env:
           PUBLIC_HEALTH_URL: ${{ vars.DEV_PUBLIC_HEALTH_URL || 'https://globber-dev.store/api/actuator/health' }}
+          LOCAL_HEALTH_ATTEMPTS: 120
         run: bash scripts/refresh-deployment-proxy.sh refresh
 
       - name: Docker 이미지 정리
