@@ -52,8 +52,11 @@ jobs:
       - name: 배치 빌드
         working-directory: thumbnail-batch
         run: |
-          bash gradlew bootJar
-          docker build -f Dockerfile.thumbnail-batch -t globber-thumbnail-batch:${GITHUB_SHA} .
+          # Reuse the exact immutable image across prepare/convert/apply/rollback.
+          if ! docker image inspect globber-thumbnail-batch:${GITHUB_SHA} > /dev/null 2>&1; then
+            bash gradlew --no-daemon --max-workers=1 bootJar
+            docker build -f Dockerfile.thumbnail-batch -t globber-thumbnail-batch:${GITHUB_SHA} .
+          fi
       - name: 단계 실행 (원본 PUT/DELETE 없음)
         env:
           STAGE: ${{ inputs.stage }}
