@@ -5,6 +5,7 @@ import static org.mockito.BDDMockito.given;
 
 import backend.globber.city.domain.City;
 import backend.globber.diary.domain.Diary;
+import backend.globber.diary.domain.Photo;
 import backend.globber.diary.repository.DiaryRepository;
 import backend.globber.membertravel.controller.dto.CountryRecordDto;
 import backend.globber.membertravel.controller.dto.response.TravelRecordWithDiaryResponse;
@@ -96,6 +97,22 @@ class TravelRecordQueryServiceUnitTest {
         assertThat(response.totalCitiesCounts()).isEqualTo(1);
         assertThat(country(response, "JPN").diaryCount()).isEqualTo(1);
         assertThat(response.totalDiariesCounts()).isEqualTo(1);
+    }
+
+    @Test
+    void cityThumbnailsPreferSmallThenFullThenOriginalInDisplayOrder() {
+        City tokyo = city(1L, "도쿄", "일본", "JPN");
+        Diary diary = diary(tokyo);
+        diary.getPhotos().addAll(List.of(
+            Photo.builder().id(3L).photoCode("travels/original.jpg").displayOrder(2).build(),
+            Photo.builder().id(2L).photoCode("travels/full.heic").displayCode("thumbnails/full.webp").displayOrder(1).build(),
+            Photo.builder().id(1L).photoCode("travels/small.heic").displayCode("thumbnails/full-small.webp")
+                .thumbnailCode("thumbnails/small.webp").displayOrder(0).build()));
+        given(memberTravelCityRepository.findVisitedCities(1L)).willReturn(List.of(tokyo));
+        given(diaryRepository.findAllWithPhotoByMemberId(1L)).willReturn(List.of(diary));
+        var response = travelRecordQueryService.getRecordsWithDiaries(1L);
+        assertThat(country(response, "JPN").cities().getFirst().thumbnailUrls())
+            .containsExactly("thumbnails/small.webp", "thumbnails/full.webp", "travels/original.jpg");
     }
 
     private CountryRecordDto country(TravelRecordWithDiaryResponse response, String countryCode) {
