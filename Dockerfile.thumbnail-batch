@@ -1,0 +1,6 @@
+FROM eclipse-temurin:21-jre-jammy
+RUN apt-get update && apt-get install -y --no-install-recommends libvips-tools libheif1 \
+    && rm -rf /var/lib/apt/lists/*
+COPY build/libs/*-SNAPSHOT.jar /app.jar
+ENV VIPS_CONCURRENCY=1
+ENTRYPOINT ["java","-Xmx256m","-Dloader.main=backend.migration.ThumbnailBatch","-cp","/app.jar","org.springframework.boot.loader.launch.PropertiesLauncher"]

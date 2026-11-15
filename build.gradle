@@ -9,6 +9,10 @@ group = 'backend'
 version = '0.0.1-SNAPSHOT'
 description = 'globber'
 
+springBoot {
+    mainClass = 'backend.globber.GlobberApplication'
+}
+
 java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(21)

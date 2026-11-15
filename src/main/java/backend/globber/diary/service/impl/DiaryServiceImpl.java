@@ -126,7 +126,9 @@ public class DiaryServiceImpl implements DiaryService {
             throw new NoCredException("본인의 기록만 삭제할 수 있습니다.");
         }
 
-        List<String> photoCodes = diary.getPhotos().stream().map(Photo::getPhotoCode).toList();
+        List<String> photoCodes = diary.getPhotos().stream()
+            .flatMap(photo -> java.util.stream.Stream.of(photo.getPhotoCode(), photo.getThumbnailCode()))
+            .filter(java.util.Objects::nonNull).toList();
         diaryRepository.delete(diary);
         // 기록이 지워진 뒤(커밋 후) 사진 S3 객체를 지운다
         s3ObjectDeleter.deleteAfterCommit(photoCodes);
@@ -232,7 +234,8 @@ public class DiaryServiceImpl implements DiaryService {
                         photo.getHeight(),
                         photo.getTakenMonth(),
                         photo.getPlaceName(),
-                        photo.getTag()
+                        photo.getTag(),
+                        photo.getThumbnailCode()
                 ))
                 .collect(toList());
 
