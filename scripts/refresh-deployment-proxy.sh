@@ -42,7 +42,8 @@ wait_for_health() {
 }
 
 : "${PUBLIC_HEALTH_URL:?PUBLIC_HEALTH_URL is required}"
-wait_for_health http://localhost:8080/actuator/health 24
+# Slow hosts (e.g. the dev server) can raise LOCAL_HEALTH_ATTEMPTS; one attempt is roughly 5s.
+wait_for_health http://localhost:8080/actuator/health "${LOCAL_HEALTH_ATTEMPTS:-24}"
 # Graceful reload re-resolves static upstream names after container replacement.
 docker exec "$proxy" nginx -t
 docker exec "$proxy" nginx -s reload
