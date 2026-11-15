@@ -22,6 +22,15 @@ The ledger has no photo FK so deletion does not erase the migration's recovery r
 
 ## Gradual rollout
 
+For the first rollout, GitHub only registers workflow_dispatch files present on
+the default branch. Until the manual workflow reaches main, DEV proxy refresh
+calls `scripts/verify-thumbnail-dev.sh`: a fixed one-off run ID verifies one live
+HEIC and always rolls back its reference. A completed ROLLED_BACK run is skipped
+on later deploys. If DEV has no referenced HEIC, it reports that gap without
+seeding user data; do not claim live conversion verification in that case.
+The script builds from the running DEV jar, preserving build identity. Both
+backup objects and diagnostic build files are retained.
+
 1. Merge into develop. DEV CD runs the backup/schema step before stopping the old API.
    Backup or SQL failure prevents the API deployment. Confirm the development health check.
 2. Use Actions **HEIC thumbnail migration**, develop branch, `stage=dev`.
