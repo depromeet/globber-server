@@ -48,3 +48,4 @@ docker exec "$proxy" nginx -t
 docker exec "$proxy" nginx -s reload
 wait_for_health "${PUBLIC_HEALTH_URL:?PUBLIC_HEALTH_URL is required}" 12
 echo "Backend and public proxy health checks passed"
+bash "$(dirname "$0")/verify-thumbnail-dev.sh"
