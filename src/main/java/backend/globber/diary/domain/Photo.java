@@ -41,6 +41,13 @@ public class Photo extends BaseTimeEntity {
     @Column(nullable = false, unique = true)
     private String photoCode;
 
+    // 파생 이미지 키. 원본 photoCode는 마이그레이션에서도 유지한다.
+    private String thumbnailCode;
+
+    public String getDisplayCode() {
+        return thumbnailCode == null ? photoCode : thumbnailCode;
+    }
+
     // 메타데이터 Start
 
     private Double lat;      // 사진 위도
