@@ -33,6 +33,9 @@ jobs:
         shell: bash
         run: bash scripts/refresh-deployment-proxy.sh preflight
 
+      - name: DB 백업 검증 및 썸네일 스키마 준비
+        run: bash scripts/prepare-thumbnail-schema.sh dev
+
       - name: 실행 중인 컨테이너 중지 및 삭제
         run: |
           echo "dev 컨테이너 중지 중..."
