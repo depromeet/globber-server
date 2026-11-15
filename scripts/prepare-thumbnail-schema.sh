@@ -11,7 +11,7 @@ else
   backup_dir="$(dirname "${GITHUB_WORKSPACE:-$PWD}")/globber-thumbnail-backups"
   mkdir -p "$backup_dir"
   chmod 700 "$backup_dir"
-  backup_file="$backup_dir/${stage}-before-thumbnail-$(date -u +%Y%m%dT%H%M%SZ).dump"
+  backup_file=$(mktemp "$backup_dir/${stage}-before-thumbnail-$(date -u +%Y%m%dT%H%M%SZ).XXXXXX.dump")
   (umask 077; docker exec "$db_container" sh -c 'exec pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Fc' > "$backup_file")
   test -s "$backup_file"
   docker exec -i "$db_container" pg_restore --list < "$backup_file" > /dev/null
