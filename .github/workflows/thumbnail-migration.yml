@@ -12,6 +12,12 @@ on:
         options: [dry-run, prepare, convert, apply, rollback]
         default: dry-run
         required: true
+      asset_kind:
+        description: 'thumbnail: 640px 목록용 / display: 원본 해상도 화면용'
+        type: choice
+        options: [thumbnail, display]
+        default: thumbnail
+        required: true
       run_id:
         description: 'UUID; prepare 이후 모든 단계에서 동일 값 사용'
         required: true
@@ -94,10 +100,12 @@ jobs:
           RUN_ID: ${{ inputs.run_id }}
           LIMIT: ${{ inputs.limit }}
           IMAGE_ID: ${{ steps.image.outputs.image_id }}
+          ASSET_KIND: ${{ inputs.asset_kind }}
         run: |
           docker run --rm --network "${STAGE}_network" --memory 768m --cpus 1 \
             "$IMAGE_ID" \
             --spring.profiles.active="$STAGE" \
             --migration.mode="$MODE" \
+            --migration.asset-kind="$ASSET_KIND" \
             --migration.run-id="$RUN_ID" \
             --migration.limit="$LIMIT"

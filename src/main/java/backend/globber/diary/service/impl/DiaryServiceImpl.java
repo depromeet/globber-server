@@ -127,7 +127,7 @@ public class DiaryServiceImpl implements DiaryService {
         }
 
         List<String> photoCodes = diary.getPhotos().stream()
-            .flatMap(photo -> java.util.stream.Stream.of(photo.getPhotoCode(), photo.getThumbnailCode()))
+            .flatMap(photo -> java.util.stream.Stream.of(photo.getPhotoCode(), photo.getThumbnailCode(), photo.getDisplayCode()))
             .filter(java.util.Objects::nonNull).toList();
         diaryRepository.delete(diary);
         // 기록이 지워진 뒤(커밋 후) 사진 S3 객체를 지운다
@@ -227,7 +227,7 @@ public class DiaryServiceImpl implements DiaryService {
                 .sorted(Photo.DISPLAY_ORDER)
                 .map(photo -> new PhotoResponse(
                         photo.getId(),
-                        photo.getPhotoCode(),
+                        photo.getViewCode(),
                         photo.getLat(),
                         photo.getLng(),
                         photo.getWidth(),

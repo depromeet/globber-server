@@ -25,15 +25,16 @@ class ThumbnailMigrationTest {
     @BeforeEach
     void setUp() {
         jdbc = new JdbcTemplate(new DriverManagerDataSource("jdbc:h2:mem:" + UUID.randomUUID() + ";DB_CLOSE_DELAY=-1"));
-        jdbc.execute("create table photo (id bigint primary key, photo_code varchar(255), thumbnail_code varchar(1024))");
+        jdbc.execute("create table photo (id bigint primary key, photo_code varchar(255), thumbnail_code varchar(1024), display_code varchar(1024))");
         jdbc.execute("""
             create table thumbnail_migration_item (
                 run_id varchar(36), bucket varchar(255), photo_id bigint, source_key varchar(255),
                 source_etag varchar(255), source_size bigint, backup_key varchar(255),
                 thumbnail_key varchar(255), state varchar(20) default 'PLANNED',
+                asset_kind varchar(20) default 'thumbnail',
                 updated_at timestamp default now(), primary key (run_id,photo_id))
             """);
-        jdbc.update("insert into photo values (1,'travels/0/a.HEIC',null)");
+        jdbc.update("insert into photo values (1,'travels/0/a.HEIC',null,null)");
         s3 = mock(S3Client.class);
         batch = new ThumbnailMigration(jdbc, s3, "globber-dev");
         when(s3.headObject(any(HeadObjectRequest.class))).thenAnswer(call -> {
@@ -59,7 +60,7 @@ class ThumbnailMigrationTest {
     @Test
     void applyAndRollbackPreserveOriginalAndOtherPhotos() throws Exception {
         prepareConverted();
-        jdbc.update("insert into photo values (2,'travels/0/b.jpg','thumbnails/unrelated.webp')");
+        jdbc.update("insert into photo values (2,'travels/0/b.jpg','thumbnails/unrelated.webp',null)");
         batch.run("apply", run, 1);
         assertThat(thumbnail()).endsWith("/1.webp");
         batch.run("apply", run, 1); // idempotent
@@ -107,6 +108,39 @@ class ThumbnailMigrationTest {
             HeadObjectResponse.builder().eTag("changed").contentLength(1L).build());
         assertThatThrownBy(() -> batch.run("apply", run, 1)).hasMessageContaining("Original changed");
         assertThat(thumbnail()).isNull();
+    }
+
+    @Test
+    void fullSizeRunReusesBackupAndRollsBackOnlyDisplayReference() throws Exception {
+        prepareConverted();
+        batch.run("apply", run, 1);
+        String originalThumbnail = thumbnail();
+        String backup = jdbc.queryForObject("select backup_key from thumbnail_migration_item where run_id=?", String.class, run);
+        var displayBatch = new ThumbnailMigration(jdbc, s3, "globber-dev", "display");
+        String displayRun = UUID.randomUUID().toString();
+        displayBatch.run("prepare", displayRun, 1000);
+        assertThat(jdbc.queryForObject("select backup_key from thumbnail_migration_item where run_id=?", String.class, displayRun))
+            .isEqualTo(backup);
+        jdbc.update("update thumbnail_migration_item set state='CONVERTED' where run_id=?", displayRun);
+        assertThatThrownBy(() -> batch.run("apply", displayRun, 1)).hasMessageContaining("Asset kind mismatch");
+        displayBatch.run("apply", displayRun, 1);
+        assertThat(jdbc.queryForObject("select display_code from photo where id=1", String.class))
+            .isEqualTo("thumbnails/heic-display/" + displayRun + "/1.webp");
+        displayBatch.run("rollback", displayRun, 1);
+        assertThat(jdbc.queryForObject("select display_code from photo where id=1", String.class)).isNull();
+        assertThat(thumbnail()).isEqualTo(originalThumbnail);
+        assertThat(jdbc.queryForObject("select photo_code from photo where id=1", String.class)).isEqualTo("travels/0/a.HEIC");
+    }
+
+    @Test
+    void displayRunRefusesReplacingNewerDisplayReference() throws Exception {
+        var displayBatch = new ThumbnailMigration(jdbc, s3, "globber-dev", "display");
+        displayBatch.run("prepare", run, 1);
+        jdbc.update("update thumbnail_migration_item set state='CONVERTED' where run_id=?", run);
+        jdbc.update("update photo set display_code='newer.webp' where id=1");
+        assertThatThrownBy(() -> displayBatch.run("apply", run, 1)).hasMessageContaining("Photo changed");
+        assertThat(jdbc.queryForObject("select display_code from photo where id=1", String.class)).isEqualTo("newer.webp");
+        assertThat(state()).isEqualTo("CONVERTED");
     }
 
     private void prepareConverted() throws Exception {

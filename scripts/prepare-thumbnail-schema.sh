@@ -4,8 +4,8 @@ stage=${1:?dev or prod required}
 case "$stage" in dev|prod) ;; *) exit 2 ;; esac
 db_container="postgres_${stage}"
 # No production credentials in arguments or logs; use the DB container's own environment.
-schema_present=$(docker exec "$db_container" sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atc "SELECT count(*) FROM information_schema.columns WHERE table_name = '\''photo'\'' AND column_name = '\''thumbnail_code'\''"')
-if [[ "$schema_present" == 1 ]]; then
+schema_present=$(docker exec "$db_container" sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atc "SELECT count(*) FROM information_schema.columns WHERE table_schema = '\''public'\'' AND table_name = '\''photo'\'' AND column_name IN ('\''thumbnail_code'\'', '\''display_code'\'')"')
+if [[ "$schema_present" == 2 ]]; then
   echo 'Thumbnail column already present; checking additive audit schema.'
 else
   backup_dir="$(dirname "${GITHUB_WORKSPACE:-$PWD}")/globber-thumbnail-backups"

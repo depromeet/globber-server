@@ -62,7 +62,7 @@ public class PhotoServiceImpl implements PhotoService {
         // 목록에서 빠진 사진의 S3 객체는 커밋 뒤 지운다. 같은 키를 새 사진이 다시 쓰면 지우지 않는다
         List<String> removedCodes = diary.getPhotos().stream()
             .filter(photo -> !keepIds.contains(photo.getId()))
-            .flatMap(photo -> java.util.stream.Stream.of(photo.getPhotoCode(), photo.getThumbnailCode()))
+            .flatMap(photo -> java.util.stream.Stream.of(photo.getPhotoCode(), photo.getThumbnailCode(), photo.getDisplayCode()))
             .filter(java.util.Objects::nonNull)
             .filter(code -> !newCodes.contains(code))
             .toList();
@@ -206,7 +206,7 @@ public class PhotoServiceImpl implements PhotoService {
     private PhotoResponse toResponse(Photo photo) {
         return new PhotoResponse(
             photo.getId(),
-            photo.getPhotoCode(),
+            photo.getViewCode(),
             photo.getLat(),
             photo.getLng(),
             photo.getWidth(),

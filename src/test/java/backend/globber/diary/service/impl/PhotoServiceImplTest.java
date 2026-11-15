@@ -335,6 +335,35 @@ class PhotoServiceImplTest {
         assertThat(third.getHeight()).isEqualTo(400L);
     }
 
+    @Test
+    void responseUsesFullWebpAndEditKeepsOriginalKey() {
+        Photo photo = diary.getPhotos().getFirst();
+        ReflectionTestUtils.setField(photo, "photoCode", "travels/0/original.heic");
+        ReflectionTestUtils.setField(photo, "thumbnailCode", "thumbnails/small.webp");
+        ReflectionTestUtils.setField(photo, "displayCode", "thumbnails/heic-display/full.webp");
+        given(photoRepository.findAllByDiaryIdOrderByDisplayOrderAscIdAsc(99L)).willReturn(diary.getPhotos());
+        var response = photoService.getAllPhoto(99L).getFirst();
+        assertThat(response.photoCode()).isEqualTo("thumbnails/heic-display/full.webp");
+        assertThat(response.thumbnailCode()).isEqualTo("thumbnails/small.webp");
+        // 기존 프론트가 조회 응답의 photoCode를 그대로 돌려보내도 원본 키를 덮어쓰지 않는다.
+        photoService.syncPhotos(MEMBER_ID, diary, List.of(request(photo.getId(), response.photoCode())));
+        assertThat(photo.getPhotoCode()).isEqualTo("travels/0/original.heic");
+        assertThat(photo.getDisplayCode()).isEqualTo(response.photoCode());
+        assertThat(photo.getThumbnailCode()).isEqualTo(response.thumbnailCode());
+        verify(uploadedImageValidator, never()).validate(any());
+    }
+
+    @Test
+    void responseWithoutFullWebpKeepsExistingKeyAndDeletionIncludesAllDerivedFiles() {
+        Photo photo = diary.getPhotos().getFirst();
+        ReflectionTestUtils.setField(photo, "thumbnailCode", "thumbnails/small.webp");
+        given(photoRepository.findAllByDiaryIdOrderByDisplayOrderAscIdAsc(99L)).willReturn(diary.getPhotos());
+        assertThat(photoService.getAllPhoto(99L).getFirst().photoCode()).isEqualTo(owned("code-1"));
+        ReflectionTestUtils.setField(photo, "displayCode", "thumbnails/heic-display/full.webp");
+        photoService.syncPhotos(MEMBER_ID, diary, List.of(request(2L, owned("code-2")), request(3L, owned("code-3"))));
+        verify(s3ObjectDeleter).deleteAfterCommit(List.of(owned("code-1"), "thumbnails/small.webp", "thumbnails/heic-display/full.webp"));
+    }
+
     private static String owned(String name) {
         return "travels/" + MEMBER_ID + "/" + name + ".jpg";
     }

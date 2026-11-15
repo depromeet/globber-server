@@ -50,6 +50,7 @@ class ThumbnailConcurrentEditTest {
             assertThat(stale.getThumbnailCode()).isNull();
             // The batch commits after the user's request has loaded the old null value.
             jdbc.update("update photo set thumbnail_code='thumbnails/race.webp' where id=?", id);
+            jdbc.update("update photo set display_code='thumbnails/full-race.webp' where id=?", id);
             stale.updateMetadata(stale.getLat(), stale.getLng(), stale.getWidth(), stale.getHeight(),
                 stale.getTakenMonth(), stale.getTag(), "edited by user");
             userSession.getTransaction().commit();
@@ -60,5 +61,7 @@ class ThumbnailConcurrentEditTest {
             .isEqualTo("edited by user");
         assertThat(jdbc.queryForObject("select photo_code from photo where id=?", String.class, id))
             .isEqualTo("travels/0/race.heic");
+        assertThat(jdbc.queryForObject("select display_code from photo where id=?", String.class, id))
+            .isEqualTo("thumbnails/full-race.webp");
     }
 }
