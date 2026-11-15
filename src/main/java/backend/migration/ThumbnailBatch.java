@@ -19,7 +19,8 @@ public class ThumbnailBatch {
             var env = context.getEnvironment();
             new ThumbnailMigration(new JdbcTemplate(context.getBean(DataSource.class)),
                 context.getBean(software.amazon.awssdk.services.s3.S3Client.class),
-                env.getRequiredProperty("aws.s3.bucket-name"))
+                env.getRequiredProperty("aws.s3.bucket-name"),
+                env.getProperty("migration.asset-kind", "thumbnail"))
                 .run(env.getProperty("migration.mode", "dry-run"),
                     env.getRequiredProperty("migration.run-id"),
                     Integer.parseInt(env.getProperty("migration.limit", "1")));
