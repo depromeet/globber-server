@@ -24,11 +24,24 @@ public class ThumbnailMigration {
     private final JdbcTemplate jdbc;
     private final S3Client s3;
     private final String bucket;
+    private final String assetKind;
+    private final String column;
 
     public ThumbnailMigration(JdbcTemplate jdbc, S3Client s3, String bucket) {
+        this(jdbc, s3, bucket, "thumbnail");
+    }
+
+    public ThumbnailMigration(JdbcTemplate jdbc, S3Client s3, String bucket, String assetKind) {
         this.jdbc = jdbc;
         this.s3 = s3;
         this.bucket = bucket;
+        this.assetKind = assetKind;
+        // SQL 컬럼에는 설정값을 직접 쓰지 않고 허용한 두 식별자만 사용한다.
+        this.column = switch (assetKind) {
+            case "thumbnail" -> "thumbnail_code";
+            case "display" -> "display_code";
+            default -> throw new IllegalArgumentException("Unknown asset kind: " + assetKind);
+        };
     }
 
     public void run(String mode, String runId, int limit) throws Exception {
@@ -41,9 +54,14 @@ public class ThumbnailMigration {
             case "convert", "apply", "rollback" -> {
                 // Work on a fixed recorded set. Never rediscover or expand targets during execution.
                 var items = jdbc.query("select * from thumbnail_migration_item where run_id=? order by photo_id",
-                    (rs, row) -> new Item(rs.getLong("photo_id"), rs.getString("source_key"),
+                    (rs, row) -> {
+                        if (!assetKind.equals(rs.getString("asset_kind"))) {
+                            throw new IllegalStateException("Asset kind mismatch; use the recorded kind");
+                        }
+                        return new Item(rs.getLong("photo_id"), rs.getString("source_key"),
                         rs.getString("source_etag"), rs.getLong("source_size"), rs.getString("backup_key"),
-                        rs.getString("thumbnail_key"), rs.getString("state"), rs.getString("bucket")), runId);
+                        rs.getString("thumbnail_key"), rs.getString("state"), rs.getString("bucket"));
+                    }, runId);
                 if (items.isEmpty()) throw new IllegalStateException("No prepared items for run " + runId);
                 for (Item item : items) {
                     if (!bucket.equals(item.bucket())) throw new IllegalStateException("Bucket mismatch");
@@ -54,17 +72,15 @@ public class ThumbnailMigration {
             }
             default -> throw new IllegalArgumentException("Unknown migration.mode: " + mode);
         }
-        log.info("Migration finished: mode={}, runId={}", mode, runId);
+        log.info("Migration finished: mode={}, runId={}, assetKind={}", mode, runId, assetKind);
     }
 
     private void plan(String runId, int limit, boolean persist) {
         if (persist && jdbc.queryForObject("select count(*) from thumbnail_migration_item where run_id=?",
             Long.class, runId) != 0) throw new IllegalStateException("Use a new run ID; existing plan is immutable");
-        var targets = jdbc.query("""
-            select id, photo_code from photo
-            where thumbnail_code is null and lower(photo_code) like '%.heic'
-            order by id limit ?
-            """, (rs, row) -> Map.entry(rs.getLong(1), rs.getString(2)), limit);
+        var targets = jdbc.query("select id, photo_code from photo where " + column
+            + " is null and lower(photo_code) like '%.heic' order by id limit ?",
+            (rs, row) -> Map.entry(rs.getLong(1), rs.getString(2)), limit);
         // Validate all sources before persisting any plan.
         var items = targets.stream().map(target -> {
             String source = target.getValue();
@@ -76,9 +92,19 @@ public class ThumbnailMigration {
                 throw new IllegalStateException("Source exceeds input limit: " + source);
             }
             String prefix = "migrations/heic/" + runId + "/";
+            String backup = prefix + "originals/" + target.getKey() + ".heic";
+            if (assetKind.equals("display")) {
+                // 원본이 같다는 기록이 있는 기존 백업만 재사용한다. 실제 내용은 convert/apply에서 검증한다.
+                var backups = jdbc.queryForList("""
+                    select backup_key from thumbnail_migration_item
+                    where bucket=? and photo_id=? and source_key=? and source_etag=? and source_size=?
+                      and state in ('CONVERTED','APPLIED','ROLLED_BACK') order by run_id limit 1
+                    """, String.class, bucket, target.getKey(), source, head.eTag(), head.contentLength());
+                if (!backups.isEmpty()) backup = backups.getFirst();
+            }
             return new Item(target.getKey(), source, head.eTag(), head.contentLength(),
-                prefix + "originals/" + target.getKey() + ".heic",
-                "thumbnails/heic/" + runId + "/" + target.getKey() + ".webp", "PLANNED", bucket);
+                backup, "thumbnails/heic" + (assetKind.equals("display") ? "-display" : "")
+                + "/" + runId + "/" + target.getKey() + ".webp", "PLANNED", bucket);
         }).toList();
         transaction().executeWithoutResult(status -> {
             for (Item item : items) {
@@ -86,10 +112,10 @@ public class ThumbnailMigration {
                     item.id(), item.source(), item.thumbnail());
                 if (persist) jdbc.update("""
                     insert into thumbnail_migration_item
-                    (run_id,bucket,photo_id,source_key,source_etag,source_size,backup_key,thumbnail_key)
-                    values (?,?,?,?,?,?,?,?)
+                    (run_id,bucket,photo_id,source_key,source_etag,source_size,backup_key,thumbnail_key,asset_kind)
+                    values (?,?,?,?,?,?,?,?,?)
                     """, runId, bucket, item.id(), item.source(), item.etag(), item.size(),
-                    item.backup(), item.thumbnail());
+                    item.backup(), item.thumbnail(), assetKind);
             }
         });
         log.info("Targets={}, limit={}; compare DB count before choosing a larger limit", items.size(), limit);
@@ -105,7 +131,12 @@ public class ThumbnailMigration {
             // Independent backup survives later normal deletion of a diary's original image.
             putOnce(item.backup(), source, "image/heic", item);
             Path output = dir.resolve("thumbnail.webp");
-            execute(dir, "vips", "thumbnail", source.toString(), output + "[Q=82,strip]", "640", "--size", "down");
+            if (assetKind.equals("display")) {
+                // autorot는 축소 없이 방향을 바로잡는다. 브라우저 표시에 사용할 원본 해상도 WebP.
+                execute(dir, "vips", "autorot", source.toString(), output + "[Q=90]");
+            } else {
+                execute(dir, "vips", "thumbnail", source.toString(), output + "[Q=82,strip]", "640", "--size", "down");
+            }
             execute(dir, "vipsheader", output.toString());
             validateWebp(Files.readAllBytes(output));
             putOnce(item.thumbnail(), output, "image/webp", item);
@@ -127,10 +158,8 @@ public class ThumbnailMigration {
         verifyDerived(item);
         transaction().executeWithoutResult(status -> {
             lock(runId, item);
-            int changed = jdbc.update("""
-                update photo set thumbnail_code=?
-                where id=? and photo_code=? and thumbnail_code is null
-                """, item.thumbnail(), item.id(), item.source());
+            int changed = jdbc.update("update photo set " + column + "=? where id=? and photo_code=? and "
+                + column + " is null", item.thumbnail(), item.id(), item.source());
             if (changed != 1) throw new IllegalStateException("Photo changed/deleted; refusing apply: " + item.id());
             jdbc.update("update thumbnail_migration_item set state='APPLIED',updated_at=now() where run_id=? and photo_id=?",
                 runId, item.id());
@@ -141,10 +170,8 @@ public class ThumbnailMigration {
         if (!item.state().equals("APPLIED")) return;
         transaction().executeWithoutResult(status -> {
             lock(runId, item);
-            int changed = jdbc.update("""
-                update photo set thumbnail_code=null
-                where id=? and photo_code=? and thumbnail_code=?
-                """, item.id(), item.source(), item.thumbnail());
+            int changed = jdbc.update("update photo set " + column + "=null where id=? and photo_code=? and "
+                + column + "=?", item.id(), item.source(), item.thumbnail());
             if (changed != 1) throw new IllegalStateException("Photo changed/deleted; manual review needed: " + item.id());
             jdbc.update("update thumbnail_migration_item set state='ROLLED_BACK',updated_at=now() where run_id=? and photo_id=?",
                 runId, item.id());

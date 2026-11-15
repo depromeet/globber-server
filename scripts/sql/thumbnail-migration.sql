@@ -3,6 +3,7 @@
 BEGIN;
 SET LOCAL lock_timeout = '5s';
 ALTER TABLE photo ADD COLUMN IF NOT EXISTS thumbnail_code VARCHAR(1024);
+ALTER TABLE photo ADD COLUMN IF NOT EXISTS display_code VARCHAR(1024);
 CREATE TABLE IF NOT EXISTS thumbnail_migration_item (
     run_id VARCHAR(36) NOT NULL,
     bucket VARCHAR(255) NOT NULL,
@@ -17,5 +18,6 @@ CREATE TABLE IF NOT EXISTS thumbnail_migration_item (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     PRIMARY KEY (run_id, photo_id)
 );
+ALTER TABLE thumbnail_migration_item ADD COLUMN IF NOT EXISTS asset_kind VARCHAR(20) NOT NULL DEFAULT 'thumbnail';
 -- No FK: rollback evidence survives a user's deletion of a photo.
 COMMIT;

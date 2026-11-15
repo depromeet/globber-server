@@ -7,7 +7,7 @@ API never starts a migration. Its image is built with `Dockerfile.thumbnail-batc
 the production API image does not gain native image tools.
 
 The batch only reads `travels/`. It never overwrites/deletes an original or changes
-`photo_code`, display order, dimensions, or other photo metadata. Before conversion
+the DB `photo_code`, display order, dimensions, or other photo metadata. Before conversion
 it makes an independent backup under `migrations/heic/{run-id}/originals/{photo-id}.heic`.
 The normal application's S3 deleter does not accept that prefix, so this backup
 survives subsequent diary deletion. No lifecycle or public-access settings are changed.
@@ -53,8 +53,8 @@ backup objects and diagnostic build files are retained.
    updates `thumbnail_code` and the ledger per photo. Concurrent edits/deletion stop
    the run without replacing the user's newer data. Completed items are skipped on retry.
 7. Check city record `thumbnailUrls` and diary `photos[].thumbnailCode` in the DEV API.
-   Photo responses retain the original `photoCode`. Frontend must use `thumbnailCode`
-   for previews, falling back to `photoCode`. Full-size HEIC display is separate work.
+   The 640px migration alone does not change the diary's `photoCode` response.
+   Use the display migration below to fix existing clients without frontend changes.
 8. Test `rollback`, verify the original keys and other photos are unchanged. Repeat
    with a new UUID if a new canary is needed. Keep all backups and ledger entries.
 9. After DEV is verified, promote the same changes to main. Repeat the sequence
@@ -85,6 +85,50 @@ If an original was subsequently removed by a user, clearing a derived reference
 does not restore a deleted file or photo row. Its independent backup is retained;
 review that user's deletion intent before any manual recovery. Restoring a DB dump
 over the live database is not part of automated rollback.
+
+## Full-size display migration and existing client compatibility
+
+The original 37-photo production migration populated only `thumbnail_code` with
+640px WebP keys. The existing frontend still reads `photoCode`, so that alone did
+not fix diary photo display. Do not report backend thumbnail completion as UI completion.
+
+Run the same staged workflow with `asset_kind=display`, a new UUID and a newly
+built/pinned image containing this feature. Never use the old thumbnail-only image.
+Use the same kind, UUID and image ID across prepare/convert/apply/rollback.
+`display` selects HEIC photos whose `display_code` is null, including photos that
+already have small thumbnails. It preserves the recorded fixed target set.
+
+Conversion creates an auto-oriented WebP at the source resolution (Q90, no resize)
+under `thumbnails/heic-display/{run-id}/{photo-id}.webp`. It verifies the output and
+enforces the existing 10MiB/60s limits; a decode/size/timeout failure stops the run.
+Existing audited original backups with identical source key/ETag/size are reused
+after checksum/byte verification. If no such backup exists, one is created with
+the original preservation rules. Original HEICs, their backups and the old 640px
+thumbnails remain intact.
+
+After apply, **DB** `photo.photo_code` still contains the original key; the new
+`photo.display_code` contains the full-size WebP key. **API** diary/photo `photoCode`
+returns `display_code ?? photo_code`, so existing frontends use the WebP without
+code changes. `thumbnailCode` and city list thumbnails keep their small WebP keys.
+An existing photo edit is identified by `photoId`; echoing the response's WebP key
+must not replace its DB original key. Normal deletion covers original/small/full
+display objects and still excludes independent backups under `migrations/`.
+
+`asset_kind=display, mode=rollback` clears only the exact display references applied
+by that run, preserving original and thumbnail references. It does not remove S3
+objects. A thumbnail run cannot apply or roll back a display run (and vice versa).
+Schema deployment verifies a fresh DB dump before adding `display_code` to an
+existing thumbnail-enabled database.
+
+This is an existing-HEIC one-off migration, not a new upload pipeline. Current web
+uploads already convert HEIC to JPEG before directly uploading to
+`travels/{memberId}/...` in S3; the server issues a presigned URL and persists the
+uploaded key. New uploads do not automatically create extra WebPs in this change.
+
+Validate one real DEV image through apply/rollback, then one PROD image before
+converting/applying the remaining live references. Confirm the actual public
+`/record/5?uuid=e0c9b2` page requests WebP and displays the reported photos.
+SQL inspection: add `photo.display_code` and ledger `asset_kind` to the queries above.
 
 ## Local verification
 

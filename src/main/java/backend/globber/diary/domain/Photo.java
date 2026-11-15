@@ -45,8 +45,15 @@ public class Photo extends BaseTimeEntity {
     // 파생 이미지 키. 원본 photoCode는 마이그레이션에서도 유지한다.
     private String thumbnailCode;
 
-    public String getDisplayCode() {
-        return thumbnailCode == null ? photoCode : thumbnailCode;
+    // 큰 화면용 파생 이미지. DB의 photoCode는 원본 복구·삭제를 위해 유지한다.
+    private String displayCode;
+
+    public String getViewCode() {
+        return displayCode == null ? photoCode : displayCode;
+    }
+
+    public String getThumbnailDisplayCode() {
+        return thumbnailCode == null ? getViewCode() : thumbnailCode;
     }
 
     // 메타데이터 Start
