@@ -19,6 +19,9 @@ on:
         description: 'prepare/dry-run 대상 수 (첫 실행은 1)'
         default: '1'
         required: true
+      image_id:
+        description: 'dry-run 출력의 sha256 이미지 ID; 후속 단계에서 필수'
+        required: false
 permissions:
   contents: read
 concurrency:
@@ -49,20 +52,51 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
-      - name: 배치 빌드
+      - name: 실행 이미지 고정
+        id: image
         working-directory: thumbnail-batch
+        env:
+          IMAGE_ID: ${{ inputs.image_id }}
+          STAGE: ${{ inputs.stage }}
+          MODE: ${{ inputs.mode }}
+          RUN_ID: ${{ inputs.run_id }}
         run: |
-          bash gradlew bootJar
-          docker build -f Dockerfile.thumbnail-batch -t globber-thumbnail-batch:${GITHUB_SHA} .
+          set -euo pipefail
+          [[ "$RUN_ID" =~ ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$ ]]
+          pin="thumbnail-migration-${STAGE}-${RUN_ID}"
+          if [[ -z "$IMAGE_ID" ]]; then
+            test "$MODE" = dry-run
+            # Never rebuild an existing run, even after its branch has advanced.
+            if docker container inspect "$pin" > /dev/null 2>&1; then
+              IMAGE_ID=$(docker container inspect --format '{{.Image}}' "$pin")
+            else
+            bash gradlew --no-daemon --max-workers=1 bootJar
+            docker build -f Dockerfile.thumbnail-batch -t globber-thumbnail-batch:${GITHUB_SHA} .
+              IMAGE_ID=$(docker image inspect --format '{{.Id}}' globber-thumbnail-batch:${GITHUB_SHA})
+            fi
+          fi
+          [[ "$IMAGE_ID" =~ ^sha256:[0-9a-f]{64}$ ]]
+          # A different runner must fail closed, never silently rebuild native tools.
+          test "$(docker image inspect --format '{{.Id}}' "$IMAGE_ID")" = "$IMAGE_ID"
+          if docker container inspect "$pin" > /dev/null 2>&1; then
+            test "$(docker container inspect --format '{{.Image}}' "$pin")" = "$IMAGE_ID"
+          else
+            # A stopped reference also protects this recovery image from CD image prune.
+            docker create --name "$pin" "$IMAGE_ID" > /dev/null
+          fi
+          echo "image_id=$IMAGE_ID" >> "$GITHUB_OUTPUT"
+          echo "Pinned batch image: $IMAGE_ID"
+          echo "Run: $RUN_ID; image_id: $IMAGE_ID" >> "$GITHUB_STEP_SUMMARY"
       - name: 단계 실행 (원본 PUT/DELETE 없음)
         env:
           STAGE: ${{ inputs.stage }}
           MODE: ${{ inputs.mode }}
           RUN_ID: ${{ inputs.run_id }}
           LIMIT: ${{ inputs.limit }}
+          IMAGE_ID: ${{ steps.image.outputs.image_id }}
         run: |
           docker run --rm --network "${STAGE}_network" --memory 768m --cpus 1 \
-            globber-thumbnail-batch:${GITHUB_SHA} \
+            "$IMAGE_ID" \
             --spring.profiles.active="$STAGE" \
             --migration.mode="$MODE" \
             --migration.run-id="$RUN_ID" \

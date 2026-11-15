@@ -36,6 +36,13 @@ backup objects and diagnostic build files are retained.
 2. Use Actions **HEIC thumbnail migration**, develop branch, `stage=dev`.
    Generate a UUID once (`uuidgen | tr '[:upper:]' '[:lower:]'`). Start with `limit=1`.
 3. Run `mode=dry-run`: only SELECT and S3 HEAD; no ledger or object writes.
+   Save the content-addressed `sha256:...` image ID printed in the job summary.
+   Supply it as `image_id` for every subsequent phase, including rollback. The
+   workflow binds the UUID to that exact image using a stopped pin container.
+   It never starts that container; it retains the image through CD image pruning.
+   A changed image or a runner without that image fails before batch execution.
+   Preserve the pin container until recovery is no longer needed. Do not rebuild
+   a missing image and assume it is identical; recover the exact saved image first.
 4. Run `prepare` with the same UUID: records a fixed selection, bucket, original
    key, ETag and size. A UUID cannot be prepared twice. Maximum plan size is 1000.
 5. Run `convert`: copies the original into the backup prefix, decodes HEIC into a
