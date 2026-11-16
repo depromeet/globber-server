@@ -537,6 +537,38 @@ class DiaryControllerTest {
             .body("data.diaryResponses.diaries.flatten().photos.flatten().lat", hasItem(37.5665123f));
     }
 
+    @Test
+    @DisplayName("기록 생성·수정 응답은 작성자 본인에게 가므로 사진 좌표를 그대로 돌려준다")
+    void createAndUpdate_keepPhotoCoordinates() {
+        // given
+        Map<String, Object> withCoords = photoBody(null, code("GEO"), "광장");
+        withCoords.put("lat", 37.5665123);
+        withCoords.put("lng", 126.9780456);
+
+        // when & then: 생성
+        ValidatableResponse created = RestAssured.given()
+            .contentType(ContentType.JSON)
+            .header("Authorization", accessToken)
+            .body(diaryBody("좌표 기록", List.of(withCoords)))
+            .when()
+            .post("/api/v1/diaries")
+            .then()
+            .statusCode(200)
+            .body("data.photos[0].lat", equalTo(37.5665123f))
+            .body("data.photos[0].lng", equalTo(126.9780456f));
+        Long newDiaryId = created.extract().jsonPath().getLong("data.diaryId");
+        Long photoId = created.extract().jsonPath().getLong("data.photos[0].photoId");
+
+        // when & then: 수정
+        Map<String, Object> kept = photoBody(photoId, code("GEO"), "광장");
+        kept.put("lat", 37.5665123);
+        kept.put("lng", 126.9780456);
+        put(newDiaryId, diaryBody("좌표 기록 수정", List.of(kept)))
+            .statusCode(200)
+            .body("data.photos[0].lat", equalTo(37.5665123f))
+            .body("data.photos[0].lng", equalTo(126.9780456f));
+    }
+
     private String otherMemberToken() {
         String otherEmail = "other-" + prefix + "@example.com";
         transactionTemplate.executeWithoutResult(status -> em.persist(Member.of(otherEmail, "다른회원", "password",
