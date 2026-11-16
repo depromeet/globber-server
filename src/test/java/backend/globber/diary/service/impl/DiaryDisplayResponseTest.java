@@ -24,7 +24,7 @@ class DiaryDisplayResponseTest {
             .thumbnailCode("thumbnails/small.webp").displayCode("thumbnails/heic-display/full.webp")
             .diary(diary).build());
         var service = mock(DiaryServiceImpl.class, CALLS_REAL_METHODS);
-        DiaryResponse response = ReflectionTestUtils.invokeMethod(service, "toDiaryResponse", diary, List.of());
+        DiaryResponse response = ReflectionTestUtils.invokeMethod(service, "toDiaryResponse", diary, List.of(), true);
         assertThat(response.photos().getFirst().photoCode()).isEqualTo("thumbnails/heic-display/full.webp");
         assertThat(response.photos().getFirst().thumbnailCode()).isEqualTo("thumbnails/small.webp");
         assertThat(diary.getPhotos().getFirst().getPhotoCode()).isEqualTo("travels/0/source.heic");

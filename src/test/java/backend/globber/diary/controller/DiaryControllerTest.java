@@ -4,6 +4,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.everyItem;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
@@ -494,6 +498,82 @@ class DiaryControllerTest {
         assertThat(updatedAt).endsWith("Z");
         assertThat(java.time.Instant.parse(createdAt))
             .isEqualTo(savedCreatedAt.atZone(java.time.ZoneId.systemDefault()).toInstant());
+    }
+
+    @Test
+    @DisplayName("공개 조회에서 사진 좌표는 작성자 본인에게만 주고, 비로그인·다른 회원에게는 null이며 장소 이름은 그대로 준다")
+    void publicView_hidesPhotoCoordinatesExceptAuthor() {
+        // given: 사진 A에 좌표와 장소 이름이 있다
+        jdbcTemplate.update("update photo set lat = 37.5665123, lng = 126.9780456, place_name = '시청' where id = ?",
+            photoIds.get("A"));
+        String uuid = jdbcTemplate.queryForObject("select uuid from member where id = ?", String.class, memberId);
+        String otherToken = otherMemberToken();
+
+        // when & then: 상세 조회
+        RestAssured.given().when().get("/api/v1/diaries/{diaryId}", diaryId).then().statusCode(200)
+            .body("data.photos[0].lat", nullValue())
+            .body("data.photos[0].lng", nullValue())
+            .body("data.photos[0].placeName", equalTo("시청"))
+            .body("data.city.lat", notNullValue());
+        RestAssured.given().header("Authorization", otherToken)
+            .when().get("/api/v1/diaries/{diaryId}", diaryId).then().statusCode(200)
+            .body("data.photos[0].lat", nullValue())
+            .body("data.photos[0].lng", nullValue());
+        RestAssured.given().header("Authorization", accessToken)
+            .when().get("/api/v1/diaries/{diaryId}", diaryId).then().statusCode(200)
+            .body("data.photos[0].lat", equalTo(37.5665123f))
+            .body("data.photos[0].lng", equalTo(126.9780456f));
+
+        // when & then: uuid 목록 조회
+        RestAssured.given().queryParam("uuid", uuid)
+            .when().get("/api/v1/diaries").then().statusCode(200)
+            .body("data.diaryResponses.diaries.flatten().photos.flatten().lat", everyItem(nullValue()))
+            .body("data.diaryResponses.diaries.flatten().photos.flatten().placeName", hasItem("시청"));
+        RestAssured.given().queryParam("uuid", uuid).header("Authorization", otherToken)
+            .when().get("/api/v1/diaries").then().statusCode(200)
+            .body("data.diaryResponses.diaries.flatten().photos.flatten().lat", everyItem(nullValue()));
+        RestAssured.given().queryParam("uuid", uuid).header("Authorization", accessToken)
+            .when().get("/api/v1/diaries").then().statusCode(200)
+            .body("data.diaryResponses.diaries.flatten().photos.flatten().lat", hasItem(37.5665123f));
+    }
+
+    @Test
+    @DisplayName("기록 생성·수정 응답은 작성자 본인에게 가므로 사진 좌표를 그대로 돌려준다")
+    void createAndUpdate_keepPhotoCoordinates() {
+        // given
+        Map<String, Object> withCoords = photoBody(null, code("GEO"), "광장");
+        withCoords.put("lat", 37.5665123);
+        withCoords.put("lng", 126.9780456);
+
+        // when & then: 생성
+        ValidatableResponse created = RestAssured.given()
+            .contentType(ContentType.JSON)
+            .header("Authorization", accessToken)
+            .body(diaryBody("좌표 기록", List.of(withCoords)))
+            .when()
+            .post("/api/v1/diaries")
+            .then()
+            .statusCode(200)
+            .body("data.photos[0].lat", equalTo(37.5665123f))
+            .body("data.photos[0].lng", equalTo(126.9780456f));
+        Long newDiaryId = created.extract().jsonPath().getLong("data.diaryId");
+        Long photoId = created.extract().jsonPath().getLong("data.photos[0].photoId");
+
+        // when & then: 수정
+        Map<String, Object> kept = photoBody(photoId, code("GEO"), "광장");
+        kept.put("lat", 37.5665123);
+        kept.put("lng", 126.9780456);
+        put(newDiaryId, diaryBody("좌표 기록 수정", List.of(kept)))
+            .statusCode(200)
+            .body("data.photos[0].lat", equalTo(37.5665123f))
+            .body("data.photos[0].lng", equalTo(126.9780456f));
+    }
+
+    private String otherMemberToken() {
+        String otherEmail = "other-" + prefix + "@example.com";
+        transactionTemplate.executeWithoutResult(status -> em.persist(Member.of(otherEmail, "다른회원", "password",
+            AuthProvider.KAKAO, List.of(Role.ROLE_USER), ("o" + prefix).substring(0, 6))));
+        return jwtTokenProvider.createAccessToken(otherEmail, List.of(Role.ROLE_USER.name()));
     }
 
     @Test
