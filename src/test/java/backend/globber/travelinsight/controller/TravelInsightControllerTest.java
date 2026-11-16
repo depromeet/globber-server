@@ -79,12 +79,12 @@ class TravelInsightControllerTest {
 
     private static @NotNull Member getMember() {
         return Member.of(
-                "test" + System.currentTimeMillis() + "@example.com",
+                "test-" + java.util.UUID.randomUUID() + "@example.com",
                 "테스트유저",
                 "password",
                 AuthProvider.KAKAO,
                 List.of(Role.ROLE_USER),
-                "123456"
+                java.util.UUID.randomUUID().toString().substring(0, 6)
         );
     }
 
@@ -124,6 +124,38 @@ class TravelInsightControllerTest {
                 .contentType(ContentType.JSON)
                 .when()
                 .get("/api/v1/travel-insights/{memberId}", member.getId())
+                .then().log().all()
+                .statusCode(200)
+                .body("status", equalTo("success"))
+                .body("data.title", notNullValue());
+    }
+
+    @Test
+    @DisplayName("존재하지 않는 회원의 인사이트를 조회하면 404를 반환한다")
+    void aiInsight_unknownMember_notFound() {
+        // given
+        long unknownMemberId = Long.MAX_VALUE;
+
+        // when & then
+        RestAssured.given().log().all()
+                .when()
+                .get("/api/v1/travel-insights/{memberId}", unknownMemberId)
+                .then().log().all()
+                .statusCode(404)
+                .body("status", equalTo("fail"))
+                .body("data", equalTo("존재하지 않는 회원입니다."));
+    }
+
+    @Test
+    @DisplayName("여행 기록이 없는 회원은 지금처럼 기본 인사이트를 200으로 반환한다")
+    void aiInsight_memberWithoutTravel_ok() {
+        // given
+        Member newMember = memberRepository.save(getMember());
+
+        // when & then
+        RestAssured.given().log().all()
+                .when()
+                .get("/api/v1/travel-insights/{memberId}", newMember.getId())
                 .then().log().all()
                 .statusCode(200)
                 .body("status", equalTo("success"))

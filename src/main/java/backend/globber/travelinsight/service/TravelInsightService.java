@@ -1,6 +1,8 @@
 package backend.globber.travelinsight.service;
 
+import backend.globber.auth.repository.MemberRepository;
 import backend.globber.exception.spec.GeminiException;
+import backend.globber.exception.spec.MemberNotFoundException;
 import backend.globber.membertravel.controller.dto.response.MemberTravelAllResponse;
 import backend.globber.membertravel.domain.MemberTravel;
 import backend.globber.membertravel.repository.MemberTravelRepository;
@@ -29,6 +31,7 @@ import org.springframework.util.StringUtils;
 public class TravelInsightService {
 
     private final AiClient aiClient;
+    private final MemberRepository memberRepository;
     private final MemberTravelRepository memberTravelRepository;
     private final TravelInsightRepository travelInsightRepository;
     private final TravelStatisticsService travelStatisticsService;
@@ -37,6 +40,10 @@ public class TravelInsightService {
 
     @Transactional
     public TravelInsightResponse getOrCreateInsight(Long memberId) {
+        // 없는 회원은 기본 인사이트 대신 404로 알린다(GLB-299)
+        if (!memberRepository.existsById(memberId)) {
+            throw new MemberNotFoundException();
+        }
         List<MemberTravel> travels = memberTravelRepository.findAllByMember_Id(memberId);
         if (travels.isEmpty()) {
             return TravelInsightResponse.empty();

@@ -29,6 +29,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import backend.globber.auth.repository.MemberRepository;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
@@ -42,6 +43,9 @@ class TravelInsightServiceTest {
 
     @Mock
     private AiClient aiClient;
+
+    @Mock
+    private MemberRepository memberRepository;
 
     @Mock
     private MemberTravelRepository memberTravelRepository;
@@ -64,6 +68,7 @@ class TravelInsightServiceTest {
     @BeforeEach
     void setUp() {
         lenient().when(travelInsightSettings.getTitleStrategy()).thenReturn(TitleStrategy.SERVER);
+        lenient().when(memberRepository.existsById(org.mockito.ArgumentMatchers.anyLong())).thenReturn(true);
     }
 
     @Test
