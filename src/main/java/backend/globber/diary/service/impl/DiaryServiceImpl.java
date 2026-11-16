@@ -91,7 +91,7 @@ public class DiaryServiceImpl implements DiaryService {
         photoService.syncPhotos(memberId, diary, diaryRequest.photos());
 
         // 저장된 Diary + Photo 리스트 변환
-        return toDiaryResponse(diaryRepository.findById(diary.getId()).get(), Collections.emptyList());
+        return toDiaryResponse(diaryRepository.findById(diary.getId()).get(), Collections.emptyList(), true);
     }
 
     @Transactional
@@ -111,7 +111,7 @@ public class DiaryServiceImpl implements DiaryService {
         diary.changeText(diaryRequest.text());
         photoService.syncPhotos(memberId, diary, diaryRequest.photos());
         List<EmojiResponse> emojis = getEmojiResponses(diaryId, memberId);
-        return toDiaryResponse(diary, emojis);
+        return toDiaryResponse(diary, emojis, true);
     }
 
     @Transactional
@@ -150,7 +150,7 @@ public class DiaryServiceImpl implements DiaryService {
 
         List<EmojiResponse> emojis = getEmojiResponses(diaryId, memberId);
 
-        return toDiaryResponse(diary, emojis);
+        return toDiaryResponse(diary, emojis, true);
     }
 
     @Transactional(readOnly = true)
@@ -161,7 +161,7 @@ public class DiaryServiceImpl implements DiaryService {
 
         List<EmojiResponse> emojis = getEmojiResponses(diaryId, viewerId);
 
-        return toDiaryResponse(diary, emojis);
+        return toDiaryResponse(diary, emojis, isAuthor(diary, viewerId));
     }
 
     @Transactional(readOnly = true)
@@ -177,7 +177,7 @@ public class DiaryServiceImpl implements DiaryService {
                 .map(diary -> {
                     List<EmojiResponse> emojis = getEmojiResponses(diary.getId(),
                             pressedByDiary.getOrDefault(diary.getId(), Set.of()));
-                    return toDiaryResponse(diary, emojis);
+                    return toDiaryResponse(diary, emojis, isAuthor(diary, viewerId));
                 })
                 .toList();
 
@@ -223,14 +223,22 @@ public class DiaryServiceImpl implements DiaryService {
                         Collectors.mapping(DiaryEmojiReactionRepository.PressedCode::getCode, Collectors.toSet())));
     }
 
-    private DiaryResponse toDiaryResponse(Diary diary, List<EmojiResponse> emojis) {
+    private static boolean isAuthor(Diary diary, Long viewerId) {
+        return viewerId != null
+                && viewerId.equals(diary.getMemberTravelCity().getMemberTravel().getMember().getId());
+    }
+
+    /**
+     * @param includeCoordinates 사진 좌표(lat·lng)를 넣을지 여부. 공개 조회에서는 작성자 본인일 때만 넣는다(GLB-162).
+     */
+    private DiaryResponse toDiaryResponse(Diary diary, List<EmojiResponse> emojis, boolean includeCoordinates) {
         List<PhotoResponse> photos = diary.getPhotos().stream()
                 .sorted(Photo.DISPLAY_ORDER)
                 .map(photo -> new PhotoResponse(
                         photo.getId(),
                         photo.getViewCode(),
-                        photo.getLat(),
-                        photo.getLng(),
+                        includeCoordinates ? photo.getLat() : null,
+                        includeCoordinates ? photo.getLng() : null,
                         photo.getWidth(),
                         photo.getHeight(),
                         photo.getTakenMonth(),
