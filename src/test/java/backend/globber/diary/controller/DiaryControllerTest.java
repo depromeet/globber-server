@@ -435,6 +435,49 @@ class DiaryControllerTest {
     }
 
     @Test
+    @DisplayName("takenMonth는 yyyy-MM과 yyyyMM 모두 같은 월로 저장되고 응답은 yyyy-MM이며, 잘못된 월은 400이다")
+    void takenMonth_bothFormats() {
+        // given
+        Map<String, Object> dashed = photoBody(null, code("DASH"), null);
+        dashed.put("takenMonth", "2025-04");
+        Map<String, Object> compact = photoBody(null, code("COMPACT"), null);
+        compact.put("takenMonth", "202504");
+        Map<String, Object> invalid = photoBody(null, code("BAD"), null);
+        invalid.put("takenMonth", "2025-13");
+
+        // when
+        ValidatableResponse created = RestAssured.given()
+            .contentType(ContentType.JSON)
+            .header("Authorization", accessToken)
+            .body(diaryBody("월 형식", List.of(dashed, compact)))
+            .when()
+            .post("/api/v1/diaries")
+            .then()
+            .statusCode(200);
+        Long newDiaryId = created.extract().jsonPath().getLong("data.diaryId");
+
+        // then
+        getDetail(newDiaryId).body("data.photos.takenMonth", contains("2025-04", "2025-04"));
+        put(diaryId, diaryBody("바뀌면 안 되는 본문", List.of(photoBody(photoIds.get("A"), code("A"), null), invalid)))
+            .statusCode(400)
+            .body("data", equalTo("잘못된 요청 값입니다."));
+        assertUnchanged();
+    }
+
+    @Test
+    @DisplayName("API 문서에서 사진 응답·요청의 takenMonth는 문자열 스키마다")
+    void takenMonth_documentedAsString() {
+        // when & then
+        RestAssured.given()
+            .when()
+            .get("/v3/api-docs/GLOBBER API")
+            .then()
+            .statusCode(200)
+            .body("components.schemas.PhotoResponse.properties.takenMonth.type", equalTo("string"))
+            .body("components.schemas.PhotoRequest.properties.takenMonth.type", equalTo("string"));
+    }
+
+    @Test
     @DisplayName("삭제한 사진 개별 API는 더 이상 동작하지 않는다")
     void removedPhotoApis_notAvailable() {
         RestAssured.given().contentType(ContentType.JSON).header("Authorization", accessToken)
