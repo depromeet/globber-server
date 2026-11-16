@@ -16,3 +16,14 @@ management:
     health:
       access: read-only
       show-details: never
+
+---
+spring:
+  config:
+    activate:
+      on-profile: prod
+
+# 운영 CORS 허용 Origin(GLB-141). www도 운영 화면이 쓰므로 함께 허용한다.
+app:
+  cors:
+    allowed-origins: https://globber.world,https://www.globber.world
