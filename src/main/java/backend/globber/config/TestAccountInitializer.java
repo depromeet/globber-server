@@ -11,20 +11,36 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Profile;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.env.Environment;
+import org.springframework.core.env.Profiles;
+import org.springframework.util.StringUtils;
 
+/**
+ * app.test-accounts에 설정한 테스트 계정이 없으면 만든다.
+ * - dev, local: 항상 실행
+ * - 그 밖(prod): 테스트 로그인 키(app.test-login.key)가 설정된 경우에만 실행 (GLB-383)
+ */
 @Configuration
-@Profile({"dev", "local"})
 @Slf4j
 @EnableConfigurationProperties(TestAccountProperties.class)
-public class DevTestAccountInitializer {
+public class TestAccountInitializer {
+
+    static boolean shouldInitialize(Environment environment, String testLoginKey) {
+        return environment.acceptsProfiles(Profiles.of("dev", "local")) || StringUtils.hasText(testLoginKey);
+    }
 
     @Bean
     public CommandLineRunner initTestAccounts(
         MemberRepository memberRepository,
         MemberSaver memberSaver,
-        TestAccountProperties testAccountProperties) {
+        TestAccountProperties testAccountProperties,
+        Environment environment,
+        @Value("${app.test-login.key:}") String testLoginKey) {
         return args -> {
+            if (!shouldInitialize(environment, testLoginKey)) {
+                return;
+            }
 
             List<TestAccountProperties.Account> testAccounts = testAccountProperties.getAccounts();
 
