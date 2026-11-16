@@ -1,7 +1,7 @@
 package backend.globber.diary.controller.dto;
 
 import backend.globber.diary.domain.constant.PhotoTag;
-import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
@@ -38,11 +38,12 @@ public record PhotoRequest(
         Long height,     // 사진 높이
 
         @NotNull(message = "사진이 찍힌 시각은 필수입니다.")
-        @JsonFormat(pattern = "yyyyMM")
+        @JsonDeserialize(using = TakenMonthDeserializer.class)
         @Schema(
-                description = "사진이 찍힌 시각 (YearMonth). yyyyMM 형식으로 전달",
-                example = "202510",
-                type = "string"
+                description = "사진이 찍힌 월. yyyy-MM 형식 권장(예: 2025-10). 기존 yyyyMM(예: 202510)도 받습니다.",
+                example = "2025-10",
+                type = "string",
+                pattern = "^\\d{4}-?\\d{2}$"
         )
         YearMonth takenMonth,   // 사진이 찍힌 시각
 
