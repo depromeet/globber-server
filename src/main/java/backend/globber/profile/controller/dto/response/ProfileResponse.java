@@ -19,7 +19,7 @@ public record ProfileResponse(
         return ProfileResponse.builder()
             .memberId(member.getId())
             .nickname(member.getName())
-            .email(member.getEmail())
+            .email(member.getContactEmail())
             .profileImageUrl(fullUrl)
             .authProvider(member.getAuthProvider())
             .build();
