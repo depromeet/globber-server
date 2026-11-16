@@ -435,6 +435,25 @@ class DiaryControllerTest {
     }
 
     @Test
+    @DisplayName("기록 조회의 createdAt·updatedAt은 UTC 오프셋(Z)을 붙인 ISO 8601이고 저장된 시각과 같은 순간이다")
+    void diaryTimes_haveUtcOffset() {
+        // given
+        java.time.LocalDateTime savedCreatedAt = jdbcTemplate.queryForObject(
+            "select created_at from diary where id = ?", java.time.LocalDateTime.class, diaryId);
+
+        // when
+        ValidatableResponse detail = getDetail(diaryId);
+        String createdAt = detail.extract().jsonPath().getString("data.createdAt");
+        String updatedAt = detail.extract().jsonPath().getString("data.updatedAt");
+
+        // then
+        assertThat(createdAt).endsWith("Z");
+        assertThat(updatedAt).endsWith("Z");
+        assertThat(java.time.Instant.parse(createdAt))
+            .isEqualTo(savedCreatedAt.atZone(java.time.ZoneId.systemDefault()).toInstant());
+    }
+
+    @Test
     @DisplayName("삭제한 사진 개별 API는 더 이상 동작하지 않는다")
     void removedPhotoApis_notAvailable() {
         RestAssured.given().contentType(ContentType.JSON).header("Authorization", accessToken)

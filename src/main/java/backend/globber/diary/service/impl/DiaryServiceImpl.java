@@ -9,6 +9,7 @@ import backend.globber.city.repository.CityRepository;
 import backend.globber.diary.controller.dto.CityGroupedDiaryResponse;
 import backend.globber.diary.controller.dto.DiaryListResponse;
 import backend.globber.diary.controller.dto.DiaryRequest;
+import backend.globber.common.util.UtcDateTimes;
 import backend.globber.diary.controller.dto.DiaryResponse;
 import backend.globber.diary.controller.dto.EmojiResponse;
 import backend.globber.common.service.S3ObjectDeleter;
@@ -243,8 +244,8 @@ public class DiaryServiceImpl implements DiaryService {
                 diary.getId(),
                 CityResponse.toResponse(diary.getMemberTravelCity().getCity()),
                 diary.getText(),
-                diary.getCreatedAt().toString(),
-                diary.getUpdatedAt().toString(),
+                UtcDateTimes.format(diary.getCreatedAt()),
+                UtcDateTimes.format(diary.getUpdatedAt()),
                 photos,
                 emojis,
                 diary.getMemberTravelCity().getMemberTravel().getMember().getId(),
