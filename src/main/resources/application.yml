@@ -4,6 +4,13 @@ spring:
   profiles:
     active: local
 
+server:
+  # JSON 응답 gzip 압축(GLB-221). Nginx는 백엔드가 준 Content-Encoding을 그대로 넘긴다.
+  compression:
+    enabled: true
+    mime-types: application/json,text/html,text/xml,text/plain,text/css,text/javascript,application/javascript
+    min-response-size: 1024
+
 management:
   endpoints:
     # 프로필 설정이 노출 목록을 덮어써도 health 외 엔드포인트는 비활성화되어 열리지 않게 한다.
