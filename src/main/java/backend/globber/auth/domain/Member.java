@@ -39,6 +39,8 @@ import java.util.Objects;
 @Where(clause = "deleted = false")
 public class Member {
 
+    private static final java.util.regex.Pattern SYNTHETIC_KAKAO_EMAIL = java.util.regex.Pattern.compile("\\d+@kakao");
+
     @ElementCollection(fetch = FetchType.EAGER)
     @Enumerated(EnumType.STRING)
     private final List<Role> roles = new ArrayList<>();
@@ -107,6 +109,17 @@ public class Member {
 
     public void changeUUID(String uuid) {
         this.uuid = uuid;
+    }
+
+    /**
+     * 연락용 이메일. 카카오 로그인은 '{카카오 회원번호}@kakao'를 로그인 식별자(email 컬럼)로 저장하는데,
+     * 이 값은 실제 이메일이 아니므로 응답에는 null로 내보낸다(GLB-325). 로그인 식별자 자체는 바꾸지 않는다.
+     */
+    public String getContactEmail() {
+        if (email == null || SYNTHETIC_KAKAO_EMAIL.matcher(email).matches()) {
+            return null;
+        }
+        return email;
     }
 
     public String getProfileImageUrl(String s3BaseUrl) {
