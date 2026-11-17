@@ -78,7 +78,7 @@ class LogoutBlacklistTest {
         RestAssured.given().log().all()
             .header("Authorization", token)
             .when()
-            .post("/logout")
+            .post("/api/v1/auth/logout")
             .then().log().all()
             .statusCode(200);
     }
@@ -114,7 +114,7 @@ class LogoutBlacklistTest {
         RestAssured.given().log().all()
             .header("Authorization", token)
             .when()
-            .post("/logout")
+            .post("/api/v1/auth/logout")
             .then().log().all()
             .statusCode(200)
             .header("Set-Cookie", containsString("RefreshToken="))
@@ -132,7 +132,7 @@ class LogoutBlacklistTest {
         RestAssured.given().log().all()
             .header("Authorization", token)
             .when()
-            .delete("/withdraw")
+            .delete("/api/v1/auth/withdraw")
             .then().log().all()
             .statusCode(200);
 

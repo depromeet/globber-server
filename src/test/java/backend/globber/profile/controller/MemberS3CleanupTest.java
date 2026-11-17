@@ -135,7 +135,7 @@ class MemberS3CleanupTest {
         RestAssured.given().log().all()
             .header("Authorization", token)
             .when()
-            .delete("/withdraw")
+            .delete("/api/v1/auth/withdraw")
             .then().log().all()
             .statusCode(200);
 

@@ -232,7 +232,7 @@ class AccessTokenValidationTest {
             RestAssured.given().log().all()
                 .header("Authorization", validBearerToken())
                 .when()
-                .post("/logout")
+                .post("/api/v1/auth/logout")
                 .then().log().all()
                 .statusCode(200);
         }
@@ -247,7 +247,7 @@ class AccessTokenValidationTest {
             RestAssured.given().log().all()
                 .header("Authorization", validBearerToken().substring(BEARER.length()))
                 .when()
-                .post("/logout")
+                .post("/api/v1/auth/logout")
                 .then().log().all()
                 .statusCode(401)
                 .body("status", equalTo("fail"));
@@ -275,7 +275,7 @@ class AccessTokenValidationTest {
                 .header("Authorization", BEARER + expiredRawJwt())
                 .cookie("RefreshToken", refreshToken)
                 .when()
-                .post("/reissue")
+                .post("/api/v1/auth/reissue")
                 .then().log().all()
                 .statusCode(200)
                 .body("data.accessToken", notNullValue());
@@ -292,7 +292,7 @@ class AccessTokenValidationTest {
                 .header("Authorization", expiredRawJwt())
                 .cookie("RefreshToken", refreshToken)
                 .when()
-                .post("/reissue")
+                .post("/api/v1/auth/reissue")
                 .then().log().all()
                 .statusCode(401)
                 .body("status", equalTo("fail"));
@@ -309,7 +309,7 @@ class AccessTokenValidationTest {
                 .header("Authorization", BEARER + unsignedExpiredRawJwt())
                 .cookie("RefreshToken", refreshToken)
                 .when()
-                .post("/reissue")
+                .post("/api/v1/auth/reissue")
                 .then().log().all()
                 .statusCode(401)
                 .body("status", equalTo("fail"));
@@ -328,7 +328,7 @@ class AccessTokenValidationTest {
                 .header("Authorization", BEARER + expiredRawJwt())
                 .cookie("RefreshToken", differentRefreshToken)
                 .when()
-                .post("/reissue")
+                .post("/api/v1/auth/reissue")
                 .then().log().all()
                 .statusCode(401)
                 .body("status", equalTo("fail"))
@@ -346,7 +346,7 @@ class AccessTokenValidationTest {
                 .header("Authorization", BEARER + forgedRawJwt())
                 .cookie("RefreshToken", refreshToken)
                 .when()
-                .post("/reissue")
+                .post("/api/v1/auth/reissue")
                 .then().log().all()
                 .statusCode(401)
                 .body("status", equalTo("fail"));

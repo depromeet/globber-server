@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("api/v1/globes")
+@RequestMapping("/api/v1/globes")
 @Tag(name = "지구본 API", description = "사용자의 여행 기록 지구본 조회 API")
 public class GlobeController {
 

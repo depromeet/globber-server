@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component;
 
 /**
  * 로그인 성공 결과를 일회용 code로 잠시 보관한다. 리다이렉트 URL에는 code만 싣고,
- * 프론트가 POST /auth/token으로 code를 한 번 교환해 결과를 받는다.
+ * 프론트가 POST /api/v1/auth/token으로 code를 한 번 교환해 결과를 받는다.
  */
 @Slf4j
 @Component

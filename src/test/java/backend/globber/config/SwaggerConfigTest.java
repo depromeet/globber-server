@@ -49,8 +49,8 @@ class SwaggerConfigTest {
         response.statusCode(200)
                 .body("servers", hasSize(3))
                 .body("servers.url", contains(
-                        "https://globber.world/api",
-                        "https://dev.globber.world/api",
+                        "https://globber.world",
+                        "https://dev.globber.world",
                         "http://localhost:8080"))
                 .body("servers.description", contains("운영 서버", "개발 서버", "로컬 서버"))
                 .body("servers.url", not(hasItem("/")))

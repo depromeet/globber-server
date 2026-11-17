@@ -125,7 +125,7 @@ public class OauthUtil implements OAuth2UserService<OAuth2UserRequest, OAuth2Use
             // 콜백에서 꺼낸 인가 요청의 redirect_uri가 허용 출처일 때만 쓰고, 아니면 기본 콜백 주소로 보낸다
             String redirectUri = redirectUriPolicy.resolveFromCallback(request);
 
-            // 토큰은 URL에 싣지 않고, 프론트가 POST /auth/token으로 교환할 일회용 code만 붙인다
+            // 토큰은 URL에 싣지 않고, 프론트가 POST /api/v1/auth/token으로 교환할 일회용 code만 붙인다
             String code = loginCodeStore.issue(
                     new LoginResult(accessToken, member.getId(), member.getUuid(), member.isFirstLogin()));
             response.sendRedirect(redirectUri + (redirectUri.contains("?") ? "&" : "?") + "code=" + code);
