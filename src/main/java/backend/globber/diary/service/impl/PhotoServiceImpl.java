@@ -1,5 +1,6 @@
 package backend.globber.diary.service.impl;
 
+import backend.globber.common.util.S3UrlResolver;
 import static java.util.stream.Collectors.toList;
 
 import backend.globber.common.service.UploadedImageValidator;
@@ -35,6 +36,7 @@ public class PhotoServiceImpl implements PhotoService {
     private final PhotoRepository photoRepository;
     private final UploadedImageValidator uploadedImageValidator;
     private final S3ObjectDeleter s3ObjectDeleter;
+    private final S3UrlResolver s3UrlResolver;
 
     @Transactional
     @Override
@@ -207,6 +209,7 @@ public class PhotoServiceImpl implements PhotoService {
         return new PhotoResponse(
             photo.getId(),
             photo.getViewCode(),
+            s3UrlResolver.toUrl(photo.getViewCode()),
             photo.getLat(),
             photo.getLng(),
             photo.getWidth(),
@@ -214,7 +217,8 @@ public class PhotoServiceImpl implements PhotoService {
             photo.getTakenMonth(),
             photo.getPlaceName(),
             photo.getTag(),
-            photo.getThumbnailCode()
+            photo.getThumbnailCode(),
+            s3UrlResolver.toUrl(photo.getThumbnailCode())
         );
     }
 }

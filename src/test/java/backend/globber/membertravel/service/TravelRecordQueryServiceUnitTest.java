@@ -27,6 +27,9 @@ class TravelRecordQueryServiceUnitTest {
     @Mock
     private DiaryRepository diaryRepository;
 
+    @org.mockito.Spy
+    private backend.globber.common.util.S3UrlResolver s3UrlResolver = new backend.globber.common.util.S3UrlResolver("https://bucket.example");
+
     @InjectMocks
     private TravelRecordQueryService travelRecordQueryService;
 

@@ -7,7 +7,10 @@ import java.time.YearMonth;
 
 public record PhotoResponse(
     Long photoId,       // 사진 ID
-    String photoCode,    // 화면 표시용 키. 큰 WebP가 있으면 사용하고, 없으면 기존 업로드 키를 반환한다.
+    @Schema(description = "화면 표시용 S3 키(전체 URL 아님). 큰 WebP가 있으면 그 키, 없으면 업로드 키.", example = "travels/6/1763216103109-7195742e.jpg")
+    String photoCode,
+    @Schema(description = "화면 표시용 전체 URL(photoCode에 버킷 주소를 붙인 값)", example = "https://globber-prod.s3.ap-northeast-2.amazonaws.com/travels/6/1763216103109-7195742e.jpg")
+    String photoUrl,
     Double lat,
     Double lng,
     Long width,
@@ -17,6 +20,9 @@ public record PhotoResponse(
     YearMonth takenMonth,
     String placeName,
     PhotoTag tag,
-    String thumbnailCode) {
+    @Schema(description = "썸네일 S3 키. 없으면 null", example = "thumbnails/6/1763216103109-7195742e.webp")
+    String thumbnailCode,
+    @Schema(description = "썸네일 전체 URL. thumbnailCode가 없으면 null", example = "https://globber-prod.s3.ap-northeast-2.amazonaws.com/thumbnails/6/1763216103109-7195742e.webp")
+    String thumbnailUrl) {
 
 }

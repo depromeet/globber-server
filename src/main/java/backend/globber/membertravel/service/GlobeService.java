@@ -1,5 +1,6 @@
 package backend.globber.membertravel.service;
 
+import backend.globber.common.util.S3UrlResolver;
 import backend.globber.exception.spec.UUIDNotFoundException;
 import backend.globber.membertravel.controller.dto.CityDto;
 import backend.globber.membertravel.controller.dto.GlobeSummaryDto;
@@ -20,6 +21,7 @@ import java.util.stream.Collectors;
 public class GlobeService {
 
     private final MemberTravelRepository memberTravelRepository;
+    private final S3UrlResolver s3UrlResolver;
 
     @Transactional(readOnly = true)
     public GlobeSummaryDto getGlobe(final String uuid) {
@@ -34,7 +36,7 @@ public class GlobeService {
         Map<String, List<MemberTravelCity>> groupedByCountry = getStringListMap(travelCities);
         List<RegionDto> regions = getRegionDtos(groupedByCountry);
 
-        String thumbnailUrl = memberTravel.getThumbnailUrl(); // (아래 설명 참고)
+        String thumbnailUrl = s3UrlResolver.toUrl(memberTravel.getThumbnailUrl());
 
         return new GlobeSummaryDto(memberTravel.getMember().getId(), memberTravel.getMember().getName(), cityCount, (int) countryCount, regions, thumbnailUrl);
     }

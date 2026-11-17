@@ -1,5 +1,6 @@
 package backend.globber.diary.service.impl;
 
+import backend.globber.common.util.S3UrlResolver;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -47,15 +48,16 @@ class OwnershipChecksTest {
     private static final long PHOTO_ID = 20L;
 
     private final DiaryRepository diaryRepository = mock(DiaryRepository.class);
+    private static final S3UrlResolver S3_URLS = new S3UrlResolver("https://bucket.example");
     private final PhotoRepository photoRepository = mock(PhotoRepository.class);
     private final MemberRepository memberRepository = mock(MemberRepository.class);
     private final PhotoServiceImpl photoService = new PhotoServiceImpl(photoRepository,
-        mock(UploadedImageValidator.class), mock(S3ObjectDeleter.class));
+        mock(UploadedImageValidator.class), mock(S3ObjectDeleter.class), S3_URLS);
     private final PhotoService photoServiceMock = mock(PhotoService.class);
     private final DiaryServiceImpl diaryService = new DiaryServiceImpl(diaryRepository, photoRepository,
         memberRepository, mock(CityRepository.class), mock(JwtTokenProvider.class), photoServiceMock,
         mock(MemberTravelCityRepository.class), mock(MemberTravelRepository.class),
-        mock(DiaryEmojiRepository.class), mock(DiaryEmojiReactionRepository.class), mock(S3ObjectDeleter.class));
+        mock(DiaryEmojiRepository.class), mock(DiaryEmojiReactionRepository.class), mock(S3ObjectDeleter.class), S3_URLS);
 
     private Member member(long id) {
         Member member = mock(Member.class);

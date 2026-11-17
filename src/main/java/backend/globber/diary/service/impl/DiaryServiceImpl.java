@@ -1,5 +1,6 @@
 package backend.globber.diary.service.impl;
 
+import backend.globber.common.util.S3UrlResolver;
 import backend.globber.auth.domain.Member;
 import backend.globber.auth.repository.MemberRepository;
 import backend.globber.auth.util.JwtTokenProvider;
@@ -59,6 +60,7 @@ public class DiaryServiceImpl implements DiaryService {
     private final DiaryEmojiRepository emojiRepository;
     private final DiaryEmojiReactionRepository emojiReactionRepository;
     private final S3ObjectDeleter s3ObjectDeleter;
+    private final S3UrlResolver s3UrlResolver;
 
     @Transactional
     @Override
@@ -237,6 +239,7 @@ public class DiaryServiceImpl implements DiaryService {
                 .map(photo -> new PhotoResponse(
                         photo.getId(),
                         photo.getViewCode(),
+                        s3UrlResolver.toUrl(photo.getViewCode()),
                         includeCoordinates ? photo.getLat() : null,
                         includeCoordinates ? photo.getLng() : null,
                         photo.getWidth(),
@@ -244,7 +247,8 @@ public class DiaryServiceImpl implements DiaryService {
                         photo.getTakenMonth(),
                         photo.getPlaceName(),
                         photo.getTag(),
-                        photo.getThumbnailCode()
+                        photo.getThumbnailCode(),
+                        s3UrlResolver.toUrl(photo.getThumbnailCode())
                 ))
                 .collect(toList());
 
@@ -258,7 +262,7 @@ public class DiaryServiceImpl implements DiaryService {
                 emojis,
                 diary.getMemberTravelCity().getMemberTravel().getMember().getId(),
                 diary.getMemberTravelCity().getMemberTravel().getMember().getName(),
-                diary.getMemberTravelCity().getMemberTravel().getMember().getProfileImageKey()
+                s3UrlResolver.toUrl(diary.getMemberTravelCity().getMemberTravel().getMember().getProfileImageKey())
         );
     }
 }

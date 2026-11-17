@@ -89,6 +89,9 @@ class DiaryControllerTest {
     @Autowired
     private JwtTokenProvider jwtTokenProvider;
 
+    @org.springframework.beans.factory.annotation.Value("${aws.s3.base-url}")
+    private String s3BaseUrl;
+
     private String prefix;
     private Long memberId;
     private String accessToken;
@@ -374,7 +377,7 @@ class DiaryControllerTest {
             .get("/api/v1/member-travels/listViews")
             .then()
             .statusCode(200)
-            .body("data.records[0].cities[0].thumbnailUrls[0]", equalTo(expectedPhotoCode));
+            .body("data.records[0].cities[0].thumbnailUrls[0]", equalTo(fullUrl(expectedPhotoCode)));
     }
 
     @Test
@@ -567,6 +570,49 @@ class DiaryControllerTest {
             .statusCode(200)
             .body("data.photos[0].lat", equalTo(37.5665123f))
             .body("data.photos[0].lng", equalTo(126.9780456f));
+    }
+
+    @Test
+    @DisplayName("이미지 필드 중 이름이 ...Url인 것은 전체 URL이고, photoCode는 S3 키 그대로다 (GLB-211)")
+    void imageFields_areFullUrls() {
+        // given: 회원 프로필 키, 사진 A의 썸네일 키, 지구본 대표 사진 키
+        jdbcTemplate.update("update member set profile_image_key = ? where id = ?", "profiles/" + memberId + "/me.jpeg", memberId);
+        jdbcTemplate.update("update photo set thumbnail_code = ? where id = ?", "thumbnails/" + memberId + "/a.webp", photoIds.get("A"));
+        jdbcTemplate.update("update member_travel set thumbnail_url = ? where member_id = ?", "travels/" + memberId + "/globe.jpg", memberId);
+        String uuid = jdbcTemplate.queryForObject("select uuid from member where id = ?", String.class, memberId);
+        String base = s3BaseUrl.endsWith("/") ? s3BaseUrl.substring(0, s3BaseUrl.length() - 1) : s3BaseUrl;
+
+        // when & then: 기록 상세
+        RestAssured.given().when().get("/api/v1/diaries/{diaryId}", diaryId).then().statusCode(200)
+            .body("data.profileImageUrl", equalTo(base + "/profiles/" + memberId + "/me.jpeg"))
+            .body("data.photos[0].photoCode", equalTo(code("A")))
+            .body("data.photos[0].photoUrl", equalTo(base + "/" + code("A")))
+            .body("data.photos[0].thumbnailCode", equalTo("thumbnails/" + memberId + "/a.webp"))
+            .body("data.photos[0].thumbnailUrl", equalTo(base + "/thumbnails/" + memberId + "/a.webp"))
+            .body("data.photos[1].thumbnailCode", nullValue())
+            .body("data.photos[1].thumbnailUrl", nullValue());
+
+        // when & then: uuid 기록 목록
+        RestAssured.given().queryParam("uuid", uuid).when().get("/api/v1/diaries").then().statusCode(200)
+            .body("data.diaryResponses.diaries.flatten().profileImageUrl", everyItem(equalTo(base + "/profiles/" + memberId + "/me.jpeg")))
+            .body("data.diaryResponses.diaries.flatten().photos.flatten().photoUrl", hasItem(base + "/" + code("A")));
+
+        // when & then: listViews 대표 사진
+        RestAssured.given().header("Authorization", accessToken)
+            .when().get("/api/v1/member-travels/listViews").then().statusCode(200)
+            .body("data.records.flatten().cities.flatten().thumbnailUrls.flatten()",
+                everyItem(org.hamcrest.Matchers.startsWith(base + "/")))
+            .body("data.records.flatten().cities.flatten().thumbnailUrls.flatten()",
+                hasItem(base + "/thumbnails/" + memberId + "/a.webp"));
+
+        // when & then: 지구본 대표 사진
+        RestAssured.given().when().get("/api/v1/globes/{uuid}", uuid).then().statusCode(200)
+            .body("data.thumbnailUrl", equalTo(base + "/travels/" + memberId + "/globe.jpg"));
+    }
+
+    private String fullUrl(String key) {
+        String base = s3BaseUrl.endsWith("/") ? s3BaseUrl.substring(0, s3BaseUrl.length() - 1) : s3BaseUrl;
+        return base + "/" + key;
     }
 
     private String otherMemberToken() {
