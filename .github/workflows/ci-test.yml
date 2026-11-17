@@ -28,7 +28,12 @@ jobs:
         with:
           java-version: '21'
           distribution: 'temurin'
-          cache: gradle
+
+      - name: Gradle 캐시 설정 (배포 파일·의존성)
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          # develop·main 푸시에서만 캐시를 저장하고, PR은 그 캐시를 읽기만 한다
+          cache-read-only: ${{ github.ref != 'refs/heads/main' && github.ref != 'refs/heads/develop' }}
 
       - name: gradlew 실행 권한 부여
         run: chmod +x gradlew
