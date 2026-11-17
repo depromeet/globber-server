@@ -62,7 +62,8 @@ jobs:
         # 개발 서버(Oracle Always Free Micro)는 CPU가 작아서 기동에 수 분이 걸릴 수 있음
         timeout-minutes: 15
         env:
-          PUBLIC_HEALTH_URL: ${{ vars.DEV_PUBLIC_HEALTH_URL || 'https://globber-dev.store/api/actuator/health' }}
+          # 저장소 변수 DEV_PUBLIC_HEALTH_URL(개발 서버 공개 health 주소)을 쓴다. 없으면 스크립트가 바로 실패한다.
+          PUBLIC_HEALTH_URL: ${{ vars.DEV_PUBLIC_HEALTH_URL }}
           LOCAL_HEALTH_ATTEMPTS: 120
         run: bash scripts/refresh-deployment-proxy.sh refresh
 
