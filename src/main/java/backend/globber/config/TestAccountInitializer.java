@@ -49,25 +49,25 @@ public class TestAccountInitializer {
                 return;
             }
 
+            // 계정 하나의 조회·생성이 실패해도(예: 아직 테이블이 없는 DB) 앱 기동은 막지 않는다
             for (TestAccountProperties.Account account : testAccounts) {
-                if (memberRepository.existsByEmail(account.getEmail())) {
-                    log.info("이미 존재함: {}", account.getEmail());
-                } else {
-                    try {
-                        Member member = Member.of(
-                            account.getEmail(),
-                            account.getNickname(),
-                            null,  // password (OAuth 사용자이므로 null)
-                            AuthProvider.KAKAO,
-                            List.of(Role.ROLE_USER),
-                            null  // uuid는 saveWithUUID에서 생성됨
-                        );
-
-                        memberSaver.saveWithUUID(member);
-                        log.info("테스트 계정 생성 완료: {} (UUID: {})", account.getEmail(), member.getUuid());
-                    } catch (Exception e) {
-                        log.error("테스트 계정 생성 실패: {} - {}", account.getEmail(), e.getMessage());
+                try {
+                    if (memberRepository.existsByEmail(account.getEmail())) {
+                        log.info("이미 존재함: {}", account.getEmail());
+                        continue;
                     }
+                    Member member = Member.of(
+                        account.getEmail(),
+                        account.getNickname(),
+                        null,  // password (OAuth 사용자이므로 null)
+                        AuthProvider.KAKAO,
+                        List.of(Role.ROLE_USER),
+                        null  // uuid는 saveWithUUID에서 생성됨
+                    );
+                    memberSaver.saveWithUUID(member);
+                    log.info("테스트 계정 생성 완료: {} (UUID: {})", account.getEmail(), member.getUuid());
+                } catch (Exception e) {
+                    log.warn("테스트 계정 준비 실패(기동은 계속): {} - {}", account.getEmail(), e.getMessage());
                 }
             }
 
