@@ -27,6 +27,9 @@ class TravelRecordQueryServiceUnitTest {
     @Mock
     private DiaryRepository diaryRepository;
 
+    @org.mockito.Spy
+    private backend.globber.common.util.S3UrlResolver s3UrlResolver = new backend.globber.common.util.S3UrlResolver("https://bucket.example");
+
     @InjectMocks
     private TravelRecordQueryService travelRecordQueryService;
 
@@ -96,6 +99,40 @@ class TravelRecordQueryServiceUnitTest {
         assertThat(response.totalCitiesCounts()).isEqualTo(1);
         assertThat(country(response, "JPN").diaryCount()).isEqualTo(1);
         assertThat(response.totalDiariesCounts()).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("도시 대표 사진은 표시 순서대로 중복 없이 최대 3개를 전체 URL로 돌려준다")
+    void cityThumbnails_areOrderedDistinctFullUrls() {
+        // given: 한 도시의 기록 2개, 사진 키 4종 + 중복 1장
+        Long memberId = 1L;
+        City tokyo = city(1L, "도쿄", "일본", "JPN");
+        Diary first = diary(tokyo);
+        addPhoto(first, "travels/1/b.jpg", 1);
+        addPhoto(first, "travels/1/a.jpg", 0);
+        Diary second = diary(tokyo);
+        addPhoto(second, "travels/1/a.jpg", 0);
+        addPhoto(second, "travels/1/c.jpg", 1);
+        addPhoto(second, "travels/1/d.jpg", 2);
+        given(memberTravelCityRepository.findVisitedCities(memberId)).willReturn(List.of(tokyo));
+        given(diaryRepository.findAllWithPhotoByMemberId(memberId)).willReturn(List.of(first, second));
+
+        // when
+        TravelRecordWithDiaryResponse response = travelRecordQueryService.getRecordsWithDiaries(memberId);
+
+        // then
+        assertThat(country(response, "JPN").cities().getFirst().thumbnailUrls()).containsExactly(
+            "https://bucket.example/travels/1/a.jpg",
+            "https://bucket.example/travels/1/b.jpg",
+            "https://bucket.example/travels/1/c.jpg");
+    }
+
+    private void addPhoto(Diary diary, String photoCode, int displayOrder) {
+        diary.getPhotos().add(backend.globber.diary.domain.Photo.builder()
+                .photoCode(photoCode)
+                .displayOrder(displayOrder)
+                .diary(diary)
+                .build());
     }
 
     private CountryRecordDto country(TravelRecordWithDiaryResponse response, String countryCode) {

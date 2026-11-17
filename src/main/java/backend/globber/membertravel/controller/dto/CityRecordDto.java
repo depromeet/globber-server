@@ -16,7 +16,7 @@ public record CityRecordDto(
         @Schema(description = "이 도시에 기록이 1개 이상 있는지 여부", example = "true")
         boolean hasDiary,                 // 일기 존재 여부
 
-        @Schema(description = "이 도시 기록의 대표 사진 목록 (최대 3개)")
+        @Schema(description = "이 도시 기록의 대표 사진 전체 URL 목록 (최대 3개)", example = "[\"https://globber-prod.s3.ap-northeast-2.amazonaws.com/thumbnails/6/a.webp\"]")
         List<String> thumbnailUrls        // 대표 사진 목록
 ) {
 }

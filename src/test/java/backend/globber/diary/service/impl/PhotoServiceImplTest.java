@@ -1,5 +1,7 @@
 package backend.globber.diary.service.impl;
 
+import backend.globber.common.util.S3UrlResolver;
+import org.mockito.Spy;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -48,6 +50,9 @@ class PhotoServiceImplTest {
 
     @Mock
     private S3ObjectDeleter s3ObjectDeleter;
+
+    @Spy
+    private S3UrlResolver s3UrlResolver = new S3UrlResolver("https://bucket.example");
 
     @InjectMocks
     private PhotoServiceImpl photoService;

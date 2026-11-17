@@ -17,6 +17,7 @@ public record DiaryResponse(
         List<EmojiResponse> emojis,
         Long memberId,
         String nickname,
+        @Schema(description = "작성자 프로필 이미지 전체 URL. 없으면 null", example = "https://globber-prod.s3.ap-northeast-2.amazonaws.com/profiles/6/1763216103109-7195742e.jpeg")
         String profileImageUrl
 ) {
 

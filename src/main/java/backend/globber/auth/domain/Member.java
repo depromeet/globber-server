@@ -1,5 +1,7 @@
 package backend.globber.auth.domain;
 
+import backend.globber.common.util.S3Urls;
+
 import backend.globber.auth.domain.constant.AuthProvider;
 import backend.globber.auth.domain.constant.Role;
 import backend.globber.auth.domain.converter.AuthProviderConverter;
@@ -123,10 +125,7 @@ public class Member {
     }
 
     public String getProfileImageUrl(String s3BaseUrl) {
-        if (StringUtils.isEmpty(profileImageKey)) {
-            return null;
-        }
-        return s3BaseUrl + "/" + profileImageKey;
+        return S3Urls.join(s3BaseUrl, profileImageKey);
     }
 
     public void updateEmail(String email) {

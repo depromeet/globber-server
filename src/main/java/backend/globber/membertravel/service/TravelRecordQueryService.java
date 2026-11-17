@@ -1,5 +1,6 @@
 package backend.globber.membertravel.service;
 
+import backend.globber.common.util.S3UrlResolver;
 import backend.globber.city.domain.City;
 import backend.globber.diary.domain.Diary;
 import backend.globber.diary.domain.Photo;
@@ -25,6 +26,7 @@ public class TravelRecordQueryService {
 
     private final MemberTravelCityRepository memberTravelCityRepository;
     private final DiaryRepository diaryRepository;
+    private final S3UrlResolver s3UrlResolver;
 
     public TravelRecordWithDiaryResponse getRecordsWithDiaries(Long memberId) {
 
@@ -84,12 +86,13 @@ public class TravelRecordQueryService {
                 .build();
     }
 
-    private static List<String> getThumbnails(List<Diary> cityDiaries) {
+    private List<String> getThumbnails(List<Diary> cityDiaries) {
         return cityDiaries.stream()
                 .flatMap(diary -> diary.getPhotos().stream().sorted(Photo.DISPLAY_ORDER))
                 .map(Photo::getThumbnailDisplayCode)
                 .distinct()
                 .limit(MAX_THUMBNAILS)
+                .map(s3UrlResolver::toUrl)
                 .toList();
     }
 
