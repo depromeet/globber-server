@@ -59,15 +59,15 @@ class ProdTestLoginDisabledTest {
         for (String key : new String[]{"", "anything"}) {
             RestAssured.given().contentType(ContentType.JSON).header("X-Test-Login-Key", key)
                 .body("{\"email\": \"" + TEST_EMAIL + "\"}")
-                .when().post("/auth/test-login")
+                .when().post("/api/v1/auth/test-login")
                 .then().statusCode(404).body("status", equalTo("fail"))
                 .body("data", equalTo("요청한 경로를 찾을 수 없습니다."));
         }
         // 본문이 비거나 없어도 400이 아니라 404다(API 존재를 드러내지 않는다)
         RestAssured.given().contentType(ContentType.JSON).body("{}")
-            .when().post("/auth/test-login").then().statusCode(404);
+            .when().post("/api/v1/auth/test-login").then().statusCode(404);
         RestAssured.given().contentType(ContentType.JSON)
-            .when().post("/auth/test-login").then().statusCode(404);
+            .when().post("/api/v1/auth/test-login").then().statusCode(404);
     }
 
     @Test

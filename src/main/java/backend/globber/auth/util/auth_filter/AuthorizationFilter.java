@@ -22,7 +22,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 public class AuthorizationFilter extends OncePerRequestFilter {
 
     // 재발급은 만료된 액세스 토큰으로 요청하므로 필터에서 검증하지 않고 서비스에서 서명만 확인한다
-    private static final String REISSUE_PATH = "/reissue";
+    private static final String REISSUE_PATH = "/api/v1/auth/reissue";
 
     private final JwtTokenProvider jwtTokenProvider;
 

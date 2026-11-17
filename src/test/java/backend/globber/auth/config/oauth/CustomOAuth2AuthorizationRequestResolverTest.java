@@ -26,12 +26,12 @@ class CustomOAuth2AuthorizationRequestResolverTest {
             .userInfoUri("https://kapi.kakao.com/v2/user/me")
             .userNameAttributeName("id")
             .build()),
-        "/oauth2/authorization",
+        "/api/v1/oauth2/authorization",
         new RedirectUriPolicy(List.of("https://globber.world"), "https://globber.world/login/oauth/success"));
 
     private MockHttpServletRequest loginStart(String redirectUri) {
-        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/oauth2/authorization/kakao");
-        request.setServletPath("/oauth2/authorization/kakao");
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/v1/oauth2/authorization/kakao");
+        request.setServletPath("/api/v1/oauth2/authorization/kakao");
         request.setParameter("redirect_uri", redirectUri);
         return request;
     }

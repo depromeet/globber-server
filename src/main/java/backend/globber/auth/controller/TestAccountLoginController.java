@@ -49,7 +49,7 @@ public class TestAccountLoginController {
         this.testLoginKey = StringUtils.hasText(testLoginKey) ? testLoginKey.getBytes(StandardCharsets.UTF_8) : null;
     }
 
-    @PostMapping("/auth/test-login")
+    @PostMapping("/api/v1/auth/test-login")
     public ResponseEntity<ApiResponse<?>> login(
         @RequestHeader(value = KEY_HEADER, required = false) String key,
         @RequestBody(required = false) TestLoginRequest request) {

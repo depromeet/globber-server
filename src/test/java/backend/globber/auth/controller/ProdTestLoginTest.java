@@ -67,7 +67,7 @@ class ProdTestLoginTest {
         if (key != null) {
             request.header("X-Test-Login-Key", key);
         }
-        return request.when().post("/auth/test-login").then().extract();
+        return request.when().post("/api/v1/auth/test-login").then().extract();
     }
 
     @Test
@@ -127,7 +127,7 @@ class ProdTestLoginTest {
     @DisplayName("email이 비어 있으면 400이다")
     void blankEmail_badRequest() {
         RestAssured.given().contentType(ContentType.JSON).header("X-Test-Login-Key", KEY).body("{}")
-            .when().post("/auth/test-login")
+            .when().post("/api/v1/auth/test-login")
             .then().statusCode(400).body("status", equalTo("fail"));
     }
 
@@ -136,6 +136,6 @@ class ProdTestLoginTest {
     void hiddenFromApiDocs() {
         String docs = RestAssured.given().when().get("/v3/api-docs/GLOBBER API")
             .then().statusCode(200).extract().asString();
-        assertThat(docs).doesNotContain("/auth/test-login");
+        assertThat(docs).doesNotContain("/api/v1/auth/test-login");
     }
 }

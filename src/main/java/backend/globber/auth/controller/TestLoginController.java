@@ -31,7 +31,7 @@ public class TestLoginController {
     private final JwtTokenProvider jwtTokenProvider;
     private final TestAccountProperties testAccountProperties;
 
-    @PostMapping("/dev/test-login")
+    @PostMapping("/api/v1/dev/test-login")
     @Operation(summary = "[개발용] 테스트 계정 로그인",
         description = "[dev/local 환경만] 설정된 테스트 계정으로 바로 로그인하여 JWT 토큰을 발급받습니다.")
     public ResponseEntity<ApiResponse<JwtTokenResponse>> testLogin(

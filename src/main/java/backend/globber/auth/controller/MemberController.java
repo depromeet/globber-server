@@ -31,7 +31,7 @@ public class MemberController {
     private final TokenService tokenService;
     private final LoginCodeStore loginCodeStore;
 
-    @PostMapping("/logout")
+    @PostMapping("/api/v1/auth/logout")
     @Operation(summary = "로그아웃", description = "로그아웃을 진행합니다.")
     public ResponseEntity<ApiResponse<String>> logout(
         @RequestHeader("Authorization") String accessToken) {
@@ -45,7 +45,7 @@ public class MemberController {
             .body(ApiResponse.success("로그아웃 되었습니다."));
     }
 
-    @PostMapping("/reissue")
+    @PostMapping("/api/v1/auth/reissue")
     @Operation(summary = "AccessToken 재발급", description = "AccessToken을 재발급합니다.")
     public ResponseEntity<ApiResponse<?>> reissue(
         @RequestHeader("Authorization") String accessToken,
@@ -62,7 +62,7 @@ public class MemberController {
             .body(ApiResponse.success(jwtTokenResponse));
     }
 
-    @PostMapping("/auth/token")
+    @PostMapping("/api/v1/auth/token")
     @Operation(summary = "로그인 결과 받기", description = "로그인 성공 리다이렉트로 받은 일회용 code를 교환해 "
         + "accessToken(\"Bearer \" 접두어 포함), memberId, uuid, firstLogin을 받습니다. "
         + "code는 60초 동안 한 번만 쓸 수 있고, 잘못되었거나 만료되었거나 이미 쓴 code면 401입니다.")
@@ -72,7 +72,7 @@ public class MemberController {
         return ResponseEntity.ok(ApiResponse.success(result));
     }
 
-    @DeleteMapping("/withdraw")
+    @DeleteMapping("/api/v1/auth/withdraw")
     @Operation(summary = "회원탈퇴", description = "회원 정보를 삭제하고 로그아웃 처리합니다.")
     public ResponseEntity<ApiResponse<String>> withdraw(
         @RequestHeader("Authorization") String accessToken) {

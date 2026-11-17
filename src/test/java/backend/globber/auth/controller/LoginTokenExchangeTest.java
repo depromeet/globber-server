@@ -82,7 +82,7 @@ class LoginTokenExchangeTest {
         // when & then
         RestAssured.given().log().all()
             .contentType(ContentType.JSON).body(body(code))
-            .when().post("/auth/token")
+            .when().post("/api/v1/auth/token")
             .then().log().all()
             .statusCode(200)
             .body("status", equalTo("success"))
@@ -92,7 +92,7 @@ class LoginTokenExchangeTest {
             .body("data.firstLogin", equalTo(true));
 
         RestAssured.given().contentType(ContentType.JSON).body(body(code))
-            .when().post("/auth/token")
+            .when().post("/api/v1/auth/token")
             .then().statusCode(401).body("status", equalTo("fail"));
     }
 
@@ -101,10 +101,10 @@ class LoginTokenExchangeTest {
     void exchange_invalid() {
         // when & then
         RestAssured.given().contentType(ContentType.JSON).body(body("unknown-code"))
-            .when().post("/auth/token")
+            .when().post("/api/v1/auth/token")
             .then().statusCode(401).body("status", equalTo("fail"));
         RestAssured.given().contentType(ContentType.JSON).body("{}")
-            .when().post("/auth/token")
+            .when().post("/api/v1/auth/token")
             .then().statusCode(400).body("status", equalTo("fail"));
     }
 

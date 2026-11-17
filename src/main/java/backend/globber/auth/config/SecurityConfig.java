@@ -87,7 +87,7 @@ public class SecurityConfig {
     ) {
         return new CustomOAuth2AuthorizationRequestResolver(
                 clientRegistrationRepository,
-                "/oauth2/authorization",
+                "/api/v1/oauth2/authorization",
                 redirectUriPolicy
         );
     }
