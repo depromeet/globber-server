@@ -1,5 +1,9 @@
 package backend.globber.exception;
 
+import java.io.IOException;
+import java.util.Locale;
+import org.apache.catalina.connector.ClientAbortException;
+import org.springframework.web.context.request.async.AsyncRequestNotUsableException;
 import backend.globber.common.dto.ApiResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.MessageSourceResolvable;
@@ -107,7 +111,30 @@ class MVCGlobalException {
     // 위에서 처리하지 못한 예외는 원본 메시지를 응답에 싣지 않고 로그에만 남긴다
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<String>> unexpectedExceptionHandler(Exception e) {
+        // 클라이언트가 응답 도중 연결을 끊은 경우: 응답을 쓸 수 없으니 쓰지 않고, 장애가 아니므로 ERROR로 남기지 않는다
+        if (isClientDisconnect(e)) {
+            log.debug("클라이언트 연결 끊김: {}", e.getMessage());
+            return null;
+        }
         log.error("처리하지 못한 예외", e);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ApiResponse.fail(INTERNAL_ERROR_MESSAGE));
+    }
+
+    private static boolean isClientDisconnect(Throwable e) {
+        for (Throwable t = e; t != null; t = t.getCause()) {
+            if (t instanceof AsyncRequestNotUsableException || t instanceof ClientAbortException) {
+                return true;
+            }
+            if (t instanceof IOException && t.getMessage() != null) {
+                String message = t.getMessage().toLowerCase(Locale.ROOT);
+                if (message.contains("broken pipe") || message.contains("connection reset by peer")) {
+                    return true;
+                }
+            }
+            if (t.getCause() == t) {
+                break;
+            }
+        }
+        return false;
     }
 }
