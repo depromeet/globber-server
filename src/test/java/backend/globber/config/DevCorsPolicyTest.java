@@ -52,4 +52,20 @@ class DevCorsPolicyTest {
                 .andExpect(status().isForbidden())
                 .andExpect(header().doesNotExist("Access-Control-Allow-Origin"));
     }
+
+    @Test
+    @DisplayName("개발 프로필도 로컬 FE가 쓰는 요청 헤더만 허용하고, 목록에 없는 헤더의 preflight는 403이다")
+    void devRequestHeadersLimited() throws Exception {
+        // when & then
+        mockMvc.perform(options("/api/v1/profiles/me")
+                        .header("Origin", "http://localhost:3000")
+                        .header("Access-Control-Request-Method", "PUT")
+                        .header("Access-Control-Request-Headers", "authorization, content-type"))
+                .andExpect(status().isOk());
+        mockMvc.perform(options("/api/v1/profiles/me")
+                        .header("Origin", "http://localhost:3000")
+                        .header("Access-Control-Request-Method", "GET")
+                        .header("Access-Control-Request-Headers", "X-Arbitrary-Review"))
+                .andExpect(status().isForbidden());
+    }
 }

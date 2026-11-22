@@ -12,6 +12,8 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 public class AppConfig {
 
     private static final List<String> ALLOWED_METHODS = List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS");
+    // FE가 실제로 보내는 요청 헤더만 허용한다(GLB-141). sentry-trace·baggage는 FE Sentry 추적 헤더다.
+    private static final List<String> ALLOWED_HEADERS = List.of("Authorization", "Content-Type", "sentry-trace", "baggage");
 
     /**
      * 허용 목록에 있는 Origin만 credentials와 함께 허용한다(GLB-141).
@@ -23,7 +25,7 @@ public class AppConfig {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowedOrigins(allowedOrigins.stream().map(String::trim).filter(origin -> !origin.isEmpty()).toList());
         config.setAllowedMethods(ALLOWED_METHODS);
-        config.addAllowedHeader("*");
+        config.setAllowedHeaders(ALLOWED_HEADERS);
         config.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

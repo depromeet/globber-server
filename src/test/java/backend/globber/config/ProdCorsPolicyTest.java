@@ -81,4 +81,22 @@ class ProdCorsPolicyTest {
         preflight("https://globber.world", "TRACE")
                 .andExpect(status().isForbidden());
     }
+
+    @Test
+    @DisplayName("FE가 쓰는 요청 헤더(Authorization, Content-Type)는 허용하고, 목록에 없는 헤더의 preflight는 403이다")
+    void requestHeadersLimited() throws Exception {
+        // when & then
+        mockMvc.perform(options(PATH)
+                .header("Origin", "https://globber.world")
+                .header("Access-Control-Request-Method", "POST")
+                .header("Access-Control-Request-Headers", "authorization, content-type"))
+            .andExpect(status().isOk())
+            .andExpect(header().string("Access-Control-Allow-Origin", "https://globber.world"));
+        mockMvc.perform(options(PATH)
+                .header("Origin", "https://globber.world")
+                .header("Access-Control-Request-Method", "GET")
+                .header("Access-Control-Request-Headers", "X-Arbitrary-Review"))
+            .andExpect(status().isForbidden())
+            .andExpect(header().doesNotExist("Access-Control-Allow-Headers"));
+    }
 }
