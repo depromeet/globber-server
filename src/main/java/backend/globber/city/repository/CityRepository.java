@@ -2,7 +2,6 @@ package backend.globber.city.repository;
 
 import backend.globber.city.controller.dto.SearchResponse;
 import backend.globber.city.domain.City;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -61,8 +60,5 @@ public interface CityRepository extends JpaRepository<City, Long> {
      */
     Optional<City> findByCountryNameAndCityName(String countryName, String cityName);
 
-    @Cacheable(
-            value = "cities", key = "#cityName + '-' + #countryCode"
-    )
     Optional<City> findByCountryCodeAndCityName(String countryCode, String cityName);
 }
